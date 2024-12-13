@@ -160,7 +160,7 @@ const AuthScreen = () => {
             useNativeDriver: true,
           }),
         ]).start(() => {
-          router.replace('/(tabs)/Home');
+          router.replace('/(tabs)/qn1');
         });
       } else {
         Alert.alert('Login Failed', 'Invalid email or password',
