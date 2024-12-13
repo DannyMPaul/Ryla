@@ -3,9 +3,16 @@ import {StyleSheet,View,Text,TextInput,TouchableOpacity,Image,Dimensions,Animate
 from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import HomeScreen from './Home';
 
 import { Video } from 'expo-av';
 import { ResizeMode } from 'expo-av';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../hooks/types';
+import {useRouter} from 'expo-router';
+
+
 
 
 const COLORS = {
@@ -29,7 +36,7 @@ interface FormErrors {
 
 
 const AuthScreen = () => {
-  // const video = React.useRef(null);
+  const router = useRouter();
   const video = React.useRef<Video>(null);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -136,24 +143,30 @@ const AuthScreen = () => {
     return true;
   };
 
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'AuthScreen'>>();
+
   const handleSubmit = () => {
     if (validateForm()) {
-      //  Authentication logic 
-      console.log('Form submitted:', { email, password, name });
-      
-      // Animate button press
-      Animated.sequence([
-        Animated.timing(buttonScale, {
-          toValue: 0.95,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(buttonScale, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      if (email === 'abc@gmail.com' && password === '123456') {
+        Animated.sequence([
+          Animated.timing(buttonScale, {
+            toValue: 0.95,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(buttonScale, {
+            toValue: 1,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          router.replace('/(tabs)/qn1');
+        });
+      } else {
+        Alert.alert('Login Failed', 'Invalid email or password',
+          [{ text: 'OK', onPress: () => shakeAnimation() }]
+        );
+      }
     }
   };
 
