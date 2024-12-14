@@ -103,7 +103,7 @@ const HomeScreen: React.FC = () => {
             <TouchableOpacity 
               style={styles.startButton} 
               onPress={() => {
-                router.replace('/(tabs)');
+                router.replace('/Crossword');
               }}
             >
               <Text style={styles.startButtonText}>START</Text>

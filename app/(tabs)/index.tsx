@@ -34,8 +34,11 @@ interface FormErrors {
   name?: string;
 }
 
+interface AuthScreenProps {
+  onLogin: () => void;
+}
 
-const AuthScreen = () => {
+const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   const router = useRouter();
   const video = React.useRef<Video>(null);
   const [isLogin, setIsLogin] = useState(true);
