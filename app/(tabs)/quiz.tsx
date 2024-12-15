@@ -117,7 +117,7 @@ const Quiz = () => {
           <TouchableOpacity
             style={styles.continueButton}
             onPress={() => {
-              router.replace('/TabNavigator');
+              router.replace('/Welcome');
             }}
           >
             <Text style={styles.continueButtonText}>Lets Begin the Journey!</Text>
