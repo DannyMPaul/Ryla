@@ -9,6 +9,8 @@ import CommunityScreen from '../../components/screens/CommunityScreen';
 import SpeakScreen from '../../components/screens/SpeakScreen';
 import ReviewScreen from '../../components/screens/ReviewScreen';
 import ProfileScreen from '../../components/screens/ProfileScreen';
+import HoneScreen from './Home';
+import HomeScreen from './Home';
 
 const Tab = createBottomTabNavigator();
 
@@ -24,8 +26,8 @@ const TabNavigator = () => {
       }}
     >
       <Tab.Screen
-        name="Learn"
-        component={LearnScreen}
+        name="Home"
+        component={HomeScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Icon name="globe" size={24} color={color} />
@@ -33,8 +35,8 @@ const TabNavigator = () => {
         }}
       />
       <Tab.Screen
-        name="Community"
-        component={CommunityScreen}
+        name="Learn"
+        component={LearnScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Icon name="users" size={24} color={color} />
@@ -78,33 +80,35 @@ const TabNavigator = () => {
 };
 
 const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: '#FFFFFF',
-    height: Platform.OS === 'ios' ? 85 : 60,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  tabBarLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  profileIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  profileIconActive: {
-    borderWidth: 2,
-    borderColor: '#0066FF',
-  },
-  profileImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 12,
-  },
-});
+    tabBar: {
+        backgroundColor: '#111b21', // Matches the primary background color
+        height: Platform.OS === 'ios' ? 85 : 60,
+        paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: '#2b3940', // Matches secondary background elements
+      },
+      tabBarLabel: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: '#fff', // White text for contrast
+      },
+      profileIcon: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        overflow: 'hidden',
+      },
+      profileIconActive: {
+        borderWidth: 2,
+        borderColor: '#58cc02', // Highlight with the primary green color
+      },
+      profileImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 12,
+      },
+    });
+
 
 export default TabNavigator;

@@ -1,14 +1,28 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useRouter } from 'expo-router';
 
 const LearnScreen = () => {
+  const router = useRouter();
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Learn</Text>
       <View style={styles.lessonList}>
-        {['Basics', 'Greetings', 'Food', 'Travel'].map((lesson, index) => (
-          <TouchableOpacity key={index} style={styles.lessonItem}>
+        {['Videos', 'Games', 'Food', 'Travel', 'Learn with AI'].map((lesson, index) => (
+          <TouchableOpacity 
+            key={index} 
+            style={styles.lessonItem} 
+            onPress={lesson === 'Learn with AI' ? () => router.replace('/(tabs)/Learnwithai') : undefined}
+          >
+            <TouchableOpacity 
+            key={index} 
+            style={styles.lessonItem} 
+            onPress={lesson === 'Learn with AI' ? () => router.replace('/(tabs)/Learnwithai') : undefined}
+          >
+            
+          </TouchableOpacity>
             <Icon name="book-open" size={24} color="#0066FF" />
             <Text style={styles.lessonText}>{lesson}</Text>
             <Icon name="chevron-right" size={24} color="#666666" />
