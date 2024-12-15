@@ -30,8 +30,8 @@ const languages: LanguageOption[] = [
   },
   {
     id: '3',
-    flag: 'ES',
-    title: 'Spanish',
+    flag: 'FR',
+    title: 'French',
   },
 ];
 
@@ -78,7 +78,13 @@ const qn2 = () => {
         <TouchableOpacity 
           style={styles.nextButton}
           onPress={() => {
-            router.replace('./Welcome');
+            if (selectedLanguage === '1') {
+              router.replace('./English');
+            } else if (selectedLanguage === '2') {
+              router.replace('./German');
+            } else if (selectedLanguage === '3') {
+              router.replace('./Spanish');
+            }
           }}
         >
           <Text style={styles.nextButtonText}>Next Question</Text>

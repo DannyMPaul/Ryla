@@ -12,6 +12,9 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import TabNavigator from './TabNavigator';
+import { NavigationContainer } from '@react-navigation/native';
+
+
 
 const { width } = Dimensions.get('window');
 
@@ -68,6 +71,7 @@ const HomeScreen: React.FC = () => {
     profile: false,
   });
 
+
   const toggleCard = (card: keyof typeof expandedCards) => {
     setExpandedCards(prev => ({
       ...prev,
@@ -103,7 +107,7 @@ const HomeScreen: React.FC = () => {
             <TouchableOpacity 
               style={styles.startButton} 
               onPress={() => {
-                router.replace('/(tabs)');
+                router.replace('/Crossword');
               }}
             >
               <Text style={styles.startButtonText}>START</Text>

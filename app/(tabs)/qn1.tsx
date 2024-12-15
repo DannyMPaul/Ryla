@@ -44,7 +44,7 @@ const goals: GoalOption[] = [
   },
   {
     id: '6',
-    icon: 'aircraft',
+    icon: 'book',
     title: 'Other',
   },
 ];
