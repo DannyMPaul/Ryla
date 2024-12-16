@@ -14,7 +14,7 @@ const CustomHeader = () => {
     </View>
   );
 };
-add
+
 
 // Layout with Tabs
 export default function Layout() {
