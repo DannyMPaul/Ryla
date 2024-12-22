@@ -332,6 +332,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
               style={styles.socialButton}
               onPress={() => handleSocialLogin('Apple')}
             >
+              
               <Ionicons name="logo-apple" size={24} color={COLORS.text} />
             </TouchableOpacity>
             <TouchableOpacity
