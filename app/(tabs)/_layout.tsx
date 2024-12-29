@@ -94,6 +94,14 @@ export default function Layout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="Learnwithaifood"
+        options={{
+          headerShown: false,
+          tabBarStyle: { display: 'none' },
+          tabBarButton: () => null,
+        }}
+      />
     </Tabs>
   );
 }

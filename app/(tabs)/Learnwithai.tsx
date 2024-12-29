@@ -9,6 +9,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { router } from 'expo-router';
 
 interface ConversationItem {
   id: string;
@@ -76,7 +77,13 @@ const AIConversationsScreen = () => {
           <TouchableOpacity 
             key={item.id}
             style={styles.conversationItem}
-            onPress={() => {/* Handle navigation */}}
+            onPress={() => {
+              if (item.id === '3') {
+                router.replace('/(tabs)/Learnwithaifood');
+              } else {
+                // Handle other navigation
+              }
+            }}
           >
             <View style={styles.itemHeader}>
               <Text style={styles.itemIcon}>{item.icon}</Text>
