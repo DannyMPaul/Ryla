@@ -182,7 +182,7 @@ const HomeScreen: React.FC = () => {
               </TouchableOpacity>
             </ExpandableCard>
 
-            <ExpandableCard
+            {/* <ExpandableCard
               title="Create a profile to save your progress!"
               isExpanded={expandedCards.profile}
               onToggle={() => toggleCard('profile')}
@@ -193,7 +193,7 @@ const HomeScreen: React.FC = () => {
               <TouchableOpacity style={styles.signInButton}>
                 <Text style={styles.buttonText}>SIGN IN</Text>
               </TouchableOpacity>
-            </ExpandableCard>
+            </ExpandableCard> */}
           </View>
         </View>
       </ScrollView>
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#111b21',
   },
   header: {
-    backgroundColor: '#58cc02',
+    backgroundColor: '#F0657A',
     padding: 16,
   },
   headerContent: {
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   startButton: {
-    backgroundColor: '#58cc02',
+    backgroundColor: '#F0657A',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   cardTitle: {
-    color: '#fff',
+    color: '#F0657A',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#58cc02',
+    backgroundColor: 'pink',
     borderRadius: 4,
   },
   viewAllButton: {
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   createProfileButton: {
-    backgroundColor: '#58cc02',
+    backgroundColor: '#F0657A',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',

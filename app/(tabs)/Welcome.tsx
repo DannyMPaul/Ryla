@@ -117,7 +117,7 @@ const VideoTranscriptionScreen: React.FC = () => {
       {showButton && (
         <TouchableOpacity 
           style={styles.nextButton}
-          onPress={() => router.replace('./TabNavigator')}
+          onPress={() => router.replace('/Home')}
         >
           <Text style={styles.nextButtonText}>Proceed</Text>
         </TouchableOpacity>

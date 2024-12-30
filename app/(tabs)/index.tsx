@@ -11,6 +11,8 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../hooks/types';
 import {useRouter} from 'expo-router';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { app } from '../firebase/firebase';
 
 
 
@@ -148,25 +150,60 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'AuthScreen'>>();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
-      if (email === 'abc@gmail.com' && password === '123456') {
-        Animated.sequence([
-          Animated.timing(buttonScale, {
-            toValue: 0.95,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.timing(buttonScale, {
-            toValue: 1,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          router.replace('/(tabs)/qn1');
-        });
-      } else {
-        Alert.alert('Login Failed', 'Invalid email or password',
+      try {
+        const auth = getAuth(app);
+        
+        if (isLogin) {
+          try {
+            await signInWithEmailAndPassword(auth, email, password);
+            // Success animation and navigation
+            Animated.sequence([
+              Animated.timing(buttonScale, {
+                toValue: 0.95,
+                duration: 100,
+                useNativeDriver: true,
+              }),
+              Animated.timing(buttonScale, {
+                toValue: 1,
+                duration: 100,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              router.replace('/qn1');
+            });
+          } catch (error: any) {
+            console.log('Firebase error:', error.code);
+            if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+              Alert.alert(
+                'Invalid Password',
+                'The password you entered is incorrect. Please try again.',
+                [{ 
+                  text: 'OK',
+                  onPress: () => {
+                    setPassword('');
+                    shakeAnimation();
+                  }
+                }]
+              );
+            } else {
+              Alert.alert(
+                'Login Failed',
+                error.message,
+                [{ text: 'OK', onPress: () => shakeAnimation() }]
+              );
+            }
+          }
+        } else {
+          // Sign up logic...
+          await createUserWithEmailAndPassword(auth, email, password);
+          router.replace('/qn1');  // Direct navigation after signup
+        }
+      } catch (error: any) {
+        Alert.alert(
+          isLogin ? 'Login Failed' : 'Sign Up Failed',
+          error.message,
           [{ text: 'OK', onPress: () => shakeAnimation() }]
         );
       }
@@ -332,6 +369,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
               style={styles.socialButton}
               onPress={() => handleSocialLogin('Apple')}
             >
+              
               <Ionicons name="logo-apple" size={24} color={COLORS.text} />
             </TouchableOpacity>
             <TouchableOpacity

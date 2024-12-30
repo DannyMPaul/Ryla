@@ -83,7 +83,7 @@ const qn2 = () => {
             } else if (selectedLanguage === '2') {
               router.replace('./German');
             } else if (selectedLanguage === '3') {
-              router.replace('./Spanish');
+              router.replace('/Spanish');
             }
           }}
         >

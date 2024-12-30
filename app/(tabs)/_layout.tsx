@@ -1,64 +1,133 @@
-// _layout.tsx
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
-// import { Colors } from '@/constants/Colors';  // Adjust imports as per your structure
+import { View, StyleSheet, Platform } from 'react-native';
+import Icon from 'react-native-vector-icons/Feather';
 
-// Custom Header Component with "MetaSucks"
-const CustomHeader = () => {
-  return (
-    <View style={styles.header}>
-      <Text style={styles.logoText}>
-        Ry
-        <Text style={styles.Lang}>Lang</Text>
-      </Text>    
-    </View>
-  );
-};
-
-// Layout that uses CustomHeader and wraps the tab screens
 export default function Layout() {
   return (
     <Tabs
       screenOptions={{
-        headerTitle: () => <CustomHeader />,
-        headerStyle: {
-          opacity:1,
-          backgroundColor: 'black',
-          borderWidth: 3,
-          borderBottomColor: 'purple',
-          shadowColor: '#F0657A',
-          shadowOffset: {
-            width: 1,
-            height: 2,
-          },
-          shadowOpacity: 0.8,
-          shadowRadius: 1,
-        },
-        headerTintColor: 'white', // White text color
-        tabBarStyle: { display: 'none' }, // Hides the tab bar (optional)
+        headerShown: false,
+        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: '#0066FF',
+        tabBarInactiveTintColor: '#666666',
+        tabBarLabelStyle: styles.tabBarLabel,
       }}
     >
-      {}
+      {/* Auth and onboarding screens - hidden */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          tabBarStyle: { display: 'none' },
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
+        name="qn1"
+        options={{
+          tabBarStyle: { display: 'none' },
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
+        name="qn2"
+        options={{
+          tabBarStyle: { display: 'none' },
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
+        name="Spanish"
+        options={{
+          tabBarStyle: { display: 'none' },
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
+        name="Welcome"
+        options={{
+          tabBarStyle: { display: 'none' },
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+
+      {/* Main Tab Navigation */}
+      <Tabs.Screen
+        name="Home"
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Icon name="globe" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="Learn"
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Icon name="users" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="Speak"
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Icon name="message-circle" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="Review"
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Icon name="trending-up" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="Me"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <View style={[styles.profileIcon, focused && styles.profileIconActive]}>
+              <Icon name="user" size={24} color={focused ? '#0066FF' : '#666666'} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="Learnwithaifood"
+        options={{
+          headerShown: false,
+          tabBarStyle: { display: 'none' },
+          tabBarButton: () => null,
+        }}
+      />
     </Tabs>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flex: 1,
-    justifyContent: 'center',
+  tabBar: {
+    backgroundColor: '#111b21',
+    height: Platform.OS === 'ios' ? 85 : 60,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#2b3940',
+  },
+  tabBarLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  profileIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
-    backgroundColor:'rgba(0,0,0,0)',
+    justifyContent: 'center',
   },
-  logoText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#F0657A', 
-  },
-  Lang: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+  profileIconActive: {
+    borderWidth: 2,
+    borderColor: '#0066FF',
   },
 });
