@@ -7,4 +7,6 @@ requests>=2.31.0
 regex>=2023.5.5
 packaging>=23.1
 filelock>=3.12.0
-tokenizers>=0.13.3
+tokenizers>=0.1
+happytransformer
+tensorflow

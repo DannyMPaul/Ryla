@@ -11,3 +11,8 @@ pip install -r requirements.txt
 
 #TTS engine
 pip install pypiwin32
+
+#Avaliable test users : 
+-User_1 {2,4,Jason}
+-User_2 {1,1,Rohan}
+-User_3 {3,3,Aariya}
