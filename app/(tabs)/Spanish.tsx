@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { router } from 'expo-router';
+import { getAuth } from 'firebase/auth';
+import { getDatabase, ref as dbRef, update } from 'firebase/database';
 
 interface ProficiencyLevel {
   id: string;
@@ -63,6 +65,56 @@ const ProgressBars = ({ level }: { level: number }) => {
 
 const LanguageProficiencyScreen = () => {
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+  const auth = getAuth();
+
+  const handleLevelSelect = async (levelId: string) => {
+    setSelectedLevel(levelId);
+    
+    const user = auth.currentUser;
+    if (user) {
+      const db = getDatabase();
+      const userRef = dbRef(db, `users/${user.uid}`);
+      
+      try {
+        const selectedProficiency = proficiencyLevels.find(l => l.id === levelId);
+        await update(userRef, {
+          'responses/proficiencyLevel': {
+            selectedLevel: levelId,
+            levelTitle: selectedProficiency?.title,
+            levelNumber: selectedProficiency?.level,
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (error) {
+        console.error('Error saving proficiency level:', error);
+      }
+    }
+  };
+
+  const handleContinue = async () => {
+    if (!selectedLevel) return;
+
+    const user = auth.currentUser;
+    if (user) {
+      const db = getDatabase();
+      const userRef = dbRef(db, `users/${user.uid}`);
+      
+      try {
+        await update(userRef, {
+          currentStep: 'quiz',
+          lastUpdated: new Date().toISOString(),
+          'learningPath': {
+            language: 'Spanish',
+            startedAt: new Date().toISOString(),
+            initialLevel: proficiencyLevels.find(l => l.id === selectedLevel)?.level
+          }
+        });
+        router.replace('/quiz');
+      } catch (error) {
+        console.error('Error updating progress:', error);
+      }
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -86,7 +138,7 @@ const LanguageProficiencyScreen = () => {
               styles.optionButton,
               selectedLevel === level.id && styles.selectedOption,
             ]}
-            onPress={() => setSelectedLevel(level.id)}
+            onPress={() => handleLevelSelect(level.id)}
           >
             <ProgressBars level={level.level} />
             <Text style={styles.optionText}>{level.title}</Text>
@@ -100,9 +152,7 @@ const LanguageProficiencyScreen = () => {
           !selectedLevel && styles.continueButtonDisabled,
         ]}
         disabled={!selectedLevel}
-        onPress={() => {
-          router.replace('/quiz');
-        }}
+        onPress={handleContinue}
       >
         <Text style={styles.continueButtonText}>Let's quickly check your level!</Text>
       </TouchableOpacity>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import TabNavigator from './TabNavigator';
 import { NavigationContainer } from '@react-navigation/native';
+import { getAuth } from 'firebase/auth';
+import { getDatabase, ref, onValue } from 'firebase/database';
 
 
 
@@ -65,12 +67,37 @@ const ExpandableCard: React.FC<CardProps> = ({ title, isExpanded, onToggle, chil
 };
 
 const HomeScreen: React.FC = () => {
+  const [userData, setUserData] = useState<any>(null);
   const [expandedCards, setExpandedCards] = useState({
     leaderboards: false,
     quests: false,
     profile: false,
   });
 
+  useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (user) {
+      const db = getDatabase();
+      const userRef = ref(db, `users/${user.uid}`);
+      
+      const unsubscribe = onValue(userRef, (snapshot) => {
+        const data = snapshot.val();
+        setUserData(data);
+      });
+
+      return () => unsubscribe();
+    }
+  }, []);
+
+  const getMotivationalQuote = (level: string) => {
+    const quotes = {
+      Beginner: "Every expert was once a beginner. Let's start your journey!",
+      Intermediate: "You're making great progress! Keep pushing forward!",
+      Advanced: "Impressive skills! You're well on your way to mastery!"
+    };
+    return quotes[level as keyof typeof quotes] || quotes.Beginner;
+  };
 
   const toggleCard = (card: keyof typeof expandedCards) => {
     setExpandedCards(prev => ({
@@ -81,21 +108,26 @@ const HomeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* Header with Quiz Results */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Icon name="arrow-left" size={24} color="#fff" />
           <View style={styles.headerTextContainer}>
-            <Text style={styles.sectionTitle}></Text>
-            <Text style={styles.lessonTitle}>Form basic sentences</Text>
-          </View>
-          <View style={styles.statsContainer}>
-            <Icon name="flag" size={20} color="#fff" />
-            <Text style={styles.statsText}>0</Text>
-            <Icon name="diamond" size={20} color="#fff" />
-            <Text style={styles.statsText}>500</Text>
-            <Icon name="heart" size={20} color="#fff" />
-            <Text style={styles.statsText}>5</Text>
+            <Text style={styles.welcomeText}>
+              Welcome, {userData?.name || 'Learner'}!
+            </Text>
+            {userData?.quizResults && (
+              <View style={styles.quizResultsContainer}>
+                <Text style={styles.levelText}>
+                  Level: {userData.quizResults.finalLevel}
+                </Text>
+                <Text style={styles.accuracyText}>
+                  Accuracy: {userData.quizResults.details?.accuracy || '0%'}
+                </Text>
+                <Text style={styles.motivationalText}>
+                  {getMotivationalQuote(userData.quizResults.finalLevel)}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -363,6 +395,35 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  welcomeText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  quizResultsContainer: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  levelText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  accuracyText: {
+    color: '#58cc02',
+    fontSize: 16,
+    marginTop: 4,
+  },
+  motivationalText: {
+    color: '#fff',
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginTop: 8,
+    opacity: 0.9,
   },
 });
 <TabNavigator />

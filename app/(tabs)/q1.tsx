@@ -9,6 +9,9 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useRouter } from 'expo-router';
+import { getDatabase, ref, update, get } from 'firebase/database';
+import { getAuth } from 'firebase/auth';
+import { database } from '../firebase/firebase';
 
 interface QuizOption {
   id: string;
@@ -38,53 +41,94 @@ const QuizScreen = () => {
     {
       id: '3',
       label: 'el hombre',
-      image: require('../../assets/images/pensive-man-blue-shirt-with-gentle-expression-vector-illustration-light-background-concept-decisionmaking-vector-illustration_345238-2966.avif'),
+      image: require('../../assets/images/gettyimages-1352096257-612x612.jpg'),
       isCorrect: true,
     },
   ];
 
-  const handleCheck = () => {
+  const handleCheck = async () => {
     if (!selectedOption) return;
 
     const selectedAnswer = options.find(opt => opt.id === selectedOption);
-    if (selectedAnswer && !selectedAnswer.isCorrect) {
-      setHearts(prev => Math.max(0, prev - 1));
-      Alert.alert(
-        'Incorrect!',
-        'Try again',
-        [{ text: 'OK', onPress: () => setSelectedOption(null) }]
-      );
-      
-      if (hearts <= 1) {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      router.replace('./qn1');
+      return;
+    }
+
+    try {
+      if (selectedAnswer && !selectedAnswer.isCorrect) {
+        // Wrong answer
+        setHearts(prev => Math.max(0, prev - 1));
+        
+        // Store the incorrect attempt
+        const userRef = ref(database, `users/${user.uid}`);
+        const userSnapshot = await get(userRef);
+        const userData = userSnapshot.val();
+        
+        await update(userRef, {
+          [`quizResponses/q1/attempts`]: (userData?.quizResponses?.q1?.attempts || 0) + 1,
+          hearts: Math.max(0, hearts - 1)
+        });
+
         Alert.alert(
-          'Game Over',
-          'You ran out of hearts!',
+          'Incorrect!',
+          'Try again',
+          [{ text: 'OK', onPress: () => setSelectedOption(null) }]
+        );
+        
+        if (hearts <= 1) {
+          await update(userRef, {
+            hearts: 5,
+            [`quizResponses/q1/failed`]: true
+          });
+
+          Alert.alert(
+            'Game Over',
+            'You ran out of hearts!',
+            [{ 
+              text: 'Restart', 
+              onPress: () => {
+                setHearts(5);
+                setSelectedOption(null);
+              }
+            }]
+          );
+        }
+      } else {
+        // Correct answer
+        const userRef = ref(database, `users/${user.uid}`);
+        const userSnapshot = await get(userRef);
+        const userData = userSnapshot.val();
+        
+        await update(userRef, {
+          [`quizResponses/q1/completed`]: true,
+          [`quizResponses/q1/completedAt`]: new Date().toISOString(),
+          currentQuestion: 2,
+          totalCorrect: userData?.totalCorrect + 1 || 1
+        });
+
+        Alert.alert(
+          'Correct!',
+          'Well done!',
           [{ 
-            text: 'Restart', 
+            text: 'Next', 
             onPress: () => {
-              setHearts(5);
-              setSelectedOption(null);
+              router.push('./qn2');
             }
           }]
         );
       }
-    } else {
-      Alert.alert(
-        'Correct!',
-        'Well done!',
-        [{ 
-          text: 'Next', 
-          onPress: () => {
-            // Navigate to next question
-            router.push('/qn2');
-          }
-        }]
-      );
+    } catch (error) {
+      console.error('Error updating database:', error);
+      Alert.alert('Error', 'Failed to save progress');
     }
   };
 
   const handleSkip = () => {
-    router.push('/qn2');
+    router.push('./qn2');
   };
 
   const handleClose = () => {
