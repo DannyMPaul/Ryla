@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import Flag from 'react-native-flags';
+import { getAuth } from 'firebase/auth';
+import { getDatabase, ref as dbRef, update } from 'firebase/database';
 
 interface LanguageOption {
   id: string;
@@ -37,9 +39,53 @@ const languages: LanguageOption[] = [
 
 const qn2 = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
+  const auth = getAuth();
 
-  const handleLanguageSelect = (languageId: string) => {
+  const handleLanguageSelect = async (languageId: string) => {
     setSelectedLanguage(languageId);
+    
+    const user = auth.currentUser;
+    if (user) {
+      const db = getDatabase();
+      const userRef = dbRef(db, `users/${user.uid}`);
+      
+      try {
+        await update(userRef, {
+          'responses/languageSelection': {
+            selectedLanguage: languageId,
+            languageTitle: languages.find(l => l.id === languageId)?.title,
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (error) {
+        console.error('Error saving language:', error);
+      }
+    }
+  };
+
+  const handleNext = async () => {
+    if (!selectedLanguage) return;
+
+    const user = auth.currentUser;
+    if (user) {
+      const db = getDatabase();
+      const userRef = dbRef(db, `users/${user.uid}`);
+      
+      try {
+        let nextRoute = './English';
+        if (selectedLanguage === '2') nextRoute = './German';
+        if (selectedLanguage === '3') nextRoute = './Spanish';
+
+        await update(userRef, {
+          currentStep: 'quiz',
+          selectedLanguage: languages.find(l => l.id === selectedLanguage)?.title,
+          lastUpdated: new Date().toISOString()
+        });
+        router.replace(nextRoute);
+      } catch (error) {
+        console.error('Error updating progress:', error);
+      }
+    }
   };
 
   return (
@@ -77,15 +123,7 @@ const qn2 = () => {
 
         <TouchableOpacity 
           style={styles.nextButton}
-          onPress={() => {
-            if (selectedLanguage === '1') {
-              router.replace('./English');
-            } else if (selectedLanguage === '2') {
-              router.replace('./German');
-            } else if (selectedLanguage === '3') {
-              router.replace('/Spanish');
-            }
-          }}
+          onPress={handleNext}
         >
           <Text style={styles.nextButtonText}>Next Question</Text>
         </TouchableOpacity>

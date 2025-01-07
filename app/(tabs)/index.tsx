@@ -12,7 +12,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../hooks/types';
 import {useRouter} from 'expo-router';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { app } from '../firebase/firebase';
+import { app, database } from '../firebase/firebase';
+import { getDatabase, ref, set, update, get } from 'firebase/database';
 
 
 
@@ -41,8 +42,8 @@ interface AuthScreenProps {
 }
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
+  const videoRef = React.useRef<Video>(null);
   const router = useRouter();
-  const video = React.useRef<Video>(null);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,8 +64,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
 
   useEffect(() => {
     animateIn();
-    if (video.current) {
-      video.current.playAsync();
+    if (videoRef.current) {
+      videoRef.current.playAsync();
     }
   }, []);
 
@@ -150,6 +151,37 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'AuthScreen'>>();
 
+  const checkUserProgress = async (user: any) => {
+    const db = getDatabase();
+    const userRef = ref(db, `users/${user.uid}`);
+    
+    try {
+      const snapshot = await get(userRef);
+      const userData = snapshot.val();
+      
+      if (userData) {
+        // User exists, check if they completed onboarding
+        if (userData.quizResults?.isAssessmentComplete) {
+          // User has completed onboarding, go to home
+          router.replace('./home');
+        } else if (userData.currentStep) {
+          // User was in the middle of onboarding, resume from their last step
+          router.replace(`./${userData.currentStep}`);
+        } else {
+          // User hasn't started onboarding
+          router.replace('./qn1');
+        }
+      } else {
+        // New user, start onboarding
+        router.replace('./qn1');
+      }
+    } catch (error) {
+      console.error('Error checking user progress:', error);
+      // Default to qn1 if there's an error
+      router.replace('./qn1');
+    }
+  };
+
   const handleSubmit = async () => {
     if (validateForm()) {
       try {
@@ -157,22 +189,19 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
         
         if (isLogin) {
           try {
-            await signInWithEmailAndPassword(auth, email, password);
-            // Success animation and navigation
-            Animated.sequence([
-              Animated.timing(buttonScale, {
-                toValue: 0.95,
-                duration: 100,
-                useNativeDriver: true,
-              }),
-              Animated.timing(buttonScale, {
-                toValue: 1,
-                duration: 100,
-                useNativeDriver: true,
-              }),
-            ]).start(() => {
-              router.replace('/qn1');
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            
+            // Update last login time
+            const userRef = ref(database, `users/${user.uid}`);
+            await update(userRef, {
+              lastLogin: new Date().toISOString(),
+              email: user.email,
             });
+
+            // Check user progress and route accordingly
+            await checkUserProgress(user);
+
           } catch (error: any) {
             console.log('Firebase error:', error.code);
             if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
@@ -196,9 +225,27 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
             }
           }
         } else {
-          // Sign up logic...
-          await createUserWithEmailAndPassword(auth, email, password);
-          router.replace('/qn1');  // Direct navigation after signup
+          // Sign up logic with database storage
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          const user = userCredential.user;
+
+          // Store user data in Firebase Realtime Database
+          const userRef = ref(database, `users/${user.uid}`);
+          await set(userRef, {
+            name: name,
+            email: email,
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString(),
+            progress: {
+              currentQuestion: 1,
+              totalCorrect: 0,
+              hearts: 5
+            },
+            quizResponses: {},
+            currentStep: 'qn1'  // Add this to track onboarding progress
+          });
+
+          router.replace('./qn1');
         }
       } catch (error: any) {
         Alert.alert(
@@ -277,7 +324,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   return (
     <View style={styles.container}>
     <Video
-      ref={video}
+      ref={videoRef}
       style={styles.backgroundVideo}
       source={require('../../assets/videos/bg.mp4')}
        resizeMode={ResizeMode.STRETCH}

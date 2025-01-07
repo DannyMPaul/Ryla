@@ -4,12 +4,40 @@ import Icon from 'react-native-vector-icons/Feather';
 import { getAuth, onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getDatabase, ref as dbRef, onValue } from 'firebase/database';
+
+interface UserData {
+  name: string;
+  email: string;
+  lastLogin: string;
+  progress?: {
+    currentQuestion: number;
+    totalCorrect: number;
+    hearts: number;
+  };
+  quizResults?: {
+    finalLevel: string;
+    totalScore: number;
+    scores: {
+      beginner: number;
+      intermediate: number;
+      hard: number;
+    };
+    details: {
+      totalQuestions: number;
+      correctAnswers: number;
+      accuracy: string;
+    };
+    completedAt: string;
+  };
+}
 
 const ProfileScreen = () => {
   const [userEmail, setUserEmail] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const auth = getAuth();
   const storage = getStorage();
 
@@ -26,13 +54,24 @@ const ProfileScreen = () => {
         
         setUserName(formattedName);
         setProfileImage(user.photoURL);
-      } else {
-        router.replace('/');
-      }
+      } 
     });
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (auth.currentUser) {
+      const db = getDatabase();
+      const userRef = dbRef(db, `users/${auth.currentUser.uid}`);
+      
+      onValue(userRef, (snapshot) => {
+        const data = snapshot.val();
+        setUserData(data);
+        console.log('User Data:', data);
+      });
+    }
+  }, [auth.currentUser]);
 
   const pickImage = async () => {
     try {
@@ -59,7 +98,7 @@ const ProfileScreen = () => {
       const user = auth.currentUser;
       if (!user) return;
 
-      const imageRef = ref(storage, `profileImages/${user.uid}`);
+      const imageRef = storageRef(storage, `profileImages/${user.uid}`);
       await uploadBytes(imageRef, blob);
       
       const downloadURL = await getDownloadURL(imageRef);
@@ -74,7 +113,7 @@ const ProfileScreen = () => {
   const handleSignOut = async () => {
     try {
       await auth.signOut();
-      router.replace('/');
+      router.replace('./index');
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -119,6 +158,29 @@ const ProfileScreen = () => {
         <Icon name="log-out" size={24} color="#FF3B30" />
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
+
+      {userData && (
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Your Progress</Text>
+          
+          {userData.quizResults ? (
+            <View style={styles.quizStats}>
+              <Text style={styles.quizStatLabel}>Level: <Text style={styles.quizStatValue}>{userData.quizResults.finalLevel}</Text></Text>
+              <Text style={styles.quizStatLabel}>Total Score: <Text style={styles.quizStatValue}>{userData.quizResults.totalScore}/15</Text></Text>
+              <Text style={styles.quizStatLabel}>Accuracy: <Text style={styles.statHighlight}>{userData.quizResults.details.accuracy}</Text></Text>
+              
+              <View style={styles.sectionDivider} />
+              
+              <Text style={styles.quizStatLabel}>Section Scores:</Text>
+              <Text style={styles.statDetail}>Beginner: {userData.quizResults.scores.beginner}/5</Text>
+              <Text style={styles.statDetail}>Intermediate: {userData.quizResults.scores.intermediate}/5</Text>
+              <Text style={styles.statDetail}>Advanced: {userData.quizResults.scores.hard}/5</Text>
+            </View>
+          ) : (
+            <Text style={styles.noQuizText}>No quiz results yet</Text>
+          )}
+        </View>
+      )}
     </View>
   );
 };
@@ -212,6 +274,47 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 16,
     color: '#FF3B30',
+  },
+  statsSection: {
+    backgroundColor: '#1f2937',
+    borderRadius: 12,
+    padding: 16,
+    margin: 16,
+  },
+  sectionTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  quizStats: {
+    gap: 8,
+  },
+  quizStatLabel: {
+    color: '#BBBBBB',
+    fontSize: 16,
+  },
+  quizStatValue: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  statHighlight: {
+    color: '#58cc02',
+    fontWeight: 'bold',
+  },
+  statDetail: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#2d3748',
+    marginVertical: 8,
+  },
+  noQuizText: {
+    color: '#BBBBBB',
+    fontStyle: 'italic',
   },
 });
 

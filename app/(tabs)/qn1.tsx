@@ -9,6 +9,8 @@ import {
   SafeAreaView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { getAuth } from 'firebase/auth';
+import { getDatabase, ref as dbRef, update } from 'firebase/database';
 
 interface GoalOption {
   id: string;
@@ -51,9 +53,70 @@ const goals: GoalOption[] = [
 
 const GoalSelectionScreen = () => {
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
+  const auth = getAuth();
 
-  const handleGoalSelect = (goalId: string) => {
+  const handleGoalSelect = async (goalId: string) => {
     setSelectedGoal(goalId);
+    
+    // Store the selection in database
+    const user = auth.currentUser;
+    if (user) {
+      const db = getDatabase();
+      const userRef = dbRef(db, `users/${user.uid}`);
+      
+      try {
+        await update(userRef, {
+          'responses/goalSelection': {
+            selectedGoal: goalId,
+            goalTitle: goals.find(g => g.id === goalId)?.title,
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (error) {
+        console.error('Error saving goal:', error);
+      }
+    }
+  };
+
+  const handleNext = async () => {
+    if (!selectedGoal) return;
+
+    const user = auth.currentUser;
+    if (user) {
+      const db = getDatabase();
+      const userRef = dbRef(db, `users/${user.uid}`);
+      
+      try {
+        await update(userRef, {
+          currentStep: 'qn2',
+          lastUpdated: new Date().toISOString()
+        });
+        router.replace('./qn2');
+      } catch (error) {
+        console.error('Error updating progress:', error);
+      }
+    }
+  };
+
+  const handleSkip = async () => {
+    const user = auth.currentUser;
+    if (user) {
+      const db = getDatabase();
+      const userRef = dbRef(db, `users/${user.uid}`);
+      
+      try {
+        await update(userRef, {
+          'responses/goalSelection': {
+            skipped: true,
+            timestamp: new Date().toISOString()
+          },
+          currentStep: 'qn2'
+        });
+        router.replace('./qn2');
+      } catch (error) {
+        console.error('Error skipping question:', error);
+      }
+    }
   };
 
   return (
@@ -89,16 +152,21 @@ const GoalSelectionScreen = () => {
           ))}
         </View>
         <TouchableOpacity 
-          style={styles.nextButton}
-          onPress={() => {
-            router.replace('./qn2');
-          }}
+          style={[
+            styles.nextButton,
+            !selectedGoal && styles.nextButtonDisabled
+          ]}
+          onPress={handleNext}
+          disabled={!selectedGoal}
         >
           <Text style={styles.nextButtonText}>Next Question</Text>
         </TouchableOpacity>
         
 
-        <TouchableOpacity style={styles.skipButton}>
+        <TouchableOpacity 
+          style={styles.skipButton}
+          onPress={handleSkip}
+        >
           <Text style={styles.skipButtonText}>Skip this question</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -199,9 +267,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '500',
+  },
+  nextButtonDisabled: {
+    opacity: 0.5,
   }
-
-  
 });
 
 export default GoalSelectionScreen;
