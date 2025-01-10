@@ -14,7 +14,12 @@ const LearnScreen = () => {
           <TouchableOpacity 
             key={index} 
             style={styles.lessonItem} 
-            onPress={lesson === 'Learn with AI' ? () => router.replace('/(tabs)/Learnwithai') : lesson === 'Games' ? () => router.replace('/(tabs)/Crossword') : undefined}
+            onPress={
+              lesson === 'Learn with AI' ? () => router.replace('/(tabs)/Learnwithai') 
+              : lesson === 'Games' ? () => router.replace('/(tabs)/Crossword')
+              : lesson === 'Videos' ? () => router.replace('/(tabs)/Learnvid')
+              : undefined
+            }
           >
             <Icon name="book-open" size={24} color="#0066FF" />
             <Text style={styles.lessonText}>{lesson}</Text>

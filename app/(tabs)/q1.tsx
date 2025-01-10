@@ -128,7 +128,7 @@ const QuizScreen = () => {
   };
 
   const handleSkip = () => {
-    router.push('./qn2');
+    router.push('./Home');
   };
 
   const handleClose = () => {

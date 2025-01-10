@@ -13,7 +13,7 @@ import { RootStackParamList } from '../../hooks/types';
 import {useRouter} from 'expo-router';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { app, database } from '../firebase/firebase';
-import { getDatabase, ref, set, update, get } from 'firebase/database';
+import { getDatabase, ref as dbRef, set, update, get } from 'firebase/database';
 
 
 
@@ -153,7 +153,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
 
   const checkUserProgress = async (user: any) => {
     const db = getDatabase();
-    const userRef = ref(db, `users/${user.uid}`);
+    const userRef = dbRef(db, `users/${user.uid}`);
     
     try {
       const snapshot = await get(userRef);
@@ -192,36 +192,32 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
-            // Update last login time
-            const userRef = ref(database, `users/${user.uid}`);
+            // Get user data and check quiz status
+            const db = getDatabase();
+            const userRef = dbRef(db, `users/${user.uid}`);
+            const snapshot = await get(userRef);
+            const userData = snapshot.val();
+
+            // Update last login
             await update(userRef, {
               lastLogin: new Date().toISOString(),
               email: user.email,
             });
 
-            // Check user progress and route accordingly
-            await checkUserProgress(user);
+            if (userData?.quizResults?.completedAt) {
+              // Quiz completed - go to Home
+              router.replace('/(tabs)/Home');
+            } else {
+              // Quiz not completed - start onboarding
+              router.replace('/(tabs)/qn1');
+            }
 
           } catch (error: any) {
             console.log('Firebase error:', error.code);
             if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-              Alert.alert(
-                'Invalid Password',
-                'The password you entered is incorrect. Please try again.',
-                [{ 
-                  text: 'OK',
-                  onPress: () => {
-                    setPassword('');
-                    shakeAnimation();
-                  }
-                }]
-              );
+              Alert.alert('Invalid Password', 'The password you entered is incorrect.');
             } else {
-              Alert.alert(
-                'Login Failed',
-                error.message,
-                [{ text: 'OK', onPress: () => shakeAnimation() }]
-              );
+              Alert.alert('Login Failed', error.message);
             }
           }
         } else {
@@ -230,7 +226,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
           const user = userCredential.user;
 
           // Store user data in Firebase Realtime Database
-          const userRef = ref(database, `users/${user.uid}`);
+          const userRef = dbRef(database, `users/${user.uid}`);
           await set(userRef, {
             name: name,
             email: email,
@@ -320,6 +316,31 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
+
+  const handleLogin = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (user) {
+        const db = getDatabase();
+        const userRef = dbRef(db, `users/${user.uid}`);
+        const snapshot = await get(userRef);
+        const userData = snapshot.val();
+
+        if (userData?.quizResults?.completedAt) {
+          // User has completed the quiz before
+          router.replace('/(tabs)/Home');
+        } else {
+          // User hasn't taken the quiz yet
+          router.replace('/(tabs)/qn1');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking quiz status:', error);
+      Alert.alert('Error', 'Failed to check quiz status');
+    }
+  };
 
   return (
     <View style={styles.container}>

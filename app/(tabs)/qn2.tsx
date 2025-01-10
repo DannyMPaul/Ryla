@@ -37,6 +37,8 @@ const languages: LanguageOption[] = [
   },
 ];
 
+type RouteType = '/(tabs)/English' | '/(tabs)/German' | '/(tabs)/Spanish';
+
 const qn2 = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const auth = getAuth();
@@ -72,9 +74,9 @@ const qn2 = () => {
       const userRef = dbRef(db, `users/${user.uid}`);
       
       try {
-        let nextRoute = './English';
-        if (selectedLanguage === '2') nextRoute = './German';
-        if (selectedLanguage === '3') nextRoute = './Spanish';
+        let nextRoute: RouteType = '/(tabs)/English';
+        if (selectedLanguage === '2') nextRoute = '/(tabs)/German';
+        if (selectedLanguage === '3') nextRoute = '/(tabs)/Spanish';
 
         await update(userRef, {
           currentStep: 'quiz',
