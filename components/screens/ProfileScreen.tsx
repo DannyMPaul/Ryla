@@ -126,13 +126,13 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111b21',
+    backgroundColor: 'rgba(78, 13, 22, 0.14)',
     padding: 16,
   },
   header: {
     alignItems: 'center',
     marginBottom: 32,
-    marginTop: 20,
+    marginTop: 50,
   },
   imageContainer: {
     width: 100,
@@ -195,6 +195,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     marginBottom: 12,
+    marginTop: 22,
   },
   settingsText: {
     marginLeft: 12,

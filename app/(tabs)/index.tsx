@@ -14,9 +14,6 @@ import {useRouter} from 'expo-router';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { app } from '../firebase/firebase';
 
-
-
-
 const COLORS = {
   primary: '#F0657A', 
   secondary: '#674EA7', 
@@ -551,7 +548,8 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     color: '#F0657A',
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight:'bold',
     textAlign: 'center',
   },
 });

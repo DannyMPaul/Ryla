@@ -49,7 +49,7 @@ const conversationItems: ConversationItem[] = [
     id: '4',
     icon: '🍷',
     title: 'Order food',
-    image: require('../../assets/images/restaurant.avif'),
+    image: require('../../assets/images/restaurant1.jpg'),
     subtitle: 'Ordering at a restaurant',
     level: 'C1 Advanced',
   },
@@ -79,7 +79,9 @@ const AIConversationsScreen = () => {
             style={styles.conversationItem}
             onPress={() => {
               if (item.id === '3') {
-                router.replace('/(tabs)/Learnwithaifood');
+                // router.replace('/(tabs)/Learnwithaifood');
+                router.push('/(tabs)/Learnwithaifood');
+
               } else {
                 // Handle other navigation
               }
@@ -108,7 +110,7 @@ const AIConversationsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(78, 13, 22, 0.23)', // Dark background
   },
   scrollView: {
     flex: 1,
@@ -117,8 +119,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: '#FFFFFF', // Light text for dark background
     marginBottom: 16,
+    marginTop: 30,
+    textAlign: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -129,7 +133,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 16,
-    color: '#666666',
+    color: '#CCCCCC', // Lighter text for readability
     flex: 1,
     lineHeight: 24,
   },
@@ -143,10 +147,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#58cc02',
+    backgroundColor: '#4CAF50', // Green for visibility
   },
   freeTrialText: {
-    color: '#58cc02',
+    color: '#4CAF50', // Matching green
     fontSize: 14,
     fontWeight: '600',
   },
@@ -161,26 +165,27 @@ const styles = StyleSheet.create({
   },
   itemIcon: {
     fontSize: 24,
+    color: '#FFD700', // Gold for emphasis
   },
   itemTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: '#FFFFFF', // Light text
   },
   itemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#2C2C2C', // Darker background for items
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#444444', // Subtle border
     padding: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.15, // Softer shadow for dark mode
     shadowRadius: 4,
     elevation: 2,
   },
@@ -196,13 +201,14 @@ const styles = StyleSheet.create({
   itemSubtitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
+    color: '#CCCCCC', // Lighter text
     marginBottom: 4,
   },
   itemLevel: {
     fontSize: 14,
-    color: '#666666',
+    color: '#888888', // Subtle text for level info
   },
 });
+
 
 export default AIConversationsScreen;

@@ -79,9 +79,6 @@ const scenarios: Scenario[] = [
   },
 ];
 
-
-
-
 const audioFiles: Record<string, any> = {
   r1: require('../../assets/audio/r1.mp3'),
   r2: require('../../assets/audio/r2.mp3'),
@@ -267,6 +264,9 @@ const ChatGame = () => {
 
           <View style={styles.currentQuestionContainer}>
             <TouchableOpacity style={styles.questionContainer} onPress={() => playAudio(`q${currentScenario.id}`)}>
+
+              {/* <View style={styles.bubbleTail} /> */}
+
               <Text style={styles.questionText}>{currentScenario.question}</Text>
             </TouchableOpacity>
 
@@ -283,12 +283,6 @@ const ChatGame = () => {
           </View>
         </>
       )}
-      
-      <TouchableOpacity 
-        style={styles.backButton} 
-        onPress={() => router.replace('./Home')}>
-        <Text style={styles.backButtonText}>← Back</Text>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -297,165 +291,175 @@ export default function Learnwithaifood() {
   return <ChatGame />;
 }
 
-
-
 const styles = StyleSheet.create({
   currentQuestionContainer: {
-    marginBottom: normalize(20),
+    marginBottom: 20,
   },
-    container: {
-      flex: 1,
-      backgroundColor: '#232B2B',
-      padding: normalize(20),
-    },
-    heading: {
-      fontSize: normalize(18),
-      fontWeight: 'bold',
-      textAlign: 'center',
-      marginBottom: normalize(10),
-      color: '#fff',
-    },
-    // image: {
-    //   width: '100%',
-    //   height: 250,
-    //   resizeMode: 'contain',
-    //   marginBottom: 10,
-    // },
-    image: {
-      width: '100%',
-      height: SCREEN_HEIGHT * 0.25, // 25% of screen height
-      resizeMode: 'contain',
-      marginBottom: normalize(10),
-      borderWidth: 0.1, // Thickness of the border
-      borderColor: 'rgba(255, 255, 255, 0.8)', // White neon-like color
-      borderRadius: normalize(40), // Rounded edges (optional)
-      shadowColor: 'rgba(19, 9, 126, 0.8)', // White shadow color
-      shadowOffset: { width: -5, height: 14 }, // Position of the shadow
-      shadowOpacity: 0.7, // Transparency of the shadow
-      shadowRadius: normalize(40), // Blurriness of the shadow
-      elevation: 10, // Required for Android shadow
-    },
-    questionContainer: {
-      padding: normalize(10),
-      backgroundColor: '#8a2be2',
-      borderRadius: normalize(30),
-      marginBottom: normalize(10),
-      marginRight: normalize(30),
-      borderTopLeftRadius: normalize(10),
-      borderBottomLeftRadius: normalize(30),
-      shadowColor: 'rgba(19, 9, 126, 0.8)', // White shadow color
-      shadowOffset: { width: -5, height: 14 }, // Position of the shadow
-      shadowOpacity: 0.3, // Transparency of the shadow
-      shadowRadius: normalize(10), // Blurriness of the shadow
-    },
-    questionText: {
-      fontSize: normalize(18),
-      fontWeight: 'bold',
-      color: '#fff',
-    },
-    chatContainer: {
-      flexGrow: 1,
-      marginVertical: normalize(10),
-    },
-    message: {
-      marginVertical: normalize(5),
-      padding: normalize(10),
-      borderRadius: normalize(8),
-    },
-    query: {
-      backgroundColor: '#e1f5fe',
-      alignSelf: 'flex-start',
-    },
-    reply: {
-      backgroundColor: '#c8e6c9',
-      alignSelf: 'flex-end',
-    },
-    correct: {
-      backgroundColor: '#d4edda',
-    },
-    incorrect: {
-      backgroundColor: 'rgba(242, 55, 52, 0.8)',
-    },
-    messageText: {
-      fontSize: normalize(16),
-    },
-    optionsContainer: {
-      flexDirection: 'column',
-      alignItems: 'center',
-      marginTop: normalize(10),
-    },
-    optionButton: {
-      backgroundColor: 'rgba(79, 198, 172, 0.8)',
-      padding: normalize(10),
-      borderRadius: normalize(25),
-      marginBottom: normalize(10),
-  
-      borderBottomRightRadius: 0,
-      marginLeft: normalize(80),
-  
-      width: '90%',
-    },
-    optionText: {
-      color: '#fff',
-      fontSize: normalize(18),
-      textAlign: 'center',
-      fontWeight: 'bold',
+  container: {
+    flex: 1,
+    backgroundColor: 'rgb(0, 0, 0)',
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heading: {
+    marginTop: 30,
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+    color: '#fff',
+    letterSpacing: 1.4,
+    backgroundColor:'rgba(19, 9, 126, 0.4)',
+  },
+  image: {
+    width: '45%',
+    height: SCREEN_HEIGHT * 0.25,
+    resizeMode: 'stretch',
+    marginBottom: 10,
+    borderWidth: 0.8,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 40,
+    shadowColor: 'rgba(19, 9, 126, 0.8)',
+    shadowOffset: { width: -5, height: 14 },
+    shadowOpacity: 0.7,
+    shadowRadius: 40,
+    elevation: 10,
+  },
+  questionContainer: {
+    padding: 15,
+    backgroundColor: '#8a2be2',
+    borderRadius: 20,
+    borderTopStartRadius:20,
+    marginTop: 10,
+    marginLeft: 20,
+    marginBottom: 10,
+    marginRight: 30,
+    borderTopLeftRadius: 15,
+    borderBottomLeftRadius: 50,
+    shadowColor: 'rgba(19, 9, 126, 0.8)',
+    shadowOffset: { width: -2, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    position: 'relative',
+  },
+  // bubbleTail: {
+  //   position: 'absolute',
+  //   width: 40,
+  //   height: 20,
+  //   backgroundColor: '#8a2be2',
+  //   left: -12,
+  //   bottom: 53,
+  //   transform: [{ rotate: '5deg' }],
+  //   borderBottomLeftRadius: 22,  
+  // },
 
+  questionText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  chatContainer: {
+    flexGrow: 1,
+    marginVertical: 11,
+  },
+  message: {
+    marginVertical: 5,
+    padding: 5,
+    borderRadius: 8,
+  },
+  query: {
+    backgroundColor: '#e1f5fe',
+    alignSelf: 'flex-start',
+  },
+  reply: {
+    backgroundColor: '#c8e6c9',
+    alignSelf: 'flex-end',
+  },
+  correct: {
+    backgroundColor: '#d4edda',
+  },
+  incorrect: {
+    backgroundColor: 'rgba(242, 55, 52, 0.8)',
+  },
+  messageText: {
+    fontSize: 16,
+  },
+  optionsContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginTop: 10,
+    marginRight:30,
+  },
+  optionButton: {
+    backgroundColor: 'rgba(79, 198, 172, 0.8)',
+    padding: 10,
+    borderRadius: 25,
+    marginBottom: 10,
+    borderBottomRightRadius: 0,
+    marginLeft: 80,
+    width: '90%',
+  },
+  optionText: {
+    color: '#fff',
+    fontSize: 18,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  resultText: {
+    fontSize: 40,
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: '#1976d2',
+    padding: 10,
+    borderRadius: 5,
+    marginVertical: 5,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  resultContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#232B2B',
+  },
+  resultScore: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 20,
+  },
+  resultMessage: {
+    fontSize: 24,
+    textAlign: 'center',
+    color: '#FFFFFF',
+    marginBottom: 30,
+    paddingHorizontal: 20,
+  },
+  backButton: {
+    backgroundColor: '#1976d2',
+    padding: 15,
+    borderRadius: 25,
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
     },
-    resultText: {
-      fontSize: normalize(40),
-      marginBottom: normalize(20),
-    },
-    button: {
-      backgroundColor: '#1976d2',
-      padding: normalize(10),
-      borderRadius: normalize(5),
-      marginVertical: normalize(5),
-    },
-    buttonText: {
-      color: '#fff',
-      fontSize: normalize(16),
-    },
-    resultContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#232B2B', // Match the game background
-    },
-    resultScore: {
-      fontSize: normalize(32),
-      fontWeight: 'bold',
-      color: '#FFFFFF',
-      marginBottom: normalize(20),
-    },
-    resultMessage: {
-      fontSize: normalize(24),
-      textAlign: 'center',
-      color: '#FFFFFF',
-      marginBottom: normalize(30),
-      paddingHorizontal: normalize(20),
-    },
-    backButton: {
-      backgroundColor: '#1976d2',
-      padding: normalize(15),
-      borderRadius: normalize(25),
-      position: 'absolute',
-      bottom: normalize(20),
-      left: normalize(20),
-      right: normalize(20),
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.25,
-      shadowRadius: normalize(3.84),
-      elevation: 5,
-    },
-    backButtonText: {
-      color: '#fff',
-      fontSize: normalize(18),
-      fontWeight: 'bold',
-    },
-  });
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+});

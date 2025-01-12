@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import TabNavigator from './TabNavigator';
 import { NavigationContainer } from '@react-navigation/native';
-
+import { Video, ResizeMode } from 'expo-av';
 
 
 const { width } = Dimensions.get('window');
@@ -100,7 +100,17 @@ const HomeScreen: React.FC = () => {
         </View>
       </View>
 
+
       <ScrollView style={styles.scrollView}>
+        
+       <Video
+              source={require('@/assets/videos/bg4.mp4')}
+              style={styles.backgroundVideo}
+              resizeMode={ResizeMode.STRETCH}
+              shouldPlay
+              isLooping
+              isMuted
+            />
         <View style={styles.content}>
           {/* Learning Path */}
           <View style={styles.learningPath}>
@@ -207,7 +217,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#111b21',
   },
   header: {
-    backgroundColor: '#F0657A',
+    backgroundColor: 'rgb(238, 82, 105)',
     padding: 16,
   },
   headerContent: {
@@ -363,6 +373,14 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+
+  backgroundVideo: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
   },
 });
 <TabNavigator />

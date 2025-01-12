@@ -90,43 +90,49 @@ const qn2 = () => {
           <Text style={styles.nextButtonText}>Next Question</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.skipButton}>
+        {/* <TouchableOpacity style={styles.skipButton}>
           <Text style={styles.skipButtonText}>Skip this question</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </ScrollView>
     </SafeAreaView>
   );
 };
 
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#121212',
+    justifyContent: 'flex-start', 
+    paddingTop: 30, 
   },
   scrollContent: {
-    flexGrow: 1,
+    flexGrow: 1,  // This will make sure the content takes up available space
     padding: 20,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 24,
+    margin: 30,
+    textAlign: 'center', 
+    letterSpacing: 1.5,
   },
   optionsContainer: {
     gap: 12,
     marginBottom: 24,
   },
   optionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: 'rgb(255, 255, 255)',
+    borderRadius: 25,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   optionCardSelected: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: 'rgb(255, 225, 225)',
   },
   optionContent: {
     flexDirection: 'row',
@@ -145,6 +151,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 16,
+    fontWeight: '500',
     color: '#000000',
     flex: 1,
   },
@@ -166,32 +173,150 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#000000',
   },
+  
+  // Button styles:
   skipButton: {
-    paddingVertical: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 15,
     alignItems: 'center',
-    marginTop: 'auto',
+    backgroundColor: 'rgba(255, 0, 234, 0.76)', // Optional, you can keep or remove
+    position: 'absolute',
+    bottom: 80, // Position the button 80px from the bottom
+    left: 20,
+    right: 20,
   },
   skipButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
+  
   nextButton: {
-    paddingVertical: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 15,
     alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: 'rgb(240, 74, 99)',
+    position: 'absolute',
+    bottom: 20,  // Position the button 20px from the bottom
+    left: 20,
+    right: 20,
   },
   nextButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
+    iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgb(255, 255, 255)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  
 });
 
 export default qn2;
+
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: '#000000',
+//   },
+//   scrollContent: {
+//     flexGrow: 1,
+//     padding: 20,
+//   },
+//   title: {
+//     fontSize: 28,
+//     fontWeight: 'bold',
+//     color: '#FFFFFF',
+//     marginBottom: 24,
+//   },
+//   optionsContainer: {
+//     gap: 12,
+//     marginBottom: 24,
+//   },
+//   optionCard: {
+//     backgroundColor: '#FFFFFF',
+//     borderRadius: 12,
+//     padding: 16,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//   },
+//   optionCardSelected: {
+//     backgroundColor: '#F0F0F0',
+//   },
+//   optionContent: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     flex: 1,
+//   },
+  // flagContainer: {
+  //   width: 40,
+  //   height: 40,
+  //   borderRadius: 20,
+  //   backgroundColor: '#F5F5F5',
+  //   alignItems: 'center',
+  //   justifyContent: 'center',
+  //   marginRight: 12,
+  //   overflow: 'hidden',
+  // },
+//   optionText: {
+//     fontSize: 16,
+//     color: '#000000',
+//     flex: 1,
+//   },
+//   radioContainer: {
+//     marginLeft: 12,
+//   },
+//   radioOuter: {
+//     width: 24,
+//     height: 24,
+//     borderRadius: 12,
+//     borderWidth: 2,
+//     borderColor: '#000000',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//   },
+//   radioInner: {
+//     width: 12,
+//     height: 12,
+//     borderRadius: 6,
+//     backgroundColor: '#000000',
+//   },
+//   skipButton: {
+//     paddingVertical: 16,
+//     borderWidth: 1,
+//     borderColor: '#FFFFFF',
+//     borderRadius: 12,
+//     alignItems: 'center',
+//     marginTop: 'auto',
+//   },
+//   skipButtonText: {
+//     color: '#FFFFFF',
+//     fontSize: 16,
+//     fontWeight: '500',
+//   },
+//   nextButton: {
+//     paddingVertical: 16,
+//     borderWidth: 1,
+//     borderColor: '#FFFFFF',
+//     borderRadius: 12,
+//     alignItems: 'center',
+//     marginBottom: 16,
+//   },
+//   nextButtonText: {
+//     color: '#FFFFFF',
+//     fontSize: 16,
+//     fontWeight: '500',
+//   },
+// });
