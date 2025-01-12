@@ -206,7 +206,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
 
             if (userData?.quizResults?.completedAt) {
               // Quiz completed - go to Home
-              router.replace('/(tabs)/Home');
+              router.replace('/(tabs)/Home1');
             } else {
               // Quiz not completed - start onboarding
               router.replace('/(tabs)/qn1');

@@ -10,8 +10,17 @@ import {
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useRouter } from 'expo-router';
+import { getAuth } from 'firebase/auth';
+import { getDatabase, ref, get } from 'firebase/database';
 
 const { width } = Dimensions.get('window');
+
+type ValidRoute = 
+  | '/(tabs)/Home' 
+  | '/(tabs)/q1' 
+  | '/(tabs)/q2' 
+  | '/(tabs)/q3';
 
 interface Lesson {
   id: string;
@@ -20,6 +29,7 @@ interface Lesson {
   image: any;
   isCompleted: boolean;
   isLocked: boolean;
+  route?: ValidRoute;
 }
 
 interface Chapter {
@@ -32,9 +42,34 @@ interface Chapter {
 }
 
 const ChapterProgressScreen = () => {
+  const router = useRouter();
   const [progress] = useState(new Animated.Value(0));
   const [overallProgress, setOverallProgress] = useState(1);
+  const [unlockedLessons, setUnlockedLessons] = useState(['1', '2']); // Initially first two lessons unlocked
   
+  // Add useEffect to check quiz completion status
+  useEffect(() => {
+    const checkQuizStatus = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const db = getDatabase();
+        const userRef = ref(db, `users/${user.uid}`);
+        const snapshot = await get(userRef);
+        const userData = snapshot.val();
+
+        if (userData?.quizResponses?.q1?.completed) {
+          // If q1 is completed, unlock the next lesson
+          setUnlockedLessons(prev => [...prev, '3']);
+          setOverallProgress(prev => prev + 1);
+        }
+      }
+    };
+
+    checkQuizStatus();
+  }, []);
+
+  // Update the chapter data to use unlockedLessons
   const chapter: Chapter = {
     id: '1',
     title: 'Chapter 1',
@@ -44,27 +79,29 @@ const ChapterProgressScreen = () => {
     lessons: [
       {
         id: '1',
-        title: '¡Hola!',
+        title: 'Learn the Basics',
         type: 'regular',
-        image: require('../../assets/images/food.jpeg'),
+        image: require('../../assets/images/FLE web.jpg'),
         isCompleted: true,
         isLocked: false,
+        route: '/(tabs)/Home' as const
       },
       {
         id: '2',
-        title: 'Saying your name',
+        title: 'First Quiz',
         type: 'speaking',
-        image: require('../../assets/images/food.jpeg'),
+        image: require('../../assets/images/FLE web.jpg'),
         isCompleted: false,
-        isLocked: false,
+        isLocked: !unlockedLessons.includes('2'),
+        route: '/(tabs)/q1' as const
       },
       {
         id: '3',
-        title: 'Asking how someone is',
+        title: 'Next Lesson',
         type: 'ai',
         image: require('../../assets/images/food.jpeg'),
         isCompleted: false,
-        isLocked: true,
+        isLocked: !unlockedLessons.includes('3'),
       },
       // Add more lessons
     ],
@@ -86,6 +123,11 @@ const ChapterProgressScreen = () => {
     setOverallProgress(prev => Math.min(prev + 1, 100));
   };
 
+  const handleLessonPress = (lesson: Lesson) => {
+    if (lesson.isLocked || !lesson.route) return;
+    router.push(lesson.route);
+  };
+
   const renderLesson = (lesson: Lesson, index: number) => {
     return (
       <View key={lesson.id} style={styles.lessonContainer}>
@@ -96,7 +138,7 @@ const ChapterProgressScreen = () => {
             lesson.isCompleted && styles.lessonCompleted,
             lesson.isLocked && styles.lessonLocked,
           ]}
-          onPress={handleLessonComplete}
+          onPress={() => handleLessonPress(lesson)}
           disabled={lesson.isLocked}
         >
           <Image source={lesson.image} style={styles.lessonImage} />

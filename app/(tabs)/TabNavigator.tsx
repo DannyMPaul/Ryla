@@ -10,8 +10,8 @@ import CommunityScreen from '../../components/screens/CommunityScreen';
 import SpeakScreen from '../../components/screens/SpeakScreen';
 import ReviewScreen from '../../components/screens/ReviewScreen';
 import ProfileScreen from '../../components/screens/ProfileScreen';
-import HoneScreen from './Home';
-import HomeScreen from './Home';
+// import HoneScreen from './Home';
+import HomeScreen from './Home1';
 
 const Tab = createBottomTabNavigator();
 
