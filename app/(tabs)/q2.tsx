@@ -1,15 +1,8 @@
+// Import same dependencies as q1.tsx
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Alert,
-  Platform,
-  Vibration,
-  Animated,
-  Modal,
+  View, Text, StyleSheet, TouchableOpacity, Image, 
+  Alert, Platform, Vibration, Animated, Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useRouter } from 'expo-router';
@@ -30,36 +23,43 @@ const QuizScreen = () => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [showNextButton, setShowNextButton] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
+  // Updated options with French labels
   const options: QuizOption[] = [
     {
       id: '1',
-      label: 'woman',
-      image: require('../../assets/images/download.jpg'),
+      label: 'le chat',
+      image: require('../../assets/images/Cat.jpg'),
       isCorrect: false,
     },
     {
       id: '2',
-      label: 'boy',
-      image: require('../../assets/images/gettyimages-1352096257-612x612.jpg'),
+      label: 'le chien',
+      image: require('../../assets/images/dog.jpg'),
       isCorrect: true,
     },
     {
       id: '3',
-      label: 'man',
-      image: require('../../assets/images/gettyimages-1352096257-612x612.jpg'),
+      label: 'l\'oiseau',
+      image: require('../../assets/images/bird.png'),
       isCorrect: false,
     },
   ];
 
+  // Same handleCheck function but updated for q2
   const handleCheck = async () => {
-    if (!selectedOption) return;
+    if (!selectedOption) {
+      setError('Please select an option');
+      return;
+    }
 
     const selectedAnswer = options.find(opt => opt.id === selectedOption);
     const auth = getAuth();
     const user = auth.currentUser;
 
     if (!user) {
+      Alert.alert('Error', 'You must be logged in to continue');
       router.replace('/(tabs)/qn1' as const);
       return;
     }
@@ -71,19 +71,19 @@ const QuizScreen = () => {
         const userData = userSnapshot.val();
         
         await update(userRef, {
-          [`quizResponses/q1/completed`]: true,
-          [`quizResponses/q1/completedAt`]: new Date().toISOString(),
-          currentLesson: 2,
-          currentQuestion: 2,
+          [`quizResponses/q2/completed`]: true,
+          [`quizResponses/q2/completedAt`]: new Date().toISOString(),
+          currentLesson: 3,
+          currentQuestion: 3,
           totalCorrect: userData?.totalCorrect + 1 || 1,
           unlockedLessons: userData?.unlockedLessons ? 
-            [...userData.unlockedLessons, '2'] : 
-            ['1', '2'],
+            [...userData.unlockedLessons, '3'] : 
+            ['1', '2', '3'],
           learnedWords: {
             ...(userData?.learnedWords || {}),
-            'le garçon': {
-              french: 'le garçon',
-              english: 'boy',
+            'le chien': {
+              french: 'le chien',
+              english: 'dog',
               learnedAt: new Date().toISOString()
             }
           }
@@ -92,16 +92,15 @@ const QuizScreen = () => {
         Vibration.vibrate(200);
         setShowSuccessModal(true);
       } else {
-        // Wrong answer
+        // Wrong answer handling - same as q1
         setHearts(prev => Math.max(0, prev - 1));
         
-        // Store the incorrect attempt
         const userRef = ref(database, `users/${user.uid}`);
         const userSnapshot = await get(userRef);
         const userData = userSnapshot.val();
         
         await update(userRef, {
-          [`quizResponses/q1/attempts`]: (userData?.quizResponses?.q1?.attempts || 0) + 1,
+          [`quizResponses/q2/attempts`]: (userData?.quizResponses?.q2?.attempts || 0) + 1,
           hearts: Math.max(0, hearts - 1)
         });
 
@@ -114,7 +113,7 @@ const QuizScreen = () => {
         if (hearts <= 1) {
           await update(userRef, {
             hearts: 5,
-            [`quizResponses/q1/failed`]: true
+            [`quizResponses/q2/failed`]: true
           });
 
           Alert.alert(
@@ -132,10 +131,12 @@ const QuizScreen = () => {
       }
     } catch (error) {
       console.error('Error updating database:', error);
-      Alert.alert('Error', 'Failed to save progress');
+      Alert.alert('Error', 'Failed to save progress. Please try again.');
+      setError('An error occurred while saving your progress');
     }
   };
 
+  // Same navigation handlers
   const handleSkip = () => {
     router.push('/(tabs)/Home' as const);
   };
@@ -144,19 +145,18 @@ const QuizScreen = () => {
     router.back();
   };
 
+  // Same UI structure but updated question
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-          <Icon name="x" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <View style={styles.progressBar}>
-          <View style={styles.progressFill} />
-        </View>
         <View style={styles.heartsContainer}>
-          <Icon name="heart" size={24} color="#FF4B4B" />
-          <Text style={styles.heartsText}>{hearts}</Text>
+          {[...Array(hearts)].map((_, i) => (
+            <Icon key={i} name="heart" size={24} color="#ff4b4b" />
+          ))}
         </View>
+        <TouchableOpacity onPress={handleClose}>
+          <Icon name="x" size={24} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
@@ -165,7 +165,11 @@ const QuizScreen = () => {
           <Text style={styles.newWordText}>NEW WORD</Text>
         </View>
 
-        <Text style={styles.question}>Which one means "le garçon" in English?</Text>
+        <Text style={styles.question}>Which one means "dog" in French?</Text>
+
+        {error && (
+          <Text style={styles.errorText}>{error}</Text>
+        )}
 
         <View style={styles.optionsContainer}>
           {options.map((option) => (
@@ -175,9 +179,17 @@ const QuizScreen = () => {
                 styles.optionCard,
                 selectedOption === option.id && styles.selectedCard,
               ]}
-              onPress={() => setSelectedOption(option.id)}
+              onPress={() => {
+                setSelectedOption(option.id);
+                setError(null); // Clear any error when making a new selection
+              }}
+              disabled={showNextButton} // Disable options after correct answer
             >
-              <Image source={option.image} style={styles.optionImage} />
+              <Image 
+                source={option.image} 
+                style={styles.optionImage}
+                resizeMode="cover"
+              />
               <Text style={styles.optionLabel}>{option.label}</Text>
               <View style={styles.optionNumber}>
                 <Text style={styles.optionNumberText}>{option.id}</Text>
@@ -188,21 +200,28 @@ const QuizScreen = () => {
       </View>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+        <TouchableOpacity 
+          style={styles.skipButton} 
+          onPress={handleSkip}
+          disabled={showNextButton} // Disable skip after correct answer
+        >
           <Text style={styles.skipButtonText}>SKIP</Text>
         </TouchableOpacity>
         
         {showNextButton && (
           <TouchableOpacity 
             style={styles.nextButton}
-            onPress={() => router.replace('./q2' as const)}
+            onPress={() => router.replace('./q3' as const)}
           >
             <Text style={styles.nextButtonText}>NEXT</Text>
           </TouchableOpacity>
         )}
         
         <TouchableOpacity
-          style={[styles.checkButton, !selectedOption && styles.checkButtonDisabled]}
+          style={[
+            styles.checkButton, 
+            (!selectedOption || showNextButton) && styles.checkButtonDisabled
+          ]}
           onPress={handleCheck}
           disabled={!selectedOption || showNextButton}
         >
@@ -214,9 +233,21 @@ const QuizScreen = () => {
         animationType="fade"
         transparent={true}
         visible={showSuccessModal}
-        onRequestClose={() => setShowSuccessModal(false)}
+        onRequestClose={() => {
+          setShowSuccessModal(false);
+          setError(null);
+        }}
       >
-        <View style={styles.modalOverlay}>
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            setShowSuccessModal(false);
+            setShowNextButton(true);
+            setError(null);
+            setSelectedOption(null);
+          }}
+        >
           <View style={styles.modalContent}>
             <Icon name="check-circle" size={50} color="#58cc02" />
             <Text style={styles.modalTitle}>🎉 Excellent!</Text>
@@ -226,17 +257,20 @@ const QuizScreen = () => {
               onPress={() => {
                 setShowSuccessModal(false);
                 setShowNextButton(true);
+                setError(null);
+                setSelectedOption(null);
               }}
             >
               <Text style={styles.modalButtonText}>Continue</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
 };
 
+// Same styles as q1.tsx
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -265,8 +299,7 @@ const styles = StyleSheet.create({
   },
   heartsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
   heartsText: {
     color: '#FFFFFF',
@@ -423,6 +456,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  errorText: {
+    color: '#ff4b4b',
+    textAlign: 'center',
+    marginVertical: 10,
+  }
 });
 
 export default QuizScreen;
