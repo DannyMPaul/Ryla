@@ -1,14 +1,20 @@
 '''
 The following code is :
+
 last updated on 30-12-2024 15.02
+
 issues : none
+
 TBD : integrating voice, optimize the reply speed, optimize memory, optimize connection with gram bot
 '''
 
 import pyttsx3
 import torch
+import random
+
 import os
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
 from transformers import BlenderbotTokenizer, BlenderbotForConditionalGeneration
 from transformers import AutoTokenizer, T5ForConditionalGeneration
 
@@ -51,7 +57,8 @@ class RylaAssistant:
                 'model_name': "facebook/blenderbot-400M-distill",
                 'complexity': 0.1,
                 'max_length': 50,
-                'context_prompts': ["Reply in a very basic manner: "]
+                'context_prompts': ["Reply in a very basic manner: ",
+                "Reply in a way baby can understand"]
             },
             'intermediate': {
                 'model_name': "facebook/blenderbot-400M-distill",
@@ -130,7 +137,6 @@ class RylaAssistant:
     def convo_model_response(self, input_text):
         try:
             config = self.model_configs[self.current_proficiency]
-            import random
             context_prompt = random.choice(config['context_prompts'])
             modified_input = f"{context_prompt} {input_text}"
 

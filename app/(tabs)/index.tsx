@@ -1,3 +1,5 @@
+//Log in Glitches when keyboard is down : scrollview package
+
 import React, { useState, useEffect } from 'react';
 import {StyleSheet,View,Text,TextInput,TouchableOpacity,Image,Dimensions,Animated,KeyboardAvoidingView,Platform,Alert,} 
 from 'react-native';

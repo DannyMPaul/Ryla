@@ -1,12 +1,25 @@
 '''
+
 The following code is :
+
 last updated on 05-01-2024 18.58
-issues : fails to initialize pro_lvl 2
-TBD : integrating voice, optimize memory, if user not found allow retry chance
+
+issues : none
+
+TBD : 
+    integrating voice
+if user not found allow retry chance #error handling
+add french to the options
+french bot : translate eng to french as a help option {}
+    change DB to realtime DB
+change py format to pth
+
+
 '''
 
 import pyttsx3
 import torch
+
 import os
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
@@ -19,7 +32,7 @@ from transformers import AutoTokenizer, T5ForConditionalGeneration
 
 class RylaAssistant:
     def __init__(self, firebase_key_path):
-        # Initialize Firebase
+        # Firebase DB
         try:
             cred = credentials.Certificate(firebase_key_path)
             firebase_admin.initialize_app(cred)
@@ -29,12 +42,12 @@ class RylaAssistant:
             print(f"Error initializing Firebase: {e}")
             raise
 
-        # Initialize text-to-speech
+        # TTS
         self.engine = pyttsx3.init()
         self.engine.setProperty('rate', 150)
         self.engine.setProperty('volume', 0.9)
 
-        # Target uses configuration
+        # Target_Use
         self.target_uses = {
             'grammar_correction': {
                 'prompt': "Correct the grammar: ",
@@ -62,7 +75,7 @@ class RylaAssistant:
             }
         }
 
-        # Model configurations
+        # Chat_models
         self.model_configs = {
             'beginner': {
                 'model_name': "facebook/blenderbot-400M-distill",
@@ -84,7 +97,7 @@ class RylaAssistant:
             }
         }
 
-        # Value mapping for database
+        # Mapping
         self.prof_level_map = {1: 'beginner', 2: 'intermediate', 3: 'expert'}
         self.prof_level_map_reverse = {'beginner': 1, 'intermediate': 2, 'expert': 3}
         
@@ -97,6 +110,7 @@ class RylaAssistant:
             6: 'neutral_tone'
         }
         self.target_use_map_reverse = {v: k for k, v in self.target_use_map.items()}
+
 
     def get_user_preferences(self, user_id):
         try:
@@ -120,6 +134,7 @@ class RylaAssistant:
                     'target_use': 'grammar_correction',
                     'user_name': 'User'
                 }
+
         except Exception as e:
             print(f"Error fetching user preferences: {e}")
             return {
@@ -127,6 +142,7 @@ class RylaAssistant:
                 'target_use': 'grammar_correction',
                 'user_name': 'User'
             }
+
 
     def update_user_preferences(self, user_id, proficiency_level=None, target_use=None):
         try:
@@ -144,16 +160,15 @@ class RylaAssistant:
         except Exception as e:
             print(f"Error updating user preferences: {e}")
 
+
     def load_chat_model(self, proficiency):
         try:
-            # First load grammar model if not already loaded
             if not hasattr(self, 'grammar_tokenizer'):
                 print("Loading grammar correction model...")
                 self.grammar_tokenizer = AutoTokenizer.from_pretrained("grammarly/coedit-large")
                 self.grammar_model = T5ForConditionalGeneration.from_pretrained("grammarly/coedit-large")
                 print("Grammar model loaded successfully...")
 
-            # Then load chat model
             config = self.model_configs[proficiency]
             model_name = config['model_name']
             
@@ -168,6 +183,7 @@ class RylaAssistant:
             if proficiency != 'intermediate':
                 print("Falling back to intermediate model...")
                 self.load_chat_model('intermediate')
+
 
     def gram_model_correction(self, input_text):
         try:
@@ -203,6 +219,7 @@ class RylaAssistant:
             print(f"Error in text processing: {e}")
             return input_text
 
+
     def convo_model_response(self, input_text):
         try:
             config = self.model_configs[self.current_proficiency]
@@ -235,6 +252,7 @@ class RylaAssistant:
             print(f"Error in conversation model: {e}")
             return "I'm having trouble understanding. Could you rephrase that?"
 
+
     def set_proficiency(self, level):
         level = level.lower()
         if level in self.model_configs:
@@ -244,6 +262,7 @@ class RylaAssistant:
         else:
             print("Invalid proficiency level. Use 'beginner', 'intermediate', or 'expert'.")
 
+
     def set_target_use(self, target):
         target = target.lower()
         if target in self.target_uses:
@@ -252,16 +271,18 @@ class RylaAssistant:
         else:
             print("Invalid target use. Please choose from:", ", ".join(self.target_uses.keys()))
 
+
     def speak(self, text):
         self.engine.say(text)
         self.engine.runAndWait()
 
+
     def run(self, user_id):
-        # Load user preferences from Firebase
+        # Firebase initialized
         preferences = self.get_user_preferences(user_id)
         user_name = preferences['user_name']
         
-        # Load models
+        # 
         self.load_chat_model(preferences['proficiency_level'])
         self.current_target = preferences['target_use']
 
@@ -319,14 +340,4 @@ class RylaAssistant:
                 break
             except Exception as e:
                 print(f"An unexpected error occurred: {e}")
-
-# Example usage
-if __name__ == "__main__":
-    firebase_key_path = r"C:\Users\DAN\OneDrive\Desktop\Ryla\Firebase_connection.json"
-    assistant = RylaAssistant(firebase_key_path)
-    
-    while True:
-        user_id = input("Enter your user ID (or 'quit' to exit): ")
-        if user_id.lower() == 'quit':
-            break
-        assistant.run(user_id)
+        

@@ -10,9 +10,14 @@ ryla_env\Scripts\activate
 pip install -r requirements.txt
 
 #TTS engine
-pip install pypiwin32
+pip install pyttsx3
 
-#Avaliable test users : 
--User_1 {2,4,Jason}
--User_2 {1,1,Rohan}
--User_3 {3,3,Aariya}
+#Plan : 
+-host the model in google consel
+-connect the consel and the firebase
+-api key then use sockets
+
+#to do :
+-voice recognition model for fr/en {react-native-voice}
+-tts model for fr and en {react-native-tts}
+-integrating the entire project into a single application

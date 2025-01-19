@@ -1,0 +1,16 @@
+input_text,output_text
+How are you doing?,"Conversational: I'm doing well, thank you! How about you? Correction: *N/A*"
+I has a apple.,Conversational: I see you like apples! Correction: I have an apple.
+What is your favorite color?,Conversational: My favorite color is blue. What's yours? Correction: *N/A*
+She don't likes the movie.,"Conversational: That's okay, not everyone likes movies. Correction: She doesn't like the movie."
+Where can I find a good book?,Conversational: You can check the library or online. Correction: *N/A*
+She don't like apples.,Conversational: Why doesn't she like apples? Correction: She doesn't like apples
+He go to school everyday.,Conversational: What time does he go to school? Correction: He goes to school every day
+The cat was sat on the mat.,Conversational: How long was it sitting there? Correction: The cat was sitting on the mat
+I am agree with you.,"Conversational: That's great, do you have more thoughts Correction: I agree with you."
+He don't knows the answer.,Conversational: Maybe he just needs more time. Correction: He doesn't know the answer
+I has too many books to read.,"Conversational: I'm doing well, thank you! How about you? Correction: I have too many books to read."
+She didn't told me about it.,Conversational: Did she forget to tell you? Correction: She didn't tell me about it.
+You was right all along.,Conversational: Were you surprised? What's yours? Correction: You were right all along.
+We is going to the park later.,Conversational: Are you excited about it? Correction: We are going to the park later.
+He don't like pizza.,Conversational: Does he have a different favorite food? Correction: He doesn't like pizza.

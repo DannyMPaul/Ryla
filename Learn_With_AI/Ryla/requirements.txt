@@ -1,12 +1,27 @@
-torch>=2.0.0
-transformers>=4.30.0
-pyttsx3>=2.90
-numpy>=1.24.0
-tqdm>=4.65.0
-requests>=2.31.0
-regex>=2023.5.5
-packaging>=23.1
-filelock>=3.12.0
-tokenizers>=0.1
-happytransformer
+torch
+transformers
+pyttsx3
+firebase_admin
 tensorflow
+google-cloud-firestore
+fastapi
+uvicorn
+python-dotenv
+pydantic
+pydantic_settings
+gunicorn
+fastapi
+
+
+
+# numpy>=1.24.0 
+# tqdm>=4.65.0 
+# requests>=2.31.0 
+# regex>=2023.5.5 
+# packaging>=23.1 
+# filelock>=3.12.0 
+# tokenizers>=0.1 
+# happytransformer 
+# tensorflow 
+
+
