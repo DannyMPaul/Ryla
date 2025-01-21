@@ -83,7 +83,7 @@ const qn2 = () => {
             } else if (selectedLanguage === '2') {
               router.replace('./German');
             } else if (selectedLanguage === '3') {
-              router.replace('/Spanish');
+              router.replace('./Spanish');
             }
           }}
         >
@@ -103,9 +103,14 @@ const qn2 = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+<<<<<<< Updated upstream
     backgroundColor: '#121212',
     justifyContent: 'flex-start', 
     paddingTop: 30, 
+=======
+    backgroundColor: '#000000',
+    justifyContent: 'flex-start', // Content starts from the top
+>>>>>>> Stashed changes
   },
   scrollContent: {
     flexGrow: 1,  // This will make sure the content takes up available space
@@ -181,7 +186,10 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     borderRadius: 15,
     alignItems: 'center',
+<<<<<<< Updated upstream
     backgroundColor: 'rgba(255, 0, 234, 0.76)', // Optional, you can keep or remove
+=======
+>>>>>>> Stashed changes
     position: 'absolute',
     bottom: 80, // Position the button 80px from the bottom
     left: 20,
@@ -199,7 +207,11 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     borderRadius: 15,
     alignItems: 'center',
+<<<<<<< Updated upstream
     backgroundColor: 'rgb(240, 74, 99)',
+=======
+    backgroundColor: '#F0657A',
+>>>>>>> Stashed changes
     position: 'absolute',
     bottom: 20,  // Position the button 20px from the bottom
     left: 20,
@@ -222,6 +234,7 @@ const styles = StyleSheet.create({
   
 });
 
+<<<<<<< Updated upstream
 export default qn2;
 
 
@@ -320,3 +333,7 @@ export default qn2;
 //     fontWeight: '500',
 //   },
 // });
+=======
+
+export default qn2;
+>>>>>>> Stashed changes

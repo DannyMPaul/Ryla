@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import Gif from 'react-native-gif';
 
-
-
 import {
   View,
   Text,

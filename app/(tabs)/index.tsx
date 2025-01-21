@@ -14,6 +14,10 @@ import {useRouter} from 'expo-router';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { app } from '../firebase/firebase';
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 const COLORS = {
   primary: '#F0657A', 
   secondary: '#674EA7', 
