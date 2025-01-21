@@ -103,17 +103,12 @@ const qn2 = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-<<<<<<< Updated upstream
-    backgroundColor: '#121212',
-    justifyContent: 'flex-start', 
-    paddingTop: 30, 
-=======
     backgroundColor: '#000000',
     justifyContent: 'flex-start', // Content starts from the top
->>>>>>> Stashed changes
+    paddingTop: 30,
   },
   scrollContent: {
-    flexGrow: 1,  // This will make sure the content takes up available space
+    flexGrow: 1, // This will make sure the content takes up available space
     padding: 20,
   },
   title: {
@@ -121,7 +116,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
     margin: 30,
-    textAlign: 'center', 
+    textAlign: 'center',
     letterSpacing: 1.5,
   },
   optionsContainer: {
@@ -178,42 +173,15 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#000000',
   },
-  
-  // Button styles:
-  skipButton: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-    borderRadius: 15,
-    alignItems: 'center',
-<<<<<<< Updated upstream
-    backgroundColor: 'rgba(255, 0, 234, 0.76)', // Optional, you can keep or remove
-=======
->>>>>>> Stashed changes
-    position: 'absolute',
-    bottom: 80, // Position the button 80px from the bottom
-    left: 20,
-    right: 20,
-  },
-  skipButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  
   nextButton: {
     padding: 12,
     borderWidth: 1,
     borderColor: '#FFFFFF',
     borderRadius: 15,
     alignItems: 'center',
-<<<<<<< Updated upstream
-    backgroundColor: 'rgb(240, 74, 99)',
-=======
     backgroundColor: '#F0657A',
->>>>>>> Stashed changes
     position: 'absolute',
-    bottom: 20,  // Position the button 20px from the bottom
+    bottom: 20, // Position the button 20px from the bottom
     left: 20,
     right: 20,
   },
@@ -222,19 +190,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-    iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgb(255, 255, 255)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  
 });
 
-<<<<<<< Updated upstream
 export default qn2;
 
 
@@ -333,7 +290,3 @@ export default qn2;
 //     fontWeight: '500',
 //   },
 // });
-=======
-
-export default qn2;
->>>>>>> Stashed changes
