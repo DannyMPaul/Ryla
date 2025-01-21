@@ -6,8 +6,11 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { getAuth } from 'firebase/auth';
+import { getDatabase, ref as dbRef, update } from 'firebase/database';
 
 const questions = {
   beginner: [
@@ -46,27 +49,92 @@ const Quiz = () => {
   const [quizQuestions, setQuizQuestions] = useState(() => getRandomQuestions(section, 5));
   const [quizCompleted, setQuizCompleted] = useState(false);
   const router = useRouter();
+  const auth = getAuth();
 
-  const handleAnswer = (answer: string) => {
-    const isCorrect = answer === quizQuestions[currentQuestion].answer;
-    if (isCorrect) {
-      setScore((prev) => ({ ...prev, [section]: prev[section] + 1 }));
+  const saveFinalResult = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const db = getDatabase();
+    const userRef = dbRef(db, `users/${user.uid}`);
+    const finalLevel = calculateResult();
+    const totalScore = score.beginner + score.intermediate + score.hard;
+    
+    try {
+      await update(userRef, {
+        'quizResults': {
+          finalLevel,
+          totalScore,
+          scores: {
+            beginner: score.beginner,
+            intermediate: score.intermediate,
+            hard: score.hard
+          },
+          details: {
+            totalQuestions: 15, // 5 from each section
+            correctAnswers: totalScore,
+            accuracy: `${((totalScore / 15) * 100).toFixed(1)}%`
+          },
+          completedAt: new Date().toISOString()
+        },
+        'learningProgress': {
+          currentLevel: finalLevel,
+          lastAssessment: new Date().toISOString(),
+          isAssessmentComplete: true
+        }
+      });
+    } catch (error) {
+      console.error('Error saving final results:', error);
+      Alert.alert('Error', 'Failed to save your results');
     }
+  };
 
-    if (currentQuestion < quizQuestions.length - 1) {
-      setCurrentQuestion((prev) => prev + 1);
-      setSelectedAnswer(null);
-    } else {
-      if (section === "beginner") {
-        setSection("intermediate");
-        setQuizQuestions(getRandomQuestions("intermediate", 5));
-        setCurrentQuestion(0);
-      } else if (section === "intermediate") {
-        setSection("hard");
-        setQuizQuestions(getRandomQuestions("hard", 5));
-        setCurrentQuestion(0);
-      } else {
-        setQuizCompleted(true);
+  const handleAnswer = async (answer: string) => {
+    const isCorrect = answer === quizQuestions[currentQuestion].answer;
+    const user = auth.currentUser;
+    
+    if (user) {
+      const db = getDatabase();
+      const userRef = dbRef(db, `users/${user.uid}`);
+      
+      try {
+        // Store each answer
+        await update(userRef, {
+          [`responses/quiz/${section}/${currentQuestion}`]: {
+            question: quizQuestions[currentQuestion].question,
+            userAnswer: answer,
+            correctAnswer: quizQuestions[currentQuestion].answer,
+            isCorrect,
+            timestamp: new Date().toISOString()
+          }
+        });
+
+        if (isCorrect) {
+          setScore((prev) => ({ ...prev, [section]: prev[section] + 1 }));
+        }
+
+        // Update progress
+        if (currentQuestion === quizQuestions.length - 1) {
+          if (section === "hard") {
+            await saveFinalResult(); // Save final results when quiz is complete
+            setQuizCompleted(true);
+          } else {
+            // Move to next section
+            if (section === "beginner") {
+              setSection("intermediate");
+              setQuizQuestions(getRandomQuestions("intermediate", 5));
+            } else if (section === "intermediate") {
+              setSection("hard");
+              setQuizQuestions(getRandomQuestions("hard", 5));
+            }
+            setCurrentQuestion(0);
+          }
+        } else {
+          setCurrentQuestion((prev) => prev + 1);
+        }
+        setSelectedAnswer(null);
+      } catch (error) {
+        console.error('Error saving quiz response:', error);
       }
     }
   };
@@ -112,15 +180,21 @@ const Quiz = () => {
       ) : (
         <View style={styles.resultContainer}>
           <Text style={styles.resultText}>
-            {`Your French level is: ${calculateResult()}`}
+            Your French level is: {calculateResult()}
+          </Text>
+          <Text style={styles.scoreText}>
+            Total Score: {score.beginner + score.intermediate + score.hard}/15
+          </Text>
+          <Text style={styles.accuracyText}>
+            Accuracy: {((score.beginner + score.intermediate + score.hard) / 15 * 100).toFixed(1)}%
           </Text>
           <TouchableOpacity
             style={styles.continueButton}
             onPress={() => {
-              router.replace('/Welcome');
+              router.replace('./Welcome');
             }}
           >
-            <Text style={styles.continueButtonText}>Lets Begin the Journey!</Text>
+            <Text style={styles.continueButtonText}>Start Learning!</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -236,6 +310,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 20,
   },
+  scoreText: {
+    fontSize: 20,
+    color: '#FFFFFF',
+    marginVertical: 10,
+  },
+  accuracyText: {
+    fontSize: 18,
+    color: '#58cc02',
+    marginBottom: 20,
+  }
 });
 
 // const styles = StyleSheet.create({

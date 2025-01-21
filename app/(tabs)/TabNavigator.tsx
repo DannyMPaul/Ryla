@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, Image, Platform, BackHandler } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Feather';
+import { useFocusEffect } from '@react-navigation/native';
 
 // Import your screens
 import LearnScreen from '../../components/screens/LearnScreen';
@@ -9,12 +10,24 @@ import CommunityScreen from '../../components/screens/CommunityScreen';
 import SpeakScreen from '../../components/screens/SpeakScreen';
 import ReviewScreen from '../../components/screens/ReviewScreen';
 import ProfileScreen from '../../components/screens/ProfileScreen';
-import HoneScreen from './Home';
-import HomeScreen from './Home';
+// import HoneScreen from './Home';
+import HomeScreen from './Home1';
 
 const Tab = createBottomTabNavigator();
 
 const TabNavigator = () => {
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        BackHandler.exitApp();  // Exit app when on main navigation
+        return true;
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [])
+  );
+
   return (
     <Tab.Navigator
       screenOptions={{

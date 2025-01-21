@@ -1,15 +1,51 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { getAuth, onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getDatabase, ref as dbRef, onValue } from 'firebase/database';
+
+interface UserData {
+  name: string;
+  email: string;
+  lastLogin: string;
+  progress?: {
+    currentQuestion: number;
+    totalCorrect: number;
+    hearts: number;
+  };
+  quizResults?: {
+    finalLevel: string;
+    totalScore: number;
+    scores: {
+      beginner: number;
+      intermediate: number;
+      hard: number;
+    };
+    details: {
+      totalQuestions: number;
+      correctAnswers: number;
+      accuracy: string;
+    };
+    completedAt: string;
+  };
+  learnedWords?: {
+    [key: string]: {
+      french: string;
+      english: string;
+      learnedAt: string;
+    };
+  };
+}
 
 const ProfileScreen = () => {
   const [userEmail, setUserEmail] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [isLearnedWordsOpen, setIsLearnedWordsOpen] = useState(false);
   const auth = getAuth();
   const storage = getStorage();
 
@@ -26,13 +62,24 @@ const ProfileScreen = () => {
         
         setUserName(formattedName);
         setProfileImage(user.photoURL);
-      } else {
-        router.replace('/');
-      }
+      } 
     });
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (auth.currentUser) {
+      const db = getDatabase();
+      const userRef = dbRef(db, `users/${auth.currentUser.uid}`);
+      
+      onValue(userRef, (snapshot) => {
+        const data = snapshot.val();
+        setUserData(data);
+        console.log('User Data:', data);
+      });
+    }
+  }, [auth.currentUser]);
 
   const pickImage = async () => {
     try {
@@ -59,7 +106,7 @@ const ProfileScreen = () => {
       const user = auth.currentUser;
       if (!user) return;
 
-      const imageRef = ref(storage, `profileImages/${user.uid}`);
+      const imageRef = storageRef(storage, `profileImages/${user.uid}`);
       await uploadBytes(imageRef, blob);
       
       const downloadURL = await getDownloadURL(imageRef);
@@ -74,14 +121,14 @@ const ProfileScreen = () => {
   const handleSignOut = async () => {
     try {
       await auth.signOut();
-      router.replace('/');
+      router.replace('./index');
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
           {profileImage ? (
@@ -101,7 +148,9 @@ const ProfileScreen = () => {
 
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>120</Text>
+          <Text style={styles.statValue}>
+            {userData?.learnedWords ? Object.keys(userData.learnedWords).length : 0}
+          </Text>
           <Text style={styles.statLabel}>Words</Text>
         </View>
         <View style={styles.statItem}>
@@ -109,6 +158,36 @@ const ProfileScreen = () => {
           <Text style={styles.statLabel}>Day Streak</Text>
         </View>
       </View>
+
+      {userData?.learnedWords && (
+        <View style={styles.statsSection}>
+          <TouchableOpacity 
+            style={styles.dropdownHeader}
+            onPress={() => setIsLearnedWordsOpen(!isLearnedWordsOpen)}
+          >
+            <Text style={styles.sectionTitle}>Learned Words</Text>
+            <Icon 
+              name={isLearnedWordsOpen ? "chevron-up" : "chevron-down"} 
+              size={24} 
+              color="#FFFFFF" 
+            />
+          </TouchableOpacity>
+          
+          {isLearnedWordsOpen && (
+            <View style={styles.wordsContainer}>
+              {Object.values(userData.learnedWords).map((word, index) => (
+                <View key={index} style={styles.wordCard}>
+                  <Text style={styles.frenchWord}>{word.french}</Text>
+                  <Text style={styles.englishWord}>{word.english}</Text>
+                  <Text style={styles.learnedDate}>
+                    Learned on: {new Date(word.learnedAt).toLocaleDateString()}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
 
       <TouchableOpacity style={styles.settingsButton}>
         <Icon name="settings" size={24} color="#666666" />
@@ -119,7 +198,26 @@ const ProfileScreen = () => {
         <Icon name="log-out" size={24} color="#FF3B30" />
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
-    </View>
+
+      {userData?.quizResults && (
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Your Progress</Text>
+          
+          <View style={styles.quizStats}>
+            <Text style={styles.quizStatLabel}>Level: <Text style={styles.quizStatValue}>{userData.quizResults.finalLevel}</Text></Text>
+            <Text style={styles.quizStatLabel}>Total Score: <Text style={styles.quizStatValue}>{userData.quizResults.totalScore}/15</Text></Text>
+            <Text style={styles.quizStatLabel}>Accuracy: <Text style={styles.statHighlight}>{userData.quizResults.details.accuracy}</Text></Text>
+            
+            <View style={styles.sectionDivider} />
+            
+            <Text style={styles.quizStatLabel}>Section Scores:</Text>
+            <Text style={styles.statDetail}>Beginner: {userData.quizResults.scores.beginner}/5</Text>
+            <Text style={styles.statDetail}>Intermediate: {userData.quizResults.scores.intermediate}/5</Text>
+            <Text style={styles.statDetail}>Advanced: {userData.quizResults.scores.hard}/5</Text>
+          </View>
+        </View>
+      )}
+    </ScrollView>
   );
 };
 
@@ -213,6 +311,77 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 16,
     color: '#FF3B30',
+  },
+  statsSection: {
+    backgroundColor: '#1f2937',
+    borderRadius: 12,
+    padding: 16,
+    margin: 16,
+  },
+  sectionTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  quizStats: {
+    gap: 8,
+  },
+  quizStatLabel: {
+    color: '#BBBBBB',
+    fontSize: 16,
+  },
+  quizStatValue: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  statHighlight: {
+    color: '#58cc02',
+    fontWeight: 'bold',
+  },
+  statDetail: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#2d3748',
+    marginVertical: 8,
+  },
+  noQuizText: {
+    color: '#BBBBBB',
+    fontStyle: 'italic',
+  },
+  wordsContainer: {
+    gap: 12,
+    marginTop: 12,
+  },
+  wordCard: {
+    backgroundColor: '#2d3748',
+    borderRadius: 8,
+    padding: 12,
+  },
+  frenchWord: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#58cc02',
+    marginBottom: 4,
+  },
+  englishWord: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  learnedDate: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
 });
 

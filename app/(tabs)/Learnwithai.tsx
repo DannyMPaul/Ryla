@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   Image,
   SafeAreaView,
+  BackHandler,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface ConversationItem {
   id: string;
@@ -56,6 +58,18 @@ const conversationItems: ConversationItem[] = [
 ];
 
 const AIConversationsScreen = () => {
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        router.replace('/(tabs)');
+        return true;
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [])
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
