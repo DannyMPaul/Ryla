@@ -76,17 +76,7 @@ const QuizScreen = () => {
           currentLesson: 2,
           currentQuestion: 2,
           totalCorrect: userData?.totalCorrect + 1 || 1,
-          unlockedLessons: userData?.unlockedLessons ? 
-            [...userData.unlockedLessons, '2'] : 
-            ['1', '2'],
-          learnedWords: {
-            ...(userData?.learnedWords || {}),
-            'le garçon': {
-              french: 'le garçon',
-              english: 'boy',
-              learnedAt: new Date().toISOString()
-            }
-          }
+          unlockedLevels: 2 // Unlock second level after completing q1
         });
 
         Vibration.vibrate(200);

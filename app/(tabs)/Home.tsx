@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import TabNavigator from './TabNavigator';
 import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
-import { getDatabase, ref, onValue } from 'firebase/database';
+import { getDatabase, ref, onValue, update, get } from 'firebase/database';
 
 
 
@@ -67,13 +67,61 @@ const ExpandableCard: React.FC<CardProps> = ({ title, isExpanded, onToggle, chil
   );
 };
 
+// Add this interface for type safety
+interface UserProgress {
+  quizResponses: {
+    q1?: {
+      completed: boolean;
+      completedAt: string;
+      attempts: number;
+      failed?: boolean;
+    };
+    q2?: {
+      completed: boolean;
+      completedAt: string;
+      attempts: number;
+      failed?: boolean;
+    };
+    star2q1?: {
+      completed: boolean;
+      completedAt: string;
+      attempts: number;
+      failed?: boolean;
+    };
+    star2q2?: {
+      completed: boolean;
+      completedAt: string;
+      attempts: number;
+      failed?: boolean;
+    };
+  };
+  quizResults?: {
+    finalLevel: string;
+    details?: {
+      accuracy: string;
+    };
+  };
+  unlockedStars: number;
+  lastCompletedStar: number;
+  currentLesson: number;
+  currentQuestion: number;
+  totalCorrect: number;
+  hearts: number;
+  name?: string;
+}
+
 const HomeScreen: React.FC = () => {
-  const [userData, setUserData] = useState<any>(null);
+  const [userData, setUserData] = useState<UserProgress | null>(null);
   const [expandedCards, setExpandedCards] = useState({
     leaderboards: false,
     quests: false,
     profile: false,
   });
+  const [unlockedStars, setUnlockedStars] = useState<number>(1);
+  const [lastCompletedStar, setLastCompletedStar] = useState<number>(0);
+  const [completedQuestions, setCompletedQuestions] = useState<{[key: string]: boolean}>({});
+  const starScale = useRef(new Animated.Value(1)).current;
+  const starOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     const auth = getAuth();
@@ -82,9 +130,48 @@ const HomeScreen: React.FC = () => {
       const db = getDatabase();
       const userRef = ref(db, `users/${user.uid}`);
       
+      // Load initial state
+      const loadUserProgress = async () => {
+        const snapshot = await get(userRef);
+        const data = snapshot.val();
+        if (data) {
+          setUserData(data);
+          const completed = {
+            q1: data.quizResponses?.q1?.completed || false,
+            q2: data.quizResponses?.q2?.completed || false,
+            star2q1: data.quizResponses?.star2q1?.completed || false,
+            star2q2: data.quizResponses?.star2q2?.completed || false,
+          };
+          setCompletedQuestions(completed);
+          setUnlockedStars(data.unlockedStars || 1);
+          setLastCompletedStar(data.lastCompletedStar || 0);
+        }
+      };
+      
+      loadUserProgress();
+      
+      // Listen for real-time updates
       const unsubscribe = onValue(userRef, (snapshot) => {
         const data = snapshot.val();
-        setUserData(data);
+        if (data) {
+          setUserData(data);
+          const completed = {
+            q1: data.quizResponses?.q1?.completed || false,
+            q2: data.quizResponses?.q2?.completed || false,
+            star2q1: data.quizResponses?.star2q1?.completed || false,
+            star2q2: data.quizResponses?.star2q2?.completed || false,
+          };
+          setCompletedQuestions(completed);
+          
+          const previousUnlockedStars = unlockedStars;
+          const newUnlockedStars = data.unlockedStars || 1;
+          setUnlockedStars(newUnlockedStars);
+          setLastCompletedStar(data.lastCompletedStar || 0);
+          
+          if (newUnlockedStars > previousUnlockedStars) {
+            setTimeout(animateStarUnlock, 500);
+          }
+        }
       });
 
       return () => unsubscribe();
@@ -105,6 +192,92 @@ const HomeScreen: React.FC = () => {
       ...prev,
       [card]: !prev[card],
     }));
+  };
+
+  const animateStarUnlock = () => {
+    Animated.sequence([
+      Animated.timing(starOpacity, {
+        toValue: 0.3,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.parallel([
+        Animated.timing(starScale, {
+          toValue: 1.5,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(starOpacity, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.spring(starScale, {
+        toValue: 1,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  // Update the renderPathNode to show proper progress
+  const renderPathNode = (level: number, icon: string, onPress: () => void) => {
+    const isUnlocked = level <= unlockedStars;
+    const isCompleted = level === 1 ? 
+      (completedQuestions.q1 && completedQuestions.q2) : 
+      level === 2 ? 
+      (completedQuestions.star2q1 && completedQuestions.star2q2) : 
+      false;
+    const isNextToUnlock = level === unlockedStars + 1;
+    
+    // Determine which route to navigate to based on progress
+    const handlePress = () => {
+      if (!isUnlocked) return;
+      
+      switch(level) {
+        case 1:
+          if (!completedQuestions.q1) router.replace('./q1');
+          else if (!completedQuestions.q2) router.replace('./q2');
+          break;
+        case 2:
+          if (!completedQuestions.star2q1) router.replace('./star2q1');
+          else if (!completedQuestions.star2q2) router.replace('./star2q2');
+          break;
+        default:
+          onPress();
+      }
+    };
+    
+    return (
+      <TouchableOpacity 
+        onPress={handlePress}
+        disabled={!isUnlocked}
+      >
+        <Animated.View
+          style={[
+            styles.pathNode,
+            isCompleted && styles.completedNode,
+            isNextToUnlock && {
+              transform: [{ scale: starScale }],
+              opacity: starOpacity,
+            },
+          ]}
+        >
+          <Icon 
+            name={isCompleted ? "star" : icon} 
+            size={32} 
+            color={isCompleted ? "#58cc02" : isUnlocked ? "#58cc02" : "#666"} 
+          />
+          {!isUnlocked && (
+            <View style={styles.lockIconContainer}>
+              <Icon name="lock" size={16} color="#fff" />
+            </View>
+          )}
+        </Animated.View>
+      </TouchableOpacity>
+    );
   };
 
   useFocusEffect(
@@ -151,48 +324,24 @@ const HomeScreen: React.FC = () => {
           <View style={styles.learningPath}>
             <TouchableOpacity 
               style={styles.startButton} 
-              onPress={() => {
-                router.replace('./q1');
-              }}
+              onPress={() => router.replace('./q1')}
             >
               <Text style={styles.startButtonText}>START</Text>
             </TouchableOpacity>
 
-            <View style={styles.pathNode}>
-              <Icon name="star" size={32} color="#58cc02" />
-            </View>
+            {renderPathNode(1, "star", () => router.replace('./q1'))}
             <View style={styles.pathLine} />
-
-            <View style={styles.pathNode}>
-              <Icon name="star-outline" size={32} color="#666" />
-              <View style={styles.lockIconContainer}>
-                <Icon name="lock" size={16} color="#fff" />
-              </View>
-            </View>
+            
+            {renderPathNode(2, "star", () => router.replace('./star2q1'))}
             <View style={styles.pathLine} />
-
-            <View style={styles.pathNode}>
-              <Icon name="star-outline" size={32} color="#666" />
-              <View style={styles.lockIconContainer}>
-                <Icon name="lock" size={16} color="#fff" />
-              </View>
-            </View>
+            
+            {renderPathNode(3, "star", () => router.replace('./q3'))}
             <View style={styles.pathLine} />
-
-            <View style={styles.pathNode}>
-              <Icon name="treasure-chest" size={32} color="#666" />
-              <View style={styles.lockIconContainer}>
-                <Icon name="lock" size={16} color="#fff" />
-              </View>
-            </View>
+            
+            {renderPathNode(4, "treasure-chest", () => router.replace('./bonus'))}
             <View style={styles.pathLine} />
-
-            <View style={styles.pathNode}>
-              <Icon name="trophy" size={32} color="#666" />
-              <View style={styles.lockIconContainer}>
-                <Icon name="lock" size={16} color="#fff" />
-              </View>
-            </View>
+            
+            {renderPathNode(5, "trophy", () => router.replace('./final'))}
           </View>
 
           {/* Expandable Cards */}
@@ -437,6 +586,17 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 8,
     opacity: 0.9,
+  },
+  unlockedNode: {
+    backgroundColor: '#1f2937',
+  },
+  nodeContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completedNode: {
+    borderColor: '#58cc02',
+    borderWidth: 2,
   },
 });
 <TabNavigator />

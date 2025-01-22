@@ -526,9 +526,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
     color: COLORS.text,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 2,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   inputContainer: {
     marginBottom: 10,
