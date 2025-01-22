@@ -161,6 +161,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#f5f5f5',
     position: 'relative',
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
   },
   video: {
     width: '100%',

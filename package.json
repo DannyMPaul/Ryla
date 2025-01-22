@@ -33,7 +33,6 @@
     "expo-splash-screen": "~0.29.18",
     "expo-status-bar": "~2.0.0",
     "expo-system-ui": "~4.0.6",
-    "expo-video": "~2.0.2",
     "expo-web-browser": "~14.0.1",
     "firebase": "^11.1.0",
     "mongoose": "^8.9.2",
@@ -49,8 +48,7 @@
     "react-native-screens": "~4.1.0",
     "react-native-vector-icons": "^10.2.0",
     "react-native-video": "^6.8.2",
-    "react-native-web": "~0.19.10",
-    "undefined": "\\"
+    "react-native-web": "~0.19.10"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
