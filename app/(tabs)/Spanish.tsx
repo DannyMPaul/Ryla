@@ -55,11 +55,7 @@ const ProgressBars = ({ level }: { level: number }) => {
           key={bar}
           style={[
             styles.progressBar,
-<<<<<<< Updated upstream
             { backgroundColor: bar <= level ? 'rgb(240, 74, 99)' : 'rgba(240, 74, 99, 0.18)' },
-=======
-            { backgroundColor: bar <= level ? '#F0657A' : 'rgba(242, 0, 255, 0.28)' },
->>>>>>> Stashed changes
           ]}
         />
       ))}
@@ -167,15 +163,15 @@ const LanguageProficiencyScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(78, 13, 22, 0.14)',
+    backgroundColor: 'rgb(21, 1, 20)',
   },
   header: {
-<<<<<<< Updated upstream
+// <<<<<<< Updated upstream
     marginTop:50,
     flexDirection: 'row',
-=======
-    flexDirection: 'column',
->>>>>>> Stashed changes
+// =======
+//     flexDirection: 'column',
+// >>>>>>> Stashed changes
     padding: 20,
     alignItems: 'center',
     gap: 12,
@@ -195,11 +191,8 @@ const styles = StyleSheet.create({
   },
   questionText: {
     color: '#FFFFFF',
-<<<<<<< Updated upstream
     fontSize: 25,
-=======
-    fontSize: 22,
->>>>>>> Stashed changes
+
     fontWeight: 'bold',
   },
   scrollView: {
@@ -217,13 +210,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   selectedOption: {
-<<<<<<< Updated upstream
     backgroundColor: '#2a3a4a',
     borderColor: 'rgba(240, 74, 99, 0.78)',
-=======
-    backgroundColor: 'rgba(242, 0, 255, 0.09)',
-    borderColor: '#F0657A',
->>>>>>> Stashed changes
+
     borderWidth: 2,
     // backgroundColor:'rgb(12, 239, 76)',
 
@@ -243,17 +232,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   continueButton: {
-<<<<<<< Updated upstream
     backgroundColor: 'rgb(240, 74, 99)',
     margin: 20,
     padding: 16,
     borderRadius: 15,
-=======
-    backgroundColor: '#F0657A',
-    margin: 20,
-    padding: 16,
-    borderRadius: 20,
->>>>>>> Stashed changes
+
     alignItems: 'center',
   },
   continueButtonDisabled: {

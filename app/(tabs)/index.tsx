@@ -17,10 +17,6 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } f
 import { app, database } from '../firebase/firebase';
 import { getDatabase, ref as dbRef, set, update, get } from 'firebase/database';
 
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
 const COLORS = {
   primary: '#F0657A', 
   secondary: '#674EA7', 

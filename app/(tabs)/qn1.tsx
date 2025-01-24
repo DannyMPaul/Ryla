@@ -180,9 +180,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#000000',
   },
-<<<<<<< Updated upstream
   
-=======
 //   skipButton: {
 //     padding: 12,
 //     borderWidth: 1,
@@ -212,7 +210,6 @@ const styles = StyleSheet.create({
 //     fontWeight: 'bold',
 //   }
 // });
->>>>>>> Stashed changes
   // Button styles:
   skipButton: {
     padding: 12,
@@ -220,10 +217,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     borderRadius: 15,
     alignItems: 'center',
-<<<<<<< Updated upstream
     backgroundColor: 'rgba(255, 0, 234, 0.76)', // Optional, you can keep or remove
-=======
->>>>>>> Stashed changes
     position: 'absolute',
     bottom: 80, // Position the button 80px from the bottom
     left: 20,
@@ -241,11 +235,8 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     borderRadius: 15,
     alignItems: 'center',
-<<<<<<< Updated upstream
     backgroundColor: 'rgb(240, 74, 99)',
-=======
-    backgroundColor: '#F0657A',
->>>>>>> Stashed changes
+
     position: 'absolute',
     bottom: 20,  // Position the button 20px from the bottom
     left: 20,
@@ -256,7 +247,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-<<<<<<< Updated upstream
     iconContainer: {
     width: 40,
     height: 40,
@@ -370,10 +360,3 @@ export default GoalSelectionScreen;
 
   
 // });
-
-=======
-});
-
-
-export default GoalSelectionScreen;
->>>>>>> Stashed changes

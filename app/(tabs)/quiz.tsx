@@ -212,7 +212,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#FFFFFF',
-<<<<<<< Updated upstream
     margin: 30,
     marginBottom:50,
     textAlign: 'center',
@@ -224,16 +223,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 20,
     paddingLeft: 10,
-=======
     margin: 20,
-    textAlign: 'center',
   },
-  question: {
-    fontSize: 20,
-    color: '#FFFFFF',
-    margin: 20,
->>>>>>> Stashed changes
-  },
+
   scrollView: {
     flex: 1,
     marginBottom: 20,
@@ -242,14 +234,10 @@ const styles = StyleSheet.create({
     backgroundColor:  'rgba(57, 54, 54, 0.84)',  // Dark option button background for uniformity
     borderRadius: 12,
     padding: 16,
-<<<<<<< Updated upstream
     margin: 12,
     alignItems: 'center',  // Centering option text
     justifyContent: 'center', 
-=======
-    marginBottom: 12,
-    margin:10,
->>>>>>> Stashed changes
+
   },
   // selectedOption: {
   //   backgroundColor: '#2a3a4a',
@@ -257,20 +245,15 @@ const styles = StyleSheet.create({
   //   borderWidth: 2,
   // },
   selectedOption: {
-<<<<<<< Updated upstream
     backgroundColor: '#333333',  // Darker background for selected options
     borderColor: '#F04A63',  // Accent color for selected options
-=======
-    backgroundColor: 'rgba(242, 0, 255, 0.09)',
-    borderColor: '#F0657A',
->>>>>>> Stashed changes
+
     borderWidth: 2,
     // backgroundColor:'rgb(12, 239, 76)',
 
   },
     optionText: {
     color: '#FFFFFF',
-<<<<<<< Updated upstream
     fontSize: 20,
     textAlign: 'center',  // Center text within the button
   },
@@ -278,18 +261,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F04A63',  // Accent color for the continue button
     padding: 16,
     borderRadius: 15,
-=======
     fontSize: 18,
     margin:3,
-  },
-  continueButton: {
-    backgroundColor: '#F0657A',
-    margin: 20,
-    padding: 16,
-    borderRadius: 20,
->>>>>>> Stashed changes
+
     alignItems: 'center',
-    margin: 20,
   },
   continueButtonDisabled: {
     backgroundColor: '#3C3C3C',  // Darker gray for the disabled button
