@@ -65,41 +65,36 @@ const QuizScreen = () => {
     }
 
     try {
+      const userRef = ref(database, `users/${user.uid}`);
+      
       if (selectedAnswer && selectedAnswer.isCorrect) {
-        const userRef = ref(database, `users/${user.uid}`);
-        const userSnapshot = await get(userRef);
-        const userData = userSnapshot.val();
-        
-        const q1Completed = userData?.quizResponses?.q1?.completed || false;
-        
-        // Show success modal first
+        // Store the learned word when correct
+        await update(userRef, {
+          [`learnedWords/${new Date().getTime()}`]: {
+            french: "la fille",
+            english: "the girl",
+            learnedAt: new Date().toISOString(),
+            section: "Quiz 2",
+            context: "Basic nouns - Articles"
+          },
+          [`quizResponses/q2/completed`]: true,
+          [`quizResponses/q2/completedAt`]: new Date().toISOString(),
+          unlockedStars: 2,
+          lastCompletedStar: 1
+        });
+
+        // Show success modal
         Vibration.vibrate(200);
         setShowSuccessModal(true);
         
-        // Delay the database update and navigation
-        setTimeout(async () => {
-          await update(userRef, {
-            [`quizResponses/q2/completed`]: true,
-            [`quizResponses/q2/completedAt`]: new Date().toISOString(),
-            currentLesson: q1Completed ? 2 : 1,
-            currentQuestion: q1Completed ? 1 : 2,
-            ...(q1Completed && {
-              unlockedStars: 2,
-              lastCompletedStar: 1
-            })
-          });
-
-          // Wait for animation duration before hiding modal and navigating
-          setTimeout(() => {
-            setShowSuccessModal(false);
-            router.replace('/(tabs)/Home');
-          }, 3000); // 3 seconds for animation
-        }, 1500); // 1.5 seconds to show success modal
+        setTimeout(() => {
+          setShowSuccessModal(false);
+          router.replace('/(tabs)/Home');
+        }, 1500);
       } else {
         // Wrong answer handling - same as q1
         setHearts(prev => Math.max(0, prev - 1));
         
-        const userRef = ref(database, `users/${user.uid}`);
         const userSnapshot = await get(userRef);
         const userData = userSnapshot.val();
         
@@ -207,19 +202,21 @@ const QuizScreen = () => {
         <TouchableOpacity 
           style={styles.skipButton} 
           onPress={handleSkip}
-          disabled={showNextButton} // Disable skip after correct answer
+          disabled={showNextButton}
         >
           <Text style={styles.skipButtonText}>SKIP</Text>
         </TouchableOpacity>
         
-        {showNextButton && (
-          <TouchableOpacity 
-            style={styles.nextButton}
-            onPress={() => router.replace('./q3' as const)}
-          >
-            <Text style={styles.nextButtonText}>NEXT</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity 
+          style={[
+            styles.nextButton,
+            !selectedOption && styles.nextButtonDisabled
+          ]}
+          onPress={() => router.replace('/(tabs)/Home')}
+          disabled={!selectedOption}
+        >
+          <Text style={styles.nextButtonText}>NEXT</Text>
+        </TouchableOpacity>
         
         <TouchableOpacity
           style={[
@@ -412,6 +409,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 12,
     alignItems: 'center',
+  },
+  nextButtonDisabled: {
+    backgroundColor: '#2a3a4a',
   },
   nextButtonText: {
     color: '#FFFFFF',

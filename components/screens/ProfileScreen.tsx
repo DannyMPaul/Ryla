@@ -36,6 +36,8 @@ interface UserData {
       french: string;
       english: string;
       learnedAt: string;
+      section: string;
+      context?: string;
     };
   };
 }
@@ -159,35 +161,47 @@ const ProfileScreen = () => {
         </View>
       </View>
 
-      {userData?.learnedWords && (
-        <View style={styles.statsSection}>
-          <TouchableOpacity 
-            style={styles.dropdownHeader}
-            onPress={() => setIsLearnedWordsOpen(!isLearnedWordsOpen)}
-          >
-            <Text style={styles.sectionTitle}>Learned Words</Text>
-            <Icon 
-              name={isLearnedWordsOpen ? "chevron-up" : "chevron-down"} 
-              size={24} 
-              color="#FFFFFF" 
-            />
-          </TouchableOpacity>
-          
-          {isLearnedWordsOpen && (
-            <View style={styles.wordsContainer}>
-              {Object.values(userData.learnedWords).map((word, index) => (
-                <View key={index} style={styles.wordCard}>
-                  <Text style={styles.frenchWord}>{word.french}</Text>
-                  <Text style={styles.englishWord}>{word.english}</Text>
-                  <Text style={styles.learnedDate}>
-                    Learned on: {new Date(word.learnedAt).toLocaleDateString()}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-      )}
+      <View style={styles.statsSection}>
+        <TouchableOpacity 
+          style={styles.dropdownHeader}
+          onPress={() => setIsLearnedWordsOpen(!isLearnedWordsOpen)}
+        >
+          <Text style={styles.sectionTitle}>Learned Words</Text>
+          <Icon 
+            name={isLearnedWordsOpen ? "chevron-up" : "chevron-down"} 
+            size={24} 
+            color="#FFFFFF" 
+          />
+        </TouchableOpacity>
+        
+        {isLearnedWordsOpen && (
+          <View style={styles.wordsContainer}>
+            {userData?.learnedWords ? (
+              Object.entries(userData.learnedWords)
+                .sort(([,a], [,b]) => new Date(b.learnedAt).getTime() - new Date(a.learnedAt).getTime())
+                .map(([key, word], index) => (
+                  <View key={key} style={styles.wordCard}>
+                    <View style={styles.wordHeader}>
+                      <Text style={styles.frenchWord}>{word.french}</Text>
+                      <Text style={styles.sectionBadge}>{word.section}</Text>
+                    </View>
+                    <Text style={styles.englishWord}>{word.english}</Text>
+                    {word.context && (
+                      <Text style={styles.contextText}>{word.context}</Text>
+                    )}
+                    <Text style={styles.learnedDate}>
+                      Learned: {new Date(word.learnedAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                ))
+            ) : (
+              <Text style={styles.noWordsText}>
+                Complete quizzes to start building your vocabulary!
+              </Text>
+            )}
+          </View>
+        )}
+      </View>
 
       <TouchableOpacity style={styles.settingsButton}>
         <Icon name="settings" size={24} color="#666666" />
@@ -381,6 +395,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 8,
+  },
+  wordHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  sectionBadge: {
+    backgroundColor: '#58cc02',
+    color: '#FFFFFF',
+    padding: 4,
+    borderRadius: 4,
+    fontSize: 12,
+    textTransform: 'capitalize',
+  },
+  contextText: {
+    color: '#9ca3af',
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginVertical: 4,
+  },
+  noWordsText: {
+    color: '#9ca3af',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    padding: 16,
   },
 });
 

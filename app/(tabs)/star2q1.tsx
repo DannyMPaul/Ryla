@@ -88,7 +88,7 @@ const Star2QuizScreen = () => {
         
         setTimeout(() => {
           setShowSuccessModal(false);
-          router.replace('/(tabs)/star2q2');
+          router.replace('./star2q2');
         }, 1500);
       } else {
         setHearts(prev => Math.max(0, prev - 1));
@@ -202,14 +202,16 @@ const Star2QuizScreen = () => {
           <Text style={styles.skipButtonText}>SKIP</Text>
         </TouchableOpacity>
         
-        {showNextButton && (
-          <TouchableOpacity 
-            style={styles.nextButton}
-            onPress={() => router.replace('./star2q2')}
-          >
-            <Text style={styles.nextButtonText}>NEXT</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity 
+          style={[
+            styles.nextButton,
+            !selectedOption && styles.nextButtonDisabled
+          ]}
+          onPress={() => router.replace('./star2q2')}
+          disabled={!selectedOption}
+        >
+          <Text style={styles.nextButtonText}>NEXT</Text>
+        </TouchableOpacity>
         
         <TouchableOpacity
           style={[
@@ -240,7 +242,7 @@ const Star2QuizScreen = () => {
               style={styles.modalButton}
               onPress={() => {
                 setShowSuccessModal(false);
-                router.replace('/(tabs)/star2q2');
+                router.replace('./star2q2');
               }}
             >
               <Text style={styles.modalButtonText}>Continue</Text>
@@ -395,6 +397,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 12,
     alignItems: 'center',
+  },
+  nextButtonDisabled: {
+    backgroundColor: '#2a3a4a',
   },
   nextButtonText: {
     color: '#FFFFFF',
