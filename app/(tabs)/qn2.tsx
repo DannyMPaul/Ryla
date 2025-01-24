@@ -7,11 +7,13 @@ import {
   ScrollView,
   SafeAreaView,
   Image,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import Flag from 'react-native-flags';
 import { getAuth } from 'firebase/auth';
-import { getDatabase, ref as dbRef, update } from 'firebase/database';
+import { getDatabase, ref as dbRef, update, get } from 'firebase/database';
+import { ref } from 'firebase/database';
 
 interface LanguageOption {
   id: string;
@@ -45,22 +47,27 @@ const qn2 = () => {
 
   const handleLanguageSelect = async (languageId: string) => {
     setSelectedLanguage(languageId);
-    
     const user = auth.currentUser;
     if (user) {
-      const db = getDatabase();
-      const userRef = dbRef(db, `users/${user.uid}`);
-      
+      const userRef = ref(getDatabase(), `users/${user.uid}`);
       try {
+        // Convert language ID to language code
+        let langCode = 'en';
+        if (languageId === '1') langCode = 'en';
+        if (languageId === '2') langCode = 'de';
+        if (languageId === '3') langCode = 'fr';
+
         await update(userRef, {
-          'responses/languageSelection': {
-            selectedLanguage: languageId,
-            languageTitle: languages.find(l => l.id === languageId)?.title,
-            timestamp: new Date().toISOString()
+          'model_data': {
+            lang_to_learn: langCode,
+            proficiency_level: 'beginner' // Default until quiz determines level
           }
         });
+        
+        router.replace('./quiz');
       } catch (error) {
-        console.error('Error saving language:', error);
+        console.error('Error saving language selection:', error);
+        Alert.alert('Error', 'Failed to save language preference');
       }
     }
   };

@@ -122,6 +122,8 @@ const HomeScreen: React.FC = () => {
   const [completedQuestions, setCompletedQuestions] = useState<{[key: string]: boolean}>({});
   const starScale = useRef(new Animated.Value(1)).current;
   const starOpacity = useRef(new Animated.Value(1)).current;
+  const [showUnlockAnimation, setShowUnlockAnimation] = useState(false);
+  const unlockScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     const auth = getAuth();
@@ -173,6 +175,33 @@ const HomeScreen: React.FC = () => {
           }
         }
       });
+
+      // Check if new star was just unlocked
+      if (user) {
+        onValue(userRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data?.unlockedStars > data?.lastViewedStar) {
+            setShowUnlockAnimation(true);
+            Animated.sequence([
+              Animated.timing(unlockScale, {
+                toValue: 1.2,
+                duration: 300,
+                useNativeDriver: true
+              }),
+              Animated.timing(unlockScale, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true
+              })
+            ]).start();
+            
+            // Update lastViewedStar
+            update(userRef, {
+              lastViewedStar: data.unlockedStars
+            });
+          }
+        });
+      }
 
       return () => unsubscribe();
     }
@@ -332,7 +361,21 @@ const HomeScreen: React.FC = () => {
             {renderPathNode(1, "star", () => router.replace('./q1'))}
             <View style={styles.pathLine} />
             
-            {renderPathNode(2, "star", () => router.replace('./star2q1'))}
+            <Animated.View style={[
+              styles.star,
+              showUnlockAnimation && { transform: [{ scale: unlockScale }] }
+            ]}>
+              <TouchableOpacity 
+                onPress={() => router.replace('./star2q1')}
+                disabled={!userData?.unlockedStars || userData.unlockedStars < 2}
+              >
+                <Icon 
+                  name="star" 
+                  size={40} 
+                  color={userData?.unlockedStars >= 2 ? "#FFD700" : "#666666"}
+                />
+              </TouchableOpacity>
+            </Animated.View>
             <View style={styles.pathLine} />
             
             {renderPathNode(3, "star", () => router.replace('./q3'))}
@@ -597,6 +640,15 @@ const styles = StyleSheet.create({
   completedNode: {
     borderColor: '#58cc02',
     borderWidth: 2,
+  },
+  star: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#2b3940',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
 });
 <TabNavigator />

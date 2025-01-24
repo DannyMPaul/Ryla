@@ -12,8 +12,22 @@ import { useRouter } from 'expo-router';
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref as dbRef, update } from 'firebase/database';
 
-const questions = {
+// Add interface at the top
+interface QuizQuestion {
+  question: string;
+  options: string[];
+  answer: string;
+  context?: string;
+}
+
+const questions: Record<string, QuizQuestion[]> = {
   beginner: [
+    { 
+      question: "Hier, nous ................ un film intéressant.", 
+      options: ["regardons", "avons regardé", "regardions"], 
+      answer: "avons regardé",
+      context: "Past tense usage" 
+    },
     { question: "Translate into English: Bonjour.", options: ["Goodbye", "Hello", "Please"], answer: "Hello" },
     { question: "What does 'merci' mean?", options: ["Thank you", "Yes", "Goodbye"], answer: "Thank you" },
     { question: "Choose the correct article for 'pomme':", options: ["Le", "La", "Les"], answer: "La" },
@@ -28,7 +42,6 @@ const questions = {
     { question: "Which sentence is correct?", options: ["Elle a un chat noir.", "Elle as un chat noir.", "Elle a une chat noir."], answer: "Elle a un chat noir." },
   ],
   hard: [
-    { question: "Hier, nous ................ un film intéressant.", options: ["regardons", "avons regardé", "regardions"], answer: "avons regardé" },
     { question: "She is smarter than her brother.", options: ["Elle est plus intelligente que son frère.", "Elle est moins intelligente que son frère.", "Elle est aussi intelligente que son frère."], answer: "Elle est plus intelligente que son frère." },
     { question: "What does 'faire la cuisine' mean?", options: ["To eat in the kitchen", "To cook", "To clean the kitchen"], answer: "To cook" },
     { question: "Choose the correct conjugation: Si j'avais de l'argent, je ................ une nouvelle voiture.", options: ["achète", "achèterai", "achèterais"], answer: "achèterais" },
@@ -38,7 +51,10 @@ const questions = {
 
 const getRandomQuestions = (section: "beginner" | "intermediate" | "hard", count: number) => {
   const sectionQuestions = questions[section];
-  return sectionQuestions.sort(() => 0.5 - Math.random()).slice(0, count);
+  return sectionQuestions.sort(() => 0.5 - Math.random()).slice(0, count).map(q => ({
+    ...q,
+    options: [...q.options, "Don't Know"]
+  }));
 };
 
 const Quiz = () => {
@@ -62,7 +78,11 @@ const Quiz = () => {
     
     try {
       await update(userRef, {
-        'quizResults': {
+        'model_data': {
+          proficiency_level: finalLevel.toLowerCase(),
+          lang_to_learn: 'fr'
+        },
+        'quiz_details': {
           finalLevel,
           totalScore,
           scores: {
@@ -71,16 +91,11 @@ const Quiz = () => {
             hard: score.hard
           },
           details: {
-            totalQuestions: 15, // 5 from each section
+            totalQuestions: 15,
             correctAnswers: totalScore,
             accuracy: `${((totalScore / 15) * 100).toFixed(1)}%`
           },
           completedAt: new Date().toISOString()
-        },
-        'learningProgress': {
-          currentLevel: finalLevel,
-          lastAssessment: new Date().toISOString(),
-          isAssessmentComplete: true
         }
       });
     } catch (error) {
@@ -90,7 +105,6 @@ const Quiz = () => {
   };
 
   const handleAnswer = async (answer: string) => {
-    const isCorrect = answer === quizQuestions[currentQuestion].answer;
     const user = auth.currentUser;
     
     if (user) {
@@ -98,28 +112,47 @@ const Quiz = () => {
       const userRef = dbRef(db, `users/${user.uid}`);
       
       try {
-        // Store each answer
-        await update(userRef, {
-          [`responses/quiz/${section}/${currentQuestion}`]: {
-            question: quizQuestions[currentQuestion].question,
-            userAnswer: answer,
-            correctAnswer: quizQuestions[currentQuestion].answer,
-            isCorrect,
-            timestamp: new Date().toISOString()
-          }
-        });
+        if (answer === "Don't Know") {
+          await update(userRef, {
+            [`responses/quiz/${section}/${currentQuestion}`]: {
+              question: quizQuestions[currentQuestion].question,
+              unmarked: true,
+              skippedAt: new Date().toISOString()
+            }
+          });
+        } else {
+          const isCorrect = answer === quizQuestions[currentQuestion].answer;
+          await update(userRef, {
+            [`responses/quiz/${section}/${currentQuestion}`]: {
+              question: quizQuestions[currentQuestion].question,
+              userAnswer: answer,
+              correctAnswer: quizQuestions[currentQuestion].answer,
+              isCorrect,
+              timestamp: new Date().toISOString()
+            }
+          });
 
-        if (isCorrect) {
-          setScore((prev) => ({ ...prev, [section]: prev[section] + 1 }));
+          if (isCorrect) {
+            setScore((prev) => ({ ...prev, [section]: prev[section] + 1 }));
+            
+            // Store the learned word
+            await update(userRef, {
+              [`learnedWords/${new Date().getTime()}`]: {
+                french: quizQuestions[currentQuestion].question,
+                english: answer,
+                learnedAt: new Date().toISOString(),
+                section: section,
+                context: quizQuestions[currentQuestion].context || ''
+              }
+            });
+          }
         }
 
-        // Update progress
         if (currentQuestion === quizQuestions.length - 1) {
           if (section === "hard") {
-            await saveFinalResult(); // Save final results when quiz is complete
+            await saveFinalResult();
             setQuizCompleted(true);
           } else {
-            // Move to next section
             if (section === "beginner") {
               setSection("intermediate");
               setQuizQuestions(getRandomQuestions("intermediate", 5));
@@ -135,15 +168,16 @@ const Quiz = () => {
         setSelectedAnswer(null);
       } catch (error) {
         console.error('Error saving quiz response:', error);
+        Alert.alert('Error', 'Failed to save progress');
       }
     }
   };
 
   const calculateResult = () => {
     const totalScore = score.beginner + score.intermediate + score.hard;
-    if (totalScore <= 5) return "Beginner";
-    if (totalScore > 5 && totalScore <= 7) return "Intermediate";
-    return "Advanced";
+    if (totalScore <= 5) return "beginner";
+    if (totalScore > 5 && totalScore <= 7) return "intermediate";
+    return "advanced";
   };
 
   return (
@@ -159,10 +193,14 @@ const Quiz = () => {
                 style={[
                   styles.optionButton,
                   selectedAnswer === option && styles.selectedOption,
+                  option === "Don't Know" && styles.dontKnowOption,
                 ]}
                 onPress={() => setSelectedAnswer(option)}
               >
-                <Text style={styles.optionText}>{option}</Text>
+                <Text style={[
+                  styles.optionText,
+                  option === "Don't Know" && styles.dontKnowText
+                ]}>{option}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -191,7 +229,7 @@ const Quiz = () => {
           <TouchableOpacity
             style={styles.continueButton}
             onPress={() => {
-              router.replace('./Welcome');
+              router.replace('/(tabs)/Home1');
             }}
           >
             <Text style={styles.continueButtonText}>Start Learning!</Text>
@@ -273,7 +311,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#58cc02',
     marginBottom: 20,
-  }
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  dontKnowButton: {
+    flex: 1,
+    backgroundColor: '#334155',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  dontKnowOption: {
+    backgroundColor: '#334155',
+  },
+  dontKnowText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    fontStyle: 'italic',
+  },
 });
 
 export default Quiz;

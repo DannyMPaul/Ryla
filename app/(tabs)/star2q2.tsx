@@ -202,6 +202,17 @@ const Star2QuizScreen = () => {
           <Text style={styles.skipButtonText}>SKIP</Text>
         </TouchableOpacity>
         
+        <TouchableOpacity 
+          style={[
+            styles.nextButton,
+            !selectedOption && styles.nextButtonDisabled
+          ]}
+          onPress={() => router.replace('/(tabs)/Home')}
+          disabled={!selectedOption}
+        >
+          <Text style={styles.nextButtonText}>NEXT</Text>
+        </TouchableOpacity>
+        
         <TouchableOpacity
           style={[
             styles.checkButton, 
@@ -354,6 +365,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   skipButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  nextButton: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#58cc02',
+    borderRadius: 10,
+  },
+  nextButtonDisabled: {
+    backgroundColor: '#334155',
+  },
+  nextButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',

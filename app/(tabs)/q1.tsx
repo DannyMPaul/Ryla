@@ -60,33 +60,37 @@ const QuizScreen = () => {
     const user = auth.currentUser;
 
     if (!user) {
-      router.replace('/(tabs)/qn1' as const);
+      Alert.alert('Error', 'You must be logged in to continue');
       return;
     }
 
     try {
+      const userRef = ref(database, `users/${user.uid}`);
+      
       if (selectedAnswer && selectedAnswer.isCorrect) {
-        const userRef = ref(database, `users/${user.uid}`);
-        const userSnapshot = await get(userRef);
-        const userData = userSnapshot.val();
-        
+        // Store the learned word when correct
         await update(userRef, {
+          [`learnedWords/${new Date().getTime()}`]: {
+            french: "le garçon",
+            english: "the boy",
+            learnedAt: new Date().toISOString(),
+            section: "Quiz 1",
+            context: "Basic nouns - Articles"
+          },
           [`quizResponses/q1/completed`]: true,
-          [`quizResponses/q1/completedAt`]: new Date().toISOString(),
-          currentLesson: 2,
-          currentQuestion: 2,
-          totalCorrect: userData?.totalCorrect + 1 || 1,
-          unlockedLevels: 2 // Unlock second level after completing q1
+          [`quizResponses/q1/completedAt`]: new Date().toISOString()
         });
 
+        // Show success modal
         Vibration.vibrate(200);
         setShowSuccessModal(true);
+        
+        // Rest of your existing success handling code...
       } else {
         // Wrong answer
         setHearts(prev => Math.max(0, prev - 1));
         
         // Store the incorrect attempt
-        const userRef = ref(database, `users/${user.uid}`);
         const userSnapshot = await get(userRef);
         const userData = userSnapshot.val();
         
@@ -178,21 +182,30 @@ const QuizScreen = () => {
       </View>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+        <TouchableOpacity 
+          style={styles.skipButton} 
+          onPress={handleSkip}
+          disabled={showNextButton}
+        >
           <Text style={styles.skipButtonText}>SKIP</Text>
         </TouchableOpacity>
         
-        {showNextButton && (
-          <TouchableOpacity 
-            style={styles.nextButton}
-            onPress={() => router.replace('./q2' as const)}
-          >
-            <Text style={styles.nextButtonText}>NEXT</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity 
+          style={[
+            styles.nextButton,
+            !selectedOption && styles.nextButtonDisabled
+          ]}
+          onPress={() => router.replace('./q2')}
+          disabled={!selectedOption}
+        >
+          <Text style={styles.nextButtonText}>NEXT</Text>
+        </TouchableOpacity>
         
         <TouchableOpacity
-          style={[styles.checkButton, !selectedOption && styles.checkButtonDisabled]}
+          style={[
+            styles.checkButton, 
+            (!selectedOption || showNextButton) && styles.checkButtonDisabled
+          ]}
           onPress={handleCheck}
           disabled={!selectedOption || showNextButton}
         >
@@ -360,16 +373,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   nextButton: {
+    flex: 1,
+    padding: 16,
     backgroundColor: '#58cc02',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    alignItems: 'center',
+    borderRadius: 10,
+    marginHorizontal: 8,
   },
   nextButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  nextButtonDisabled: {
+    backgroundColor: '#334155',
   },
   modalOverlay: {
     flex: 1,
