@@ -18,3 +18,7 @@ web-build/
 
 expo-env.d.ts
 # @end expo-cli
+
+
+# Ignore Learn_With_AI folder and all its contents
+Learn_With_AI/

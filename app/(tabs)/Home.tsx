@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   Animated,
   Dimensions,
-  BackHandler,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +14,7 @@ import { router } from 'expo-router';
 import TabNavigator from './TabNavigator';
 import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
-import { getDatabase, ref, onValue, update, get } from 'firebase/database';
+import { getDatabase, ref, onValue } from 'firebase/database';
 
 
 
@@ -111,7 +110,7 @@ interface UserProgress {
 }
 
 const HomeScreen: React.FC = () => {
-  const [userData, setUserData] = useState<UserProgress | null>(null);
+  const [userData, setUserData] = useState<any>(null);
   const [expandedCards, setExpandedCards] = useState({
     leaderboards: false,
     quests: false,
@@ -132,76 +131,10 @@ const HomeScreen: React.FC = () => {
       const db = getDatabase();
       const userRef = ref(db, `users/${user.uid}`);
       
-      // Load initial state
-      const loadUserProgress = async () => {
-        const snapshot = await get(userRef);
-        const data = snapshot.val();
-        if (data) {
-          setUserData(data);
-          const completed = {
-            q1: data.quizResponses?.q1?.completed || false,
-            q2: data.quizResponses?.q2?.completed || false,
-            star2q1: data.quizResponses?.star2q1?.completed || false,
-            star2q2: data.quizResponses?.star2q2?.completed || false,
-          };
-          setCompletedQuestions(completed);
-          setUnlockedStars(data.unlockedStars || 1);
-          setLastCompletedStar(data.lastCompletedStar || 0);
-        }
-      };
-      
-      loadUserProgress();
-      
-      // Listen for real-time updates
       const unsubscribe = onValue(userRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-          setUserData(data);
-          const completed = {
-            q1: data.quizResponses?.q1?.completed || false,
-            q2: data.quizResponses?.q2?.completed || false,
-            star2q1: data.quizResponses?.star2q1?.completed || false,
-            star2q2: data.quizResponses?.star2q2?.completed || false,
-          };
-          setCompletedQuestions(completed);
-          
-          const previousUnlockedStars = unlockedStars;
-          const newUnlockedStars = data.unlockedStars || 1;
-          setUnlockedStars(newUnlockedStars);
-          setLastCompletedStar(data.lastCompletedStar || 0);
-          
-          if (newUnlockedStars > previousUnlockedStars) {
-            setTimeout(animateStarUnlock, 500);
-          }
-        }
+        setUserData(data);
       });
-
-      // Check if new star was just unlocked
-      if (user) {
-        onValue(userRef, (snapshot) => {
-          const data = snapshot.val();
-          if (data?.unlockedStars > data?.lastViewedStar) {
-            setShowUnlockAnimation(true);
-            Animated.sequence([
-              Animated.timing(unlockScale, {
-                toValue: 1.2,
-                duration: 300,
-                useNativeDriver: true
-              }),
-              Animated.timing(unlockScale, {
-                toValue: 1,
-                duration: 200,
-                useNativeDriver: true
-              })
-            ]).start();
-            
-            // Update lastViewedStar
-            update(userRef, {
-              lastViewedStar: data.unlockedStars
-            });
-          }
-        });
-      }
 
       return () => unsubscribe();
     }
@@ -223,92 +156,6 @@ const HomeScreen: React.FC = () => {
     }));
   };
 
-  const animateStarUnlock = () => {
-    Animated.sequence([
-      Animated.timing(starOpacity, {
-        toValue: 0.3,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.parallel([
-        Animated.timing(starScale, {
-          toValue: 1.5,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(starOpacity, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.spring(starScale, {
-        toValue: 1,
-        friction: 3,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  // Update the renderPathNode to show proper progress
-  const renderPathNode = (level: number, icon: string, onPress: () => void) => {
-    const isUnlocked = level <= unlockedStars;
-    const isCompleted = level === 1 ? 
-      (completedQuestions.q1 && completedQuestions.q2) : 
-      level === 2 ? 
-      (completedQuestions.star2q1 && completedQuestions.star2q2) : 
-      false;
-    const isNextToUnlock = level === unlockedStars + 1;
-    
-    // Determine which route to navigate to based on progress
-    const handlePress = () => {
-      if (!isUnlocked) return;
-      
-      switch(level) {
-        case 1:
-          if (!completedQuestions.q1) router.replace('./q1');
-          else if (!completedQuestions.q2) router.replace('./q2');
-          break;
-        case 2:
-          if (!completedQuestions.star2q1) router.replace('./star2q1');
-          else if (!completedQuestions.star2q2) router.replace('./star2q2');
-          break;
-        default:
-          onPress();
-      }
-    };
-    
-    return (
-      <TouchableOpacity 
-        onPress={handlePress}
-        disabled={!isUnlocked}
-      >
-        <Animated.View
-          style={[
-            styles.pathNode,
-            isCompleted && styles.completedNode,
-            isNextToUnlock && {
-              transform: [{ scale: starScale }],
-              opacity: starOpacity,
-            },
-          ]}
-        >
-          <Icon 
-            name={isCompleted ? "star" : icon} 
-            size={32} 
-            color={isCompleted ? "#58cc02" : isUnlocked ? "#58cc02" : "#666"} 
-          />
-          {!isUnlocked && (
-            <View style={styles.lockIconContainer}>
-              <Icon name="lock" size={16} color="#fff" />
-            </View>
-          )}
-        </Animated.View>
-      </TouchableOpacity>
-    );
-  };
-
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {
@@ -323,37 +170,44 @@ const HomeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with Quiz Results */}
+      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
+          <Icon name="arrow-left" size={24} color="#fff" />
           <View style={styles.headerTextContainer}>
-            <Text style={styles.welcomeText}>
-              Welcome, {userData?.name || 'Learner'}!
-            </Text>
-            {userData?.quizResults && (
-              <View style={styles.quizResultsContainer}>
-                <Text style={styles.levelText}>
-                  Level: {userData.quizResults.finalLevel}
-                </Text>
-                <Text style={styles.accuracyText}>
-                  Accuracy: {userData.quizResults.details?.accuracy || '0%'}
-                </Text>
-                <Text style={styles.motivationalText}>
-                  {getMotivationalQuote(userData.quizResults.finalLevel)}
-                </Text>
-              </View>
-            )}
+            <Text style={styles.sectionTitle}></Text>
+            <Text style={styles.lessonTitle}>Form basic sentences</Text>
+          </View>
+          <View style={styles.statsContainer}>
+            <Icon name="flag" size={20} color="#fff" />
+            <Text style={styles.statsText}>0</Text>
+            <Icon name="diamond" size={20} color="#fff" />
+            <Text style={styles.statsText}>500</Text>
+            <Icon name="heart" size={20} color="#fff" />
+            <Text style={styles.statsText}>5</Text>
           </View>
         </View>
       </View>
 
+
       <ScrollView style={styles.scrollView}>
+        
+       <Video
+              source={require('@/assets/videos/bg4.mp4')}
+              style={styles.backgroundVideo}
+              resizeMode={ResizeMode.STRETCH}
+              shouldPlay
+              isLooping
+              isMuted
+            />
         <View style={styles.content}>
           {/* Learning Path */}
           <View style={styles.learningPath}>
             <TouchableOpacity 
               style={styles.startButton} 
-              onPress={() => router.replace('./q1')}
+              onPress={() => {
+                router.replace('./q1');
+              }}
             >
               <Text style={styles.startButtonText}>START</Text>
             </TouchableOpacity>
@@ -444,7 +298,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#111b21',
   },
   header: {
-    backgroundColor: '#F0657A',
+    backgroundColor: 'rgb(238, 82, 105)',
     padding: 16,
   },
   headerContent: {
@@ -601,34 +455,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  welcomeText: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  quizResultsContainer: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  levelText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  accuracyText: {
-    color: '#58cc02',
-    fontSize: 16,
-    marginTop: 4,
-  },
-  motivationalText: {
-    color: '#fff',
-    fontSize: 14,
-    fontStyle: 'italic',
-    marginTop: 8,
-    opacity: 0.9,
+
+  backgroundVideo: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
   },
   unlockedNode: {
     backgroundColor: '#1f2937',

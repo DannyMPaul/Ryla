@@ -12,8 +12,7 @@ import {
 import { router } from 'expo-router';
 import Flag from 'react-native-flags';
 import { getAuth } from 'firebase/auth';
-import { getDatabase, ref as dbRef, update, get } from 'firebase/database';
-import { ref } from 'firebase/database';
+import { getDatabase, ref as dbRef, update } from 'firebase/database';
 
 interface LanguageOption {
   id: string;
@@ -39,35 +38,27 @@ const languages: LanguageOption[] = [
   },
 ];
 
-type RouteType = '/(tabs)/English' | '/(tabs)/German' | '/(tabs)/Spanish';
-
 const qn2 = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
-  const auth = getAuth();
 
-  const handleLanguageSelect = async (languageId: string) => {
+  const handleLanguageSelect = (languageId: string) => {
     setSelectedLanguage(languageId);
+    
     const user = auth.currentUser;
     if (user) {
-      const userRef = ref(getDatabase(), `users/${user.uid}`);
+      const db = getDatabase();
+      const userRef = dbRef(db, `users/${user.uid}`);
+      
       try {
-        // Convert language ID to language code
-        let langCode = 'en';
-        if (languageId === '1') langCode = 'en';
-        if (languageId === '2') langCode = 'de';
-        if (languageId === '3') langCode = 'fr';
-
         await update(userRef, {
-          'model_data': {
-            lang_to_learn: langCode,
-            proficiency_level: 'beginner' // Default until quiz determines level
+          'responses/languageSelection': {
+            selectedLanguage: languageId,
+            languageTitle: languages.find(l => l.id === languageId)?.title,
+            timestamp: new Date().toISOString()
           }
         });
-        
-        router.replace('./quiz');
       } catch (error) {
-        console.error('Error saving language selection:', error);
-        Alert.alert('Error', 'Failed to save language preference');
+        console.error('Error saving language:', error);
       }
     }
   };
@@ -132,48 +123,62 @@ const qn2 = () => {
 
         <TouchableOpacity 
           style={styles.nextButton}
-          onPress={handleNext}
+          onPress={() => {
+            if (selectedLanguage === '1') {
+              router.replace('./English');
+            } else if (selectedLanguage === '2') {
+              router.replace('./German');
+            } else if (selectedLanguage === '3') {
+              router.replace('./Spanish');
+            }
+          }}
         >
           <Text style={styles.nextButtonText}>Next Question</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.skipButton}>
+        {/* <TouchableOpacity style={styles.skipButton}>
           <Text style={styles.skipButtonText}>Skip this question</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </ScrollView>
     </SafeAreaView>
   );
 };
 
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+    justifyContent: 'flex-start', // Content starts from the top
+    paddingTop: 30,
   },
   scrollContent: {
-    flexGrow: 1,
+    flexGrow: 1, // This will make sure the content takes up available space
     padding: 20,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 24,
+    margin: 30,
+    textAlign: 'center',
+    letterSpacing: 1.5,
   },
   optionsContainer: {
     gap: 12,
     marginBottom: 24,
   },
   optionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: 'rgb(255, 255, 255)',
+    borderRadius: 25,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   optionCardSelected: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: 'rgb(255, 225, 225)',
   },
   optionContent: {
     flexDirection: 'row',
@@ -192,6 +197,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 16,
+    fontWeight: '500',
     color: '#000000',
     flex: 1,
   },
@@ -213,32 +219,120 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#000000',
   },
-  skipButton: {
-    paddingVertical: 16,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 'auto',
-  },
-  skipButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
-  },
   nextButton: {
-    paddingVertical: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 15,
     alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: '#F0657A',
+    position: 'absolute',
+    bottom: 20, // Position the button 20px from the bottom
+    left: 20,
+    right: 20,
   },
   nextButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 
 export default qn2;
+
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: '#000000',
+//   },
+//   scrollContent: {
+//     flexGrow: 1,
+//     padding: 20,
+//   },
+//   title: {
+//     fontSize: 28,
+//     fontWeight: 'bold',
+//     color: '#FFFFFF',
+//     marginBottom: 24,
+//   },
+//   optionsContainer: {
+//     gap: 12,
+//     marginBottom: 24,
+//   },
+//   optionCard: {
+//     backgroundColor: '#FFFFFF',
+//     borderRadius: 12,
+//     padding: 16,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'space-between',
+//   },
+//   optionCardSelected: {
+//     backgroundColor: '#F0F0F0',
+//   },
+//   optionContent: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     flex: 1,
+//   },
+  // flagContainer: {
+  //   width: 40,
+  //   height: 40,
+  //   borderRadius: 20,
+  //   backgroundColor: '#F5F5F5',
+  //   alignItems: 'center',
+  //   justifyContent: 'center',
+  //   marginRight: 12,
+  //   overflow: 'hidden',
+  // },
+//   optionText: {
+//     fontSize: 16,
+//     color: '#000000',
+//     flex: 1,
+//   },
+//   radioContainer: {
+//     marginLeft: 12,
+//   },
+//   radioOuter: {
+//     width: 24,
+//     height: 24,
+//     borderRadius: 12,
+//     borderWidth: 2,
+//     borderColor: '#000000',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//   },
+//   radioInner: {
+//     width: 12,
+//     height: 12,
+//     borderRadius: 6,
+//     backgroundColor: '#000000',
+//   },
+//   skipButton: {
+//     paddingVertical: 16,
+//     borderWidth: 1,
+//     borderColor: '#FFFFFF',
+//     borderRadius: 12,
+//     alignItems: 'center',
+//     marginTop: 'auto',
+//   },
+//   skipButtonText: {
+//     color: '#FFFFFF',
+//     fontSize: 16,
+//     fontWeight: '500',
+//   },
+//   nextButton: {
+//     paddingVertical: 16,
+//     borderWidth: 1,
+//     borderColor: '#FFFFFF',
+//     borderRadius: 12,
+//     alignItems: 'center',
+//     marginBottom: 16,
+//   },
+//   nextButtonText: {
+//     color: '#FFFFFF',
+//     fontSize: 16,
+//     fontWeight: '500',
+//   },
+// });

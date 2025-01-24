@@ -50,12 +50,12 @@ const proficiencyLevels: ProficiencyLevel[] = [
 const ProgressBars = ({ level }: { level: number }) => {
   return (
     <View style={styles.progressContainer}>
-      {[1, 2, 3, 4].map((bar) => (
+      {[1, 2, 3, 4,5].map((bar) => (
         <View
           key={bar}
           style={[
             styles.progressBar,
-            { backgroundColor: bar <= level ? '#4B94D8' : '#1f2937' },
+            { backgroundColor: bar <= level ? 'rgb(240, 74, 99)' : 'rgba(240, 74, 99, 0.18)' },
           ]}
         />
       ))}
@@ -163,38 +163,47 @@ const LanguageProficiencyScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111b21',
+    backgroundColor: 'rgb(21, 1, 20)',
   },
   header: {
+// <<<<<<< Updated upstream
+    marginTop:50,
     flexDirection: 'row',
+// =======
+//     flexDirection: 'column',
+// >>>>>>> Stashed changes
     padding: 20,
     alignItems: 'center',
     gap: 12,
   },
   mascot: {
     width: 80,
-    height: 80,
-    resizeMode: 'contain',
+    height: 100,
+    resizeMode: 'cover',
+    borderRadius: 30,
+
   },
   questionBubble: {
     flex: 1,
     backgroundColor: '#1f2937',
     borderRadius: 16,
-    padding: 16,
+    padding: 19,
   },
   questionText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 25,
+
     fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,
     padding: 20,
+
   },
   optionButton: {
     backgroundColor: '#1f2937',
     borderRadius: 12,
-    padding: 16,
+    padding: 28,
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -202,17 +211,20 @@ const styles = StyleSheet.create({
   },
   selectedOption: {
     backgroundColor: '#2a3a4a',
-    borderColor: '#4B94D8',
+    borderColor: 'rgba(240, 74, 99, 0.78)',
+
     borderWidth: 2,
+    // backgroundColor:'rgb(12, 239, 76)',
+
   },
   progressContainer: {
     flexDirection: 'row',
-    gap: 2,
+    gap: 3,
   },
   progressBar: {
-    width: 3,
+    width: 5,
     height: 16,
-    borderRadius: 2,
+    borderRadius: 5,
   },
   optionText: {
     color: '#FFFFFF',
@@ -220,14 +232,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   continueButton: {
-    backgroundColor: '#58cc02',
+    backgroundColor: 'rgb(240, 74, 99)',
     margin: 20,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 15,
+
     alignItems: 'center',
   },
   continueButtonDisabled: {
-    backgroundColor: '#2a3a4a',
+    backgroundColor: 'rgba(255, 255, 255, 0.59)',
   },
   continueButtonText: {
     color: '#FFFFFF',

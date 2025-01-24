@@ -17,9 +17,6 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } f
 import { app, database } from '../firebase/firebase';
 import { getDatabase, ref as dbRef, set, update, get } from 'firebase/database';
 
-
-
-
 const COLORS = {
   primary: '#F0657A', 
   secondary: '#674EA7', 
@@ -625,7 +622,8 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     color: '#F0657A',
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight:'bold',
     textAlign: 'center',
   },
 });
