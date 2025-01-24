@@ -34,6 +34,7 @@
     "experiments": {
       "typedRoutes": true,
       "tsconfigPaths": true
-    }
+    },
+    "newArchEnabled": true
   }
 }

@@ -25,19 +25,19 @@
 //     image: require('@/assets/images/waiter.png'),
 //     question: 'Good evening, everyone! How may I assist you today?',
 //     options: [
-//       { id: 'r1', text: 'Good morning. What’s the time now?', correct: false, audio: 'r1' },
+//       { id: 'r1', text: 'Good morning. What's the time now?', correct: false, audio: 'r1' },
 //       { id: 'r2', text: 'Good evening. Could we see the menu, please?', correct: true, audio: 'r2' },
-//       { id: 'r3', text: 'I don’t need help.', correct: false, audio: 'r3' },
+//       { id: 'r3', text: 'I don't need help.', correct: false, audio: 'r3' },
 //     ],
 //   },
 //   {
 //     id: '2',
 //     heading: 'SCENARIO :  The waiter hands you the menu and is ready to take your order.',
 //     image: require('@/assets/images/waiter.png'),
-//     question: 'Here’s the menu. May I take your order?',
+//     question: 'Here's the menu. May I take your order?',
 //     options: [
 //       { id: 'rr1', text: 'No, thank you. The weather is nice.', correct: false, audio: 'r5' },
-//       { id: 'rr2', text: 'Yes, please. I’ll have a garden salad and a lemonade.', correct: true, audio: 'r4' },
+//       { id: 'rr2', text: 'Yes, please. I'll have a garden salad and a lemonade.', correct: true, audio: 'r4' },
 //       { id: 'rr3', text: 'I want food. Eating', correct: false, audio: 'r6' },
 //     ],
 //   },
@@ -47,7 +47,7 @@
 //     image: require('@/assets/images/waiter.png'),
 //     question: 'The salad includes onions. Would you like them removed?',
 //     options: [
-//       { id: 'rrr1', text: 'Yes, that’s fine. Thank you for asking.', correct: true, audio: 'r7' },
+//       { id: 'rrr1', text: 'Yes, that's fine. Thank you for asking.', correct: true, audio: 'r7' },
 //       { id: 'rrr2', text: 'No, the chair is comfortable.', correct: false, audio: 'r8' },
 //       { id: 'rrr3', text: 'Why are you asking me?', correct: false, audio: 'r9' },
 //     ],
@@ -67,12 +67,12 @@
 //   },
 //   {
 //     id: '5',
-//     heading: 'SCENARIO :  The waiter asks if you’d like to pay the bill.',
+//     heading: 'SCENARIO :  The waiter asks if you'd like to pay the bill.',
 //     image: require('@/assets/images/waiter.png'),
 //     question: 'Would you like the bill now?',
 //     options: [
 //       { id: 'rrrrr1', text: 'Yes, please. Thank you for your service', correct: true, audio: 'r13' },
-//       { id: 'rrrrr2', text: 'No, I don’t like paying money.', correct: false, audio: 'r14' },
+//       { id: 'rrrrr2', text: 'No, I don't like paying money.', correct: false, audio: 'r14' },
 //       { id: 'rrrrr3', text: 'Why are you looking at me?', correct: false, audio: 'r15' },
 //     ],
 //   },
@@ -411,3 +411,9 @@
 //       paddingHorizontal: 20,
 //     },
 //   });
+
+const RestaurantChat = () => {
+  // your component code
+};
+
+export default RestaurantChat;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   Animated,
   Dimensions,
+  BackHandler,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,8 +16,7 @@ import TabNavigator from './TabNavigator';
 import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref, onValue } from 'firebase/database';
-
-
+import { Video, ResizeMode } from 'expo-av';
 
 const { width } = Dimensions.get('window');
 
@@ -115,6 +115,7 @@ const HomeScreen: React.FC = () => {
     leaderboards: false,
     quests: false,
     profile: false,
+    quizResults: false,
   });
   const [unlockedStars, setUnlockedStars] = useState<number>(1);
   const [lastCompletedStar, setLastCompletedStar] = useState<number>(0);
@@ -166,6 +167,12 @@ const HomeScreen: React.FC = () => {
       BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
     }, [])
+  );
+
+  const renderPathNode = (number: number, iconName: string, onPress: () => void) => (
+    <TouchableOpacity style={styles.pathNode} onPress={onPress}>
+      <Icon name={iconName} size={32} color="#FFFFFF" />
+    </TouchableOpacity>
   );
 
   return (
@@ -251,6 +258,73 @@ const HomeScreen: React.FC = () => {
               <Text style={styles.cardText}>
                 Complete 10 more lessons to start competing
               </Text>
+            </ExpandableCard>
+
+            <ExpandableCard
+              title="Quiz Results"
+              isExpanded={expandedCards.quizResults}
+              onToggle={() => toggleCard('quizResults')}
+            >
+              {userData?.quizResponses ? (
+                <View style={styles.quizResultsContainer}>
+                  <Text style={styles.resultTitle}>Your Progress</Text>
+                  
+                  {/* Quiz Results Summary */}
+                  {userData.quizResults && (
+                    <View style={styles.quizSummary}>
+                      <Text style={styles.quizText}>Level: {userData.quizResults.finalLevel}</Text>
+                      {userData.quizResults.details && (
+                        <Text style={styles.quizText}>Accuracy: {userData.quizResults.details.accuracy}</Text>
+                      )}
+                      <Text style={styles.quizText}>Total Correct: {userData.totalCorrect || 0}</Text>
+                      <View style={styles.divider} />
+                    </View>
+                  )}
+
+                  {/* Individual Quiz Progress */}
+                  {userData.quizResponses.q1 && (
+                    <View style={styles.quizItem}>
+                      <Text style={styles.quizText}>
+                        Quiz 1: {userData.quizResponses.q1.completed ? '✅ Completed' : '❌ Incomplete'}
+                      </Text>
+                      <Text style={styles.quizDetails}>
+                        Attempts: {userData.quizResponses.q1.attempts || 0}
+                      </Text>
+                      {userData.quizResponses.q1.completedAt && (
+                        <Text style={styles.completedText}>
+                          Completed: {new Date(userData.quizResponses.q1.completedAt).toLocaleDateString()}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Quiz 2 */}
+                  {userData.quizResponses.q2 && (
+                    <View style={styles.quizItem}>
+                      <Text style={styles.quizText}>Quiz 2: {userData.quizResponses.q2.completed ? '✅ Completed' : '❌ Incomplete'}</Text>
+                      {userData.quizResponses.q2.completedAt && (
+                        <Text style={styles.completedText}>
+                          Completed on: {new Date(userData.quizResponses.q2.completedAt).toLocaleDateString()}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Star Level 2 Quizzes */}
+                  {userData.quizResponses.star2q1 && (
+                    <View style={styles.quizItem}>
+                      <Text style={styles.quizText}>Star 2 Quiz 1: {userData.quizResponses.star2q1.completed ? '✅ Completed' : '❌ Incomplete'}</Text>
+                      {userData.quizResponses.star2q1.completedAt && (
+                        <Text style={styles.completedText}>
+                          Completed on: {new Date(userData.quizResponses.star2q1.completedAt).toLocaleDateString()}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <Text style={styles.cardText}>Complete quizzes to see your results here!</Text>
+              )}
             </ExpandableCard>
 
             <ExpandableCard
@@ -482,6 +556,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+  },
+  quizResultsContainer: {
+    padding: 16,
+    paddingTop: 0,
+  },
+  resultTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  quizItem: {
+    marginBottom: 12,
+  },
+  quizText: {
+    color: '#fff',
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  completedText: {
+    color: '#9ca3af',
+    fontSize: 12,
+  },
+  quizSummary: {
+    backgroundColor: '#2d3748',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  quizDetails: {
+    color: '#9ca3af',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#374151',
+    marginVertical: 8,
   },
 });
 <TabNavigator />

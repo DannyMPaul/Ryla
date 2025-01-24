@@ -14,6 +14,8 @@ import Flag from 'react-native-flags';
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref as dbRef, update } from 'firebase/database';
 
+type RouteType = '/(tabs)/English' | '/(tabs)/German' | '/(tabs)/Spanish';
+
 interface LanguageOption {
   id: string;
   flag: string;
@@ -40,8 +42,9 @@ const languages: LanguageOption[] = [
 
 const qn2 = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
+  const auth = getAuth();
 
-  const handleLanguageSelect = (languageId: string) => {
+  const handleLanguageSelect = async (languageId: string) => {
     setSelectedLanguage(languageId);
     
     const user = auth.currentUser;
