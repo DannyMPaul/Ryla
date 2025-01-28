@@ -134,10 +134,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     marginBottom: 10,
     elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    boxShadow: '0px 2px 3.84px rgba(0, 0, 0, 0.25)',
   },
   image: {
     width: 80,

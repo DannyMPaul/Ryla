@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   ImageBackground,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { getAuth } from 'firebase/auth';
+import { getDatabase, ref, set, get } from 'firebase/database';
 
 interface ClueType {
   number: number;
@@ -24,20 +26,129 @@ interface ClueType {
 const clues: ClueType[] = [
   {
     number: 1,
-    direction: 'down',
-    question: 'Hindu festival of lights',
-    answer: 'DIWALI',
-    length: 6,
+    direction: 'across',
+    question: 'Quelle est ta couleur préférée ?',
+    answer: 'BLEUE',
+    length: 5,
     startX: 0,
     startY: 0,
   },
-  // Add more clues here
+  {
+    number: 2,
+    direction: 'down',
+    question: 'Où habites-tu ?',
+    answer: 'PARIS',
+    length: 5,
+    startX: 0,
+    startY: 0,
+  },
+  {
+    number: 3,
+    direction: 'across',
+    question: 'Quelle heure est-il ?',
+    answer: 'TROIS',
+    length: 5,
+    startX: 2,
+    startY: 2,
+  },
+  {
+    number: 4,
+    direction: 'down',
+    question: 'Quel est ton plat préféré ?',
+    answer: 'RATATOUILLE',
+    length: 11,
+    startX: 4,
+    startY: 1,
+  },
+  {
+    number: 5,
+    direction: 'across',
+    question: "Comment s'appelle ton meilleur ami ?",
+    answer: 'PIERRE',
+    length: 6,
+    startX: 0,
+    startY: 4,
+  },
+  {
+    number: 6,
+    direction: 'down',
+    question: 'Parles-tu d'autres langues ?',
+    answer: 'ANGLAIS',
+    length: 7,
+    startX: 6,
+    startY: 2,
+  },
+  {
+    number: 7,
+    direction: 'across',
+    question: 'Aimes-tu les animaux ?',
+    answer: 'CHIENS',
+    length: 6,
+    startX: 3,
+    startY: 6,
+  },
+  {
+    number: 8,
+    direction: 'down',
+    question: 'Quels sont tes loisirs ?',
+    answer: 'MUSIQUE',
+    length: 7,
+    startX: 8,
+    startY: 3,
+  }
 ];
 
 const CrosswordScreen = () => {
   const [selectedClue, setSelectedClue] = useState<ClueType | null>(null);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [showModal, setShowModal] = useState(false);
+  const [showSolution, setShowSolution] = useState(false);
+  const [completedPuzzles, setCompletedPuzzles] = useState<string[]>([]);
+
+  useEffect(() => {
+    loadUserProgress();
+  }, []);
+
+  const loadUserProgress = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    
+    if (user) {
+      const db = getDatabase();
+      const progressRef = ref(db, `users/${user.uid}/crosswordProgress`);
+      
+      try {
+        const snapshot = await get(progressRef);
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          setAnswers(data.answers || {});
+          setCompletedPuzzles(data.completedPuzzles || []);
+        }
+      } catch (error) {
+        console.error('Error loading progress:', error);
+      }
+    }
+  };
+
+  const saveProgress = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    
+    if (user) {
+      const db = getDatabase();
+      const progressRef = ref(db, `users/${user.uid}/crosswordProgress`);
+      
+      try {
+        await set(progressRef, {
+          answers,
+          completedPuzzles,
+          lastUpdated: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Error saving progress:', error);
+      }
+    }
+  };
 
   const handleSquarePress = (x: number, y: number) => {
     const clue = clues.find(c => c.startX === x && c.startY === y);
@@ -47,23 +158,62 @@ const CrosswordScreen = () => {
     }
   };
 
-  const handleAnswer = (answer: string) => {
+  const handleAnswer = async (answer: string) => {
     if (selectedClue) {
-      setAnswers({
+      const newAnswers = {
         ...answers,
         [`${selectedClue.number}-${selectedClue.direction}`]: answer.toUpperCase(),
-      });
+      };
+      setAnswers(newAnswers);
       setShowModal(false);
+      
+      // Check if puzzle is complete
+      const isComplete = checkPuzzleComplete(newAnswers);
+      if (isComplete) {
+        const puzzleId = new Date().toISOString();
+        setCompletedPuzzles([...completedPuzzles, puzzleId]);
+      }
+      
+      await saveProgress();
     }
+  };
+
+  const checkPuzzleComplete = (currentAnswers: { [key: string]: string }) => {
+    return clues.every(clue => 
+      currentAnswers[`${clue.number}-${clue.direction}`]?.toUpperCase() === clue.answer
+    );
+  };
+
+  const handleNewGame = () => {
+    setAnswers({});
+    setShowSolution(false);
+    setSelectedClue(null);
+    setShowModal(false);
+  };
+
+  const handleShowSolution = () => {
+    const solutionAnswers: { [key: string]: string } = {};
+    clues.forEach(clue => {
+      solutionAnswers[`${clue.number}-${clue.direction}`] = clue.answer;
+    });
+    setAnswers(solutionAnswers);
+    setShowSolution(true);
   };
 
   const renderGrid = () => {
     const grid = [];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 12; i++) {
       const row = [];
-      for (let j = 0; j < 10; j++) {
+      for (let j = 0; j < 12; j++) {
         const isStartingSquare = clues.some(c => c.startX === j && c.startY === i);
         const clue = clues.find(c => c.startX === j && c.startY === i);
+        const isPartOfWord = clues.some(c => {
+          if (c.direction === 'across') {
+            return i === c.startY && j >= c.startX && j < c.startX + c.length;
+          } else {
+            return j === c.startX && i >= c.startY && i < c.startY + c.length;
+          }
+        });
         
         row.push(
           <TouchableOpacity
@@ -71,13 +221,15 @@ const CrosswordScreen = () => {
             style={[
               styles.square,
               isStartingSquare ? styles.startingSquare : null,
+              !isPartOfWord ? styles.blackSquare : null,
             ]}
-            onPress={() => handleSquarePress(j, i)}
+            onPress={() => isPartOfWord ? handleSquarePress(j, i) : null}
+            disabled={!isPartOfWord}
           >
             {isStartingSquare && (
               <Text style={styles.squareNumber}>{clue?.number}</Text>
             )}
-            {answers[`${clue?.number}-${clue?.direction}`]?.[0] && (
+            {answers[`${clue?.number}-${clue?.direction}`] && isStartingSquare && (
               <Text style={styles.answerText}>
                 {answers[`${clue?.number}-${clue?.direction}`][0]}
               </Text>
@@ -94,6 +246,51 @@ const CrosswordScreen = () => {
     return grid;
   };
 
+  const renderCluesAndAnswers = () => (
+    <View style={styles.cluesContainer}>
+      <View style={styles.clueColumn}>
+        <Text style={styles.clueColumnTitle}>Across</Text>
+        {clues
+          .filter(clue => clue.direction === 'across')
+          .map(clue => (
+            <View key={`across-${clue.number}`} style={styles.clueItem}>
+              <Text style={styles.clueNumber}>{clue.number}.</Text>
+              <Text style={styles.clueText}>{clue.question}</Text>
+              {showSolution && (
+                <Text style={styles.solutionText}>{clue.answer}</Text>
+              )}
+            </View>
+          ))}
+      </View>
+
+      <View style={styles.clueColumn}>
+        <Text style={styles.clueColumnTitle}>Down</Text>
+        {clues
+          .filter(clue => clue.direction === 'down')
+          .map(clue => (
+            <View key={`down-${clue.number}`} style={styles.clueItem}>
+              <Text style={styles.clueNumber}>{clue.number}.</Text>
+              <Text style={styles.clueText}>{clue.question}</Text>
+              {showSolution && (
+                <Text style={styles.solutionText}>{clue.answer}</Text>
+              )}
+            </View>
+          ))}
+      </View>
+    </View>
+  );
+
+  const renderCompletedPuzzles = () => (
+    <View style={styles.completedContainer}>
+      <Text style={styles.completedTitle}>Completed Puzzles</Text>
+      {completedPuzzles.map((puzzleId, index) => (
+        <Text key={puzzleId} style={styles.completedText}>
+          Puzzle {index + 1} - {new Date(puzzleId).toLocaleDateString()}
+        </Text>
+      ))}
+    </View>
+  );
+
   return (
     <ScrollView style={styles.container}>
       <ImageBackground
@@ -101,7 +298,7 @@ const CrosswordScreen = () => {
         style={styles.background}
       >
         <View style={styles.content}>
-          <Text style={styles.title}>Crossword Puzzle</Text>
+          <Text style={styles.title}>French Crossword Puzzle</Text>
           
           <View style={styles.instructions}>
             <Text style={styles.instructionText}>
@@ -111,23 +308,29 @@ const CrosswordScreen = () => {
             </Text>
           </View>
 
-          <TouchableOpacity style={styles.newGameButton}>
+          <TouchableOpacity 
+            style={styles.newGameButton}
+            onPress={handleNewGame}
+          >
             <Icon name="refresh-cw" size={20} color="#FFFFFF" />
             <Text style={styles.buttonText}>New game</Text>
           </TouchableOpacity>
 
           <View style={styles.gridContainer}>{renderGrid()}</View>
 
+          {renderCluesAndAnswers()}
+
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={handleShowSolution}
+            >
               <Icon name="eye" size={20} color="#FFFFFF" />
               <Text style={styles.buttonText}>Show solution</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Icon name="rotate-ccw" size={20} color="#FFFFFF" />
-              <Text style={styles.buttonText}>Retry</Text>
-            </TouchableOpacity>
           </View>
+
+          {completedPuzzles.length > 0 && renderCompletedPuzzles()}
         </View>
       </ImageBackground>
 
@@ -219,8 +422,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   square: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#000000',
@@ -238,7 +441,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   answerText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#000000',
   },
@@ -300,6 +503,79 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '500',
+  },
+  blackSquare: {
+    backgroundColor: '#000000',
+  },
+  clueList: {
+    marginTop: 20,
+    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 8,
+  },
+  clueText: {
+    fontSize: 14,
+    color: '#000000',
+    marginBottom: 4,
+  },
+  clueSection: {
+    marginBottom: 16,
+  },
+  clueSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#000000',
+  },
+  completedContainer: {
+    marginTop: 20,
+    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 8,
+  },
+  completedTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 12,
+  },
+  completedText: {
+    fontSize: 14,
+    color: '#000000',
+    marginBottom: 8,
+  },
+  solutionText: {
+    fontSize: 14,
+    color: '#58cc02',
+    fontWeight: 'bold',
+  },
+  cluesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  clueColumn: {
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  clueColumnTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  clueItem: {
+    marginBottom: 12,
+  },
+  clueNumber: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 4,
   },
 });
 

@@ -13,5 +13,5 @@ const auth = initializeAuth(app, {
 });
 const database = getDatabase(app);
 
-export { app, auth, database };
+export { auth, database };
 export default app; 

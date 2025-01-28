@@ -15,8 +15,11 @@ import { router } from 'expo-router';
 import TabNavigator from './TabNavigator';
 import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
-import { getDatabase, ref, onValue } from 'firebase/database';
-import { Video, ResizeMode } from 'expo-av';
+import { getDatabase, ref, onValue, update, get } from 'firebase/database';
+import { Video } from 'expo-av';
+import { ResizeMode } from 'expo-av';
+
+
 
 const { width } = Dimensions.get('window');
 
@@ -110,12 +113,11 @@ interface UserProgress {
 }
 
 const HomeScreen: React.FC = () => {
-  const [userData, setUserData] = useState<any>(null);
+  const [userData, setUserData] = useState<UserProgress | null>(null);
   const [expandedCards, setExpandedCards] = useState({
     leaderboards: false,
     quests: false,
     profile: false,
-    quizResults: false,
   });
   const [unlockedStars, setUnlockedStars] = useState<number>(1);
   const [lastCompletedStar, setLastCompletedStar] = useState<number>(0);
@@ -132,10 +134,76 @@ const HomeScreen: React.FC = () => {
       const db = getDatabase();
       const userRef = ref(db, `users/${user.uid}`);
       
+      // Load initial state
+      const loadUserProgress = async () => {
+        const snapshot = await get(userRef);
+        const data = snapshot.val();
+        if (data) {
+          setUserData(data);
+          const completed = {
+            q1: data.quizResponses?.q1?.completed || false,
+            q2: data.quizResponses?.q2?.completed || false,
+            star2q1: data.quizResponses?.star2q1?.completed || false,
+            star2q2: data.quizResponses?.star2q2?.completed || false,
+          };
+          setCompletedQuestions(completed);
+          setUnlockedStars(data.unlockedStars || 1);
+          setLastCompletedStar(data.lastCompletedStar || 0);
+        }
+      };
+      
+      loadUserProgress();
+      
+      // Listen for real-time updates
       const unsubscribe = onValue(userRef, (snapshot) => {
         const data = snapshot.val();
-        setUserData(data);
+        if (data) {
+          setUserData(data);
+          const completed = {
+            q1: data.quizResponses?.q1?.completed || false,
+            q2: data.quizResponses?.q2?.completed || false,
+            star2q1: data.quizResponses?.star2q1?.completed || false,
+            star2q2: data.quizResponses?.star2q2?.completed || false,
+          };
+          setCompletedQuestions(completed);
+          
+          const previousUnlockedStars = unlockedStars;
+          const newUnlockedStars = data.unlockedStars ?? 1;
+          setUnlockedStars(newUnlockedStars);
+          setLastCompletedStar(data.lastCompletedStar || 0);
+          
+          if (newUnlockedStars > previousUnlockedStars) {
+            setTimeout(animateStarUnlock, 500);
+          }
+        }
       });
+
+      // Check if new star was just unlocked
+      if (user) {
+        onValue(userRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data?.unlockedStars > data?.lastViewedStar) {
+            setShowUnlockAnimation(true);
+            Animated.sequence([
+              Animated.timing(unlockScale, {
+                toValue: 1.2,
+                duration: 300,
+                useNativeDriver: true
+              }),
+              Animated.timing(unlockScale, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true
+              })
+            ]).start();
+            
+            // Update lastViewedStar
+            update(userRef, {
+              lastViewedStar: data.unlockedStars
+            });
+          }
+        });
+      }
 
       return () => unsubscribe();
     }
@@ -157,6 +225,92 @@ const HomeScreen: React.FC = () => {
     }));
   };
 
+  const animateStarUnlock = () => {
+    Animated.sequence([
+      Animated.timing(starOpacity, {
+        toValue: 0.3,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.parallel([
+        Animated.timing(starScale, {
+          toValue: 1.5,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(starOpacity, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.spring(starScale, {
+        toValue: 1,
+        friction: 3,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  // Update the renderPathNode to show proper progress
+  const renderPathNode = (level: number, icon: string, onPress: () => void) => {
+    const isUnlocked = level <= unlockedStars;
+    const isCompleted = level === 1 ? 
+      (completedQuestions.q1 && completedQuestions.q2) : 
+      level === 2 ? 
+      (completedQuestions.star2q1 && completedQuestions.star2q2) : 
+      false;
+    const isNextToUnlock = level === unlockedStars + 1;
+    
+    // Determine which route to navigate to based on progress
+    const handlePress = () => {
+      if (!isUnlocked) return;
+      
+      switch(level) {
+        case 1:
+          if (!completedQuestions.q1) router.replace('./q1');
+          else if (!completedQuestions.q2) router.replace('./q2');
+          break;
+        case 2:
+          if (!completedQuestions.star2q1) router.replace('./star2q1');
+          else if (!completedQuestions.star2q2) router.replace('./star2q2');
+          break;
+        default:
+          onPress();
+      }
+    };
+    
+    return (
+      <TouchableOpacity 
+        onPress={handlePress}
+        disabled={!isUnlocked}
+      >
+        <Animated.View
+          style={[
+            styles.pathNode,
+            isCompleted && styles.completedNode,
+            isNextToUnlock && {
+              transform: [{ scale: starScale }],
+              opacity: starOpacity,
+            },
+          ]}
+        >
+          <Icon 
+            name={isCompleted ? "star" : icon} 
+            size={32} 
+            color={isCompleted ? "#58cc02" : isUnlocked ? "#58cc02" : "#666"} 
+          />
+          {!isUnlocked && (
+            <View style={styles.lockIconContainer}>
+              <Icon name="lock" size={16} color="#fff" />
+            </View>
+          )}
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
+
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {
@@ -169,52 +323,39 @@ const HomeScreen: React.FC = () => {
     }, [])
   );
 
-  const renderPathNode = (number: number, iconName: string, onPress: () => void) => (
-    <TouchableOpacity style={styles.pathNode} onPress={onPress}>
-      <Icon name={iconName} size={32} color="#FFFFFF" />
-    </TouchableOpacity>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* Header with Quiz Results */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Icon name="arrow-left" size={24} color="#fff" />
           <View style={styles.headerTextContainer}>
-            <Text style={styles.sectionTitle}></Text>
-            <Text style={styles.lessonTitle}>Form basic sentences</Text>
-          </View>
-          <View style={styles.statsContainer}>
-            <Icon name="flag" size={20} color="#fff" />
-            <Text style={styles.statsText}>0</Text>
-            <Icon name="diamond" size={20} color="#fff" />
-            <Text style={styles.statsText}>500</Text>
-            <Icon name="heart" size={20} color="#fff" />
-            <Text style={styles.statsText}>5</Text>
+            <Text style={styles.welcomeText}>
+              Welcome, {userData?.name || 'Learner'}!
+            </Text>
+            {userData?.quizResults && (
+              <View style={styles.quizResultsContainer}>
+                <Text style={styles.levelText}>
+                  Level: {userData.quizResults.finalLevel}
+                </Text>
+                <Text style={styles.accuracyText}>
+                  Accuracy: {userData.quizResults.details?.accuracy || '0%'}
+                </Text>
+                <Text style={styles.motivationalText}>
+                  {getMotivationalQuote(userData.quizResults.finalLevel)}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
 
-
       <ScrollView style={styles.scrollView}>
-        
-       <Video
-              source={require('@/assets/videos/bg4.mp4')}
-              style={styles.backgroundVideo}
-              resizeMode={ResizeMode.STRETCH}
-              shouldPlay
-              isLooping
-              isMuted
-            />
         <View style={styles.content}>
           {/* Learning Path */}
           <View style={styles.learningPath}>
             <TouchableOpacity 
               style={styles.startButton} 
-              onPress={() => {
-                router.replace('./q1');
-              }}
+              onPress={() => router.replace('./q1')}
             >
               <Text style={styles.startButtonText}>START</Text>
             </TouchableOpacity>
@@ -233,7 +374,7 @@ const HomeScreen: React.FC = () => {
                 <Icon 
                   name="star" 
                   size={40} 
-                  color={userData?.unlockedStars >= 2 ? "#FFD700" : "#666666"}
+                  color={(userData?.unlockedStars ?? 0) >= 2 ? "#FFD700" : "#666666"}
                 />
               </TouchableOpacity>
             </Animated.View>
@@ -258,73 +399,6 @@ const HomeScreen: React.FC = () => {
               <Text style={styles.cardText}>
                 Complete 10 more lessons to start competing
               </Text>
-            </ExpandableCard>
-
-            <ExpandableCard
-              title="Quiz Results"
-              isExpanded={expandedCards.quizResults}
-              onToggle={() => toggleCard('quizResults')}
-            >
-              {userData?.quizResponses ? (
-                <View style={styles.quizResultsContainer}>
-                  <Text style={styles.resultTitle}>Your Progress</Text>
-                  
-                  {/* Quiz Results Summary */}
-                  {userData.quizResults && (
-                    <View style={styles.quizSummary}>
-                      <Text style={styles.quizText}>Level: {userData.quizResults.finalLevel}</Text>
-                      {userData.quizResults.details && (
-                        <Text style={styles.quizText}>Accuracy: {userData.quizResults.details.accuracy}</Text>
-                      )}
-                      <Text style={styles.quizText}>Total Correct: {userData.totalCorrect || 0}</Text>
-                      <View style={styles.divider} />
-                    </View>
-                  )}
-
-                  {/* Individual Quiz Progress */}
-                  {userData.quizResponses.q1 && (
-                    <View style={styles.quizItem}>
-                      <Text style={styles.quizText}>
-                        Quiz 1: {userData.quizResponses.q1.completed ? '✅ Completed' : '❌ Incomplete'}
-                      </Text>
-                      <Text style={styles.quizDetails}>
-                        Attempts: {userData.quizResponses.q1.attempts || 0}
-                      </Text>
-                      {userData.quizResponses.q1.completedAt && (
-                        <Text style={styles.completedText}>
-                          Completed: {new Date(userData.quizResponses.q1.completedAt).toLocaleDateString()}
-                        </Text>
-                      )}
-                    </View>
-                  )}
-
-                  {/* Quiz 2 */}
-                  {userData.quizResponses.q2 && (
-                    <View style={styles.quizItem}>
-                      <Text style={styles.quizText}>Quiz 2: {userData.quizResponses.q2.completed ? '✅ Completed' : '❌ Incomplete'}</Text>
-                      {userData.quizResponses.q2.completedAt && (
-                        <Text style={styles.completedText}>
-                          Completed on: {new Date(userData.quizResponses.q2.completedAt).toLocaleDateString()}
-                        </Text>
-                      )}
-                    </View>
-                  )}
-
-                  {/* Star Level 2 Quizzes */}
-                  {userData.quizResponses.star2q1 && (
-                    <View style={styles.quizItem}>
-                      <Text style={styles.quizText}>Star 2 Quiz 1: {userData.quizResponses.star2q1.completed ? '✅ Completed' : '❌ Incomplete'}</Text>
-                      {userData.quizResponses.star2q1.completedAt && (
-                        <Text style={styles.completedText}>
-                          Completed on: {new Date(userData.quizResponses.star2q1.completedAt).toLocaleDateString()}
-                        </Text>
-                      )}
-                    </View>
-                  )}
-                </View>
-              ) : (
-                <Text style={styles.cardText}>Complete quizzes to see your results here!</Text>
-              )}
             </ExpandableCard>
 
             <ExpandableCard
@@ -372,7 +446,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#111b21',
   },
   header: {
-    backgroundColor: 'rgb(238, 82, 105)',
+    backgroundColor: '#F0657A',
     padding: 16,
   },
   headerContent: {
@@ -529,13 +603,34 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-
-  backgroundVideo: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
+  welcomeText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  quizResultsContainer: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  levelText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  accuracyText: {
+    color: '#58cc02',
+    fontSize: 16,
+    marginTop: 4,
+  },
+  motivationalText: {
+    color: '#fff',
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginTop: 8,
+    opacity: 0.9,
   },
   unlockedNode: {
     backgroundColor: '#1f2937',
@@ -556,44 +651,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-  },
-  quizResultsContainer: {
-    padding: 16,
-    paddingTop: 0,
-  },
-  resultTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  quizItem: {
-    marginBottom: 12,
-  },
-  quizText: {
-    color: '#fff',
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  completedText: {
-    color: '#9ca3af',
-    fontSize: 12,
-  },
-  quizSummary: {
-    backgroundColor: '#2d3748',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  quizDetails: {
-    color: '#9ca3af',
-    fontSize: 14,
-    marginTop: 4,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#374151',
-    marginVertical: 8,
   },
 });
 <TabNavigator />
