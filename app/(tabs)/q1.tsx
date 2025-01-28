@@ -35,19 +35,19 @@ const QuizScreen = () => {
     {
       id: '1',
       label: 'woman',
-      image: require('../../assets/images/download.jpg'),
+      image: require('../../assets/images/women.jpg'),
       isCorrect: false,
     },
     {
       id: '2',
       label: 'boy',
-      image: require('../../assets/images/gettyimages-1352096257-612x612.jpg'),
+      image: require('../../assets/images/boy.jpg'),
       isCorrect: true,
     },
     {
       id: '3',
       label: 'man',
-      image: require('../../assets/images/gettyimages-1352096257-612x612.jpg'),
+      image: require('../../assets/images/man.jpg'),
       isCorrect: false,
     },
   ];
@@ -139,6 +139,7 @@ const QuizScreen = () => {
   };
 
   return (
+
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
@@ -243,12 +244,13 @@ const QuizScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111b21',
+    backgroundColor: 'rgb(15, 0, 25)',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
+    paddingTop: 35,
     gap: 12,
   },
   closeButton: {
@@ -288,7 +290,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   newWordText: {
-    color: '#A56EFF',
+    color: 'rgba(127, 17, 224, 1)',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -301,30 +303,30 @@ const styles = StyleSheet.create({
   },
   optionsContainer: {
     width: '100%',
-    gap: 16,
+    gap: 18,
   },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1f2937',
-    borderRadius: 12,
+    backgroundColor: 'rgba(47, 13, 78, 0.5)',
+    borderRadius: 32,
     padding: 16,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   selectedCard: {
-    borderColor: '#58cc02',
-    backgroundColor: '#2a3a4a',
+    borderColor: 'rgb(240, 74, 99)',
+    backgroundColor: 'rgb(12, 1, 22)',
   },
   optionImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 90,
+    height: 90,
+    borderRadius: 20,
     marginRight: 16,
   },
   optionLabel: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 22,
     flex: 1,
   },
   optionNumber: {
@@ -339,55 +341,93 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
   },
-  footer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 16,
-  },
+
+
+
+
+  // footer: {
+  //   flexDirection: 'row',
+  //   padding: 16,
+  //   gap: 16,
+  // },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingBottom: 16,
+      gap: 5, 
+    },
+
+
+
   skipButton: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
+    paddingVertical: 18, // Increased for easier touch
+    paddingHorizontal: 16,
+    borderRadius: 22,
+    borderWidth: 3,
     borderColor: '#1f2937',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 8, // Adds space between buttons
   },
   skipButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 20, // Slightly larger for better readability
     fontWeight: 'bold',
   },
+  
   checkButton: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
+    paddingVertical: 18, // Increased for touch ease
+    paddingHorizontal: 16,
+    borderRadius: 15,
     backgroundColor: '#58cc02',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 8,
   },
   checkButtonDisabled: {
     backgroundColor: '#2a3a4a',
   },
   checkButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 20, 
     fontWeight: 'bold',
   },
+  
   nextButton: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#58cc02',
-    borderRadius: 10,
+    paddingVertical: 18, // Increased padding for touch
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(120, 16, 210, 0.83)',
+    borderRadius: 25,
     marginHorizontal: 8,
+    borderWidth: 5,
+    borderColor: 'rgba(127, 17, 224, 0.64)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   nextButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 22, // Larger font for readability
     fontWeight: 'bold',
     textAlign: 'center',
   },
+  
+
   nextButtonDisabled: {
-    backgroundColor: '#334155',
+    paddingVertical: 18, // Ensure the padding matches the active button for consistent size
+    paddingHorizontal: 16,
+    borderRadius: 15,
+    marginHorizontal: 8,
+    borderWidth: 5,
+    borderColor: 'rgba(127, 17, 224, 0.64)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

@@ -22,3 +22,6 @@ expo-env.d.ts
 
 # Ignore Learn_With_AI folder and all its contents
 Learn_With_AI/
+
+
+package-lock.json/

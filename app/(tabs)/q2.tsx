@@ -271,16 +271,216 @@ const QuizScreen = () => {
   );
 };
 
+
+
 // Same styles as q1.tsx
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: '#111b21',
+//   },
+//   header: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     padding: 16,
+//     gap: 12,
+//   },
+//   closeButton: {
+//     padding: 8,
+//   },
+//   progressBar: {
+//     flex: 1,
+//     height: 8,
+//     backgroundColor: '#1f2937',
+//     borderRadius: 4,
+//   },
+//   progressFill: {
+//     width: '60%',
+//     height: '100%',
+//     backgroundColor: '#58cc02',
+//     borderRadius: 4,
+//   },
+//   heartsContainer: {
+//     flexDirection: 'row',
+//     gap: 5,
+//   },
+//   heartsText: {
+//     color: '#FFFFFF',
+//     fontSize: 18,
+//     fontWeight: 'bold',
+//   },
+//   content: {
+//     flex: 1,
+//     padding: 20,
+//     alignItems: 'center',
+//   },
+//   newWordBadge: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 8,
+//     marginBottom: 16,
+//   },
+//   newWordText: {
+//     color: '#A56EFF',
+//     fontSize: 16,
+//     fontWeight: 'bold',
+//   },
+//   question: {
+//     color: '#FFFFFF',
+//     fontSize: 24,
+//     fontWeight: 'bold',
+//     textAlign: 'center',
+//     marginBottom: 32,
+//   },
+//   optionsContainer: {
+//     width: '100%',
+//     gap: 16,
+//   },
+//   optionCard: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: '#1f2937',
+//     borderRadius: 12,
+//     padding: 16,
+//     borderWidth: 2,
+//     borderColor: 'transparent',
+//   },
+//   selectedCard: {
+//     borderColor: '#58cc02',
+//     backgroundColor: '#2a3a4a',
+//   },
+//   optionImage: {
+//     width: 60,
+//     height: 60,
+//     borderRadius: 30,
+//     marginRight: 16,
+//   },
+//   optionLabel: {
+//     color: '#FFFFFF',
+//     fontSize: 18,
+//     flex: 1,
+//   },
+//   optionNumber: {
+//     width: 24,
+//     height: 24,
+//     borderRadius: 12,
+//     backgroundColor: '#2a3a4a',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//   },
+//   optionNumberText: {
+//     color: '#FFFFFF',
+//     fontSize: 14,
+//   },
+//   footer: {
+//     flexDirection: 'row',
+//     padding: 16,
+//     gap: 16,
+//   },
+//   skipButton: {
+//     flex: 1,
+//     padding: 16,
+//     borderRadius: 12,
+//     borderWidth: 2,
+//     borderColor: '#1f2937',
+//     alignItems: 'center',
+//   },
+//   skipButtonText: {
+//     color: '#FFFFFF',
+//     fontSize: 16,
+//     fontWeight: 'bold',
+//   },
+//   checkButton: {
+//     flex: 1,
+//     padding: 16,
+//     borderRadius: 12,
+//     backgroundColor: '#58cc02',
+//     alignItems: 'center',
+//   },
+//   checkButtonDisabled: {
+//     backgroundColor: '#2a3a4a',
+//   },
+//   checkButtonText: {
+//     color: '#FFFFFF',
+//     fontSize: 16,
+//     fontWeight: 'bold',
+//   },
+//   nextButton: {
+//     backgroundColor: '#58cc02',
+//     paddingVertical: 16,
+//     paddingHorizontal: 32,
+//     borderRadius: 12,
+//     alignItems: 'center',
+//   },
+//   nextButtonDisabled: {
+//     backgroundColor: '#2a3a4a',
+//   },
+//   nextButtonText: {
+//     color: '#FFFFFF',
+//     fontSize: 16,
+//     fontWeight: '600',
+//   },
+//   modalOverlay: {
+//     flex: 1,
+//     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   modalContent: {
+//     backgroundColor: 'white',
+//     borderRadius: 20,
+//     padding: 30,
+//     alignItems: 'center',
+//     shadowColor: '#000',
+//     shadowOffset: {
+//       width: 0,
+//       height: 2
+//     },
+//     shadowOpacity: 0.25,
+//     shadowRadius: 4,
+//     elevation: 5,
+//     width: '80%',
+//   },
+//   modalTitle: {
+//     fontSize: 24,
+//     fontWeight: 'bold',
+//     marginVertical: 15,
+//   },
+//   modalText: {
+//     fontSize: 16,
+//     textAlign: 'center',
+//     marginBottom: 20,
+//   },
+//   modalButton: {
+//     backgroundColor: '#58cc02',
+//     paddingVertical: 12,
+//     paddingHorizontal: 30,
+//     borderRadius: 30,
+//   },
+//   modalButtonText: {
+//     color: 'white',
+//     fontSize: 16,
+//     fontWeight: 'bold',
+//   },
+//   errorText: {
+//     color: '#ff4b4b',
+//     textAlign: 'center',
+//     marginVertical: 10,
+//   }
+// });
+
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111b21',
+    backgroundColor: 'rgb(15, 0, 25)',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
+    paddingTop: 45,
     gap: 12,
   },
   closeButton: {
@@ -300,7 +500,8 @@ const styles = StyleSheet.create({
   },
   heartsContainer: {
     flexDirection: 'row',
-    gap: 5,
+    alignItems: 'center',
+    gap: 4,
   },
   heartsText: {
     color: '#FFFFFF',
@@ -319,7 +520,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   newWordText: {
-    color: '#A56EFF',
+    color: 'rgba(127, 17, 224, 1)',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -332,30 +533,30 @@ const styles = StyleSheet.create({
   },
   optionsContainer: {
     width: '100%',
-    gap: 16,
+    gap: 18,
   },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1f2937',
-    borderRadius: 12,
+    backgroundColor: 'rgba(47, 13, 78, 0.5)',
+    borderRadius: 32,
     padding: 16,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   selectedCard: {
-    borderColor: '#58cc02',
-    backgroundColor: '#2a3a4a',
+    borderColor: 'rgb(240, 74, 99)',
+    backgroundColor: 'rgb(12, 1, 22)',
   },
   optionImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 90,
+    height: 90,
+    borderRadius: 20,
     marginRight: 16,
   },
   optionLabel: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 22,
     flex: 1,
   },
   optionNumber: {
@@ -370,54 +571,93 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
   },
-  footer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 16,
-  },
+
+
+
+
+  // footer: {
+  //   flexDirection: 'row',
+  //   padding: 16,
+  //   gap: 16,
+  // },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingBottom: 16,
+      gap: 5, 
+    },
+
+
+
   skipButton: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
+    paddingVertical: 18, // Increased for easier touch
+    paddingHorizontal: 16,
+    borderRadius: 22,
+    borderWidth: 3,
     borderColor: '#1f2937',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 8, // Adds space between buttons
   },
   skipButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 20, // Slightly larger for better readability
     fontWeight: 'bold',
   },
+  
   checkButton: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
+    paddingVertical: 18, // Increased for touch ease
+    paddingHorizontal: 16,
+    borderRadius: 15,
     backgroundColor: '#58cc02',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 8,
   },
   checkButtonDisabled: {
     backgroundColor: '#2a3a4a',
   },
   checkButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 20, // Slightly larger text
     fontWeight: 'bold',
   },
+  
   nextButton: {
-    backgroundColor: '#58cc02',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    flex: 1,
+    paddingVertical: 18, // Increased padding for touch
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(127, 17, 224, 1)',
     borderRadius: 12,
+    marginHorizontal: 8,
+    borderWidth: 5,
+    borderColor: 'rgba(127, 17, 224, 0.64)',
     alignItems: 'center',
-  },
-  nextButtonDisabled: {
-    backgroundColor: '#2a3a4a',
+    justifyContent: 'center',
   },
   nextButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 22, // Larger font for readability
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
+  
+
+  nextButtonDisabled: {
+    paddingVertical: 18, // Ensure the padding matches the active button for consistent size
+    paddingHorizontal: 16,
+    borderRadius: 15,
+    marginHorizontal: 8,
+    borderWidth: 5,
+    borderColor: 'rgba(127, 17, 224, 0.64)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -465,6 +705,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 10,
   }
+
 });
+
 
 export default QuizScreen;

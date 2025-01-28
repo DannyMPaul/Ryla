@@ -277,11 +277,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
 
   },
-  // selectedOption: {
-  //   backgroundColor: '#2a3a4a',
-  //   borderColor: '#4B94D8',
-  //   borderWidth: 2,
-  // },
+  
   selectedOption: {
     backgroundColor: '#333333',  // Darker background for selected options
     borderColor: '#F04A63',  // Accent color for selected options
@@ -357,70 +353,5 @@ const styles = StyleSheet.create({
   },
 });
 
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#111b21',
-//     padding: 20,
-//   },
-//   title: {
-//     fontSize: 20,
-//     fontWeight: 'bold',
-//     color: '#FFFFFF',
-//     margin: 20,
-//     textAlign: 'center',
-//   },
-//   question: {
-//     fontSize: 18,
-//     color: '#FFFFFF',
-//     marginTop:10,
-//     marginBottom: 20,
-//     marginLeft:10,
-//   },
-//   scrollView: {
-//     flex: 1,
-//     marginBottom: 20,
-//   },
-//   optionButton: {
-//     backgroundColor: '#1f2937',
-//     borderRadius: 12,
-//     padding: 16,
-//     marginBottom: 12,
-//   },
-//   selectedOption: {
-//     backgroundColor: '#2a3a4a',
-//     borderColor: '#4B94D8',
-//     borderWidth: 2,
-//   },
-//   optionText: {
-//     color: '#FFFFFF',
-//     fontSize: 16,
-//   },
-//   continueButton: {
-//     backgroundColor: '#58cc02',
-//     padding: 16,
-//     borderRadius: 12,
-//     alignItems: 'center',
-//   },
-//   continueButtonDisabled: {
-//     backgroundColor: '#2a3a4a',
-//   },
-//   continueButtonText: {
-//     color: '#FFFFFF',
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//   },
-//   resultContainer: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   resultText: {
-//     fontSize: 24,
-//     fontWeight: 'bold',
-//     color: '#FFFFFF',
-//     marginBottom: 20,
-//   },
-// });
 
 export default Quiz;
