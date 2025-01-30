@@ -17,36 +17,37 @@ interface GoalOption {
 }
 
 const goals: GoalOption[] = [
-  {
-    id: '1',
-    icon: 'briefcase',
-    title: 'Career and business',
-  },
-  {
-    id: '2',
-    icon: 'smile',
-    title: 'Lessons for kids',
-  },
-  {
-    id: '3',
-    icon: 'edit-3',
-    title: 'Exams and course work',
-  },
-  {
-    id: '4',
-    icon: 'globe',
-    title: 'Culture, travel and hobby',
-  },
-  {
-    id: '5',
-    icon: 'book',
-    title: 'I need it for school',
-  },
-  {
-    id: '6',
-    icon: 'book',
-    title: 'Other',
-  },
+    {
+      id: '1',
+      icon: 'briefcase',
+      title: 'For work or business',
+    },
+    {
+      id: '2',
+      icon: 'globe',
+      title: 'For travel or cultural exploration',
+    },
+    {
+      id: '3',
+      icon: 'edit-3',
+      title: 'For studies or academic purposes',
+    },
+    {
+      id: '4',
+      icon: 'message-circle',
+      title: 'For personal growth or fun',
+    },
+    {
+      id: '5',
+      icon: 'users',
+      title: 'To connect with family or friends',
+    },
+    {
+      id: '6',
+      icon: 'help-circle',
+      title: 'Other',
+    },
+  
 ];
 
 const GoalSelectionScreen = () => {
@@ -91,16 +92,12 @@ const GoalSelectionScreen = () => {
         <TouchableOpacity 
           style={styles.nextButton}
           onPress={() => {
-            router.replace('./qn2');
+            router.replace('/qn2');
           }}
         >
           <Text style={styles.nextButtonText}>Next Question</Text>
         </TouchableOpacity>
         
-
-        {/* <TouchableOpacity style={styles.skipButton}>
-          <Text style={styles.skipButtonText}>Skip this question</Text>
-        </TouchableOpacity> */}
       </ScrollView>
     </SafeAreaView>
   );
@@ -181,35 +178,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   
-//   skipButton: {
-//     padding: 12,
-//     borderWidth: 1,
-//     borderColor: '#FFFFFF',
-//     borderRadius: 15,
-//     alignItems: 'center',
-//     marginTop: 'auto',
-//     // backgroundColor: 'rgba(255, 0, 234, 0.76)'
-//   },
-//   skipButtonText: {
-//     color: '#FFFFFF',
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//   },
-//   nextButton:{
-//     padding: 12,
-//     borderWidth: 1,
-//     borderColor: '#FFFFFF',
-//     borderRadius: 15,
-//     alignItems: 'center',
-//     marginTop: 'auto',
-//     backgroundColor:'#F0657A',
-//   },
-//   nextButtonText:{
-//     color: '#FFFFFF',
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//   }
-// });
+
   // Button styles:
   skipButton: {
     padding: 12,
@@ -262,101 +231,3 @@ export default GoalSelectionScreen;
 
 
 
-//old style
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#000000',
-//   },
-//   scrollContent: {
-//     flexGrow: 1,
-//     padding: 20,
-//   },
-//   title: {
-//     fontSize: 28,
-//     fontWeight: 'bold',
-//     color: '#FFFFFF',
-//     marginBottom: 24,
-//   },
-//   optionsContainer: {
-//     gap: 12,
-//     marginBottom: 24,
-//   },
-//   optionCard: {
-//     backgroundColor: '#FFFFFF',
-//     borderRadius: 12,
-//     padding: 16,
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'space-between',
-//   },
-//   optionCardSelected: {
-//     backgroundColor: '#F0F0F0',
-//   },
-//   optionContent: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     flex: 1,
-//   },
-  // iconContainer: {
-  //   width: 40,
-  //   height: 40,
-  //   borderRadius: 20,
-  //   backgroundColor: '#F5F5F5',
-  //   alignItems: 'center',
-  //   justifyContent: 'center',
-  //   marginRight: 12,
-  // },
-//   optionText: {
-//     fontSize: 16,
-//     color: '#000000',
-//     flex: 1,
-//   },
-//   radioContainer: {
-//     marginLeft: 12,
-//   },
-//   radioOuter: {
-//     width: 24,
-//     height: 24,
-//     borderRadius: 12,
-//     borderWidth: 2,
-//     borderColor: '#000000',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-//   radioInner: {
-//     width: 12,
-//     height: 12,
-//     borderRadius: 6,
-//     backgroundColor: '#000000',
-//   },
-//   skipButton: {
-//     paddingVertical: 16,
-//     borderWidth: 1,
-//     borderColor: '#FFFFFF',
-//     borderRadius: 12,
-//     alignItems: 'center',
-//     marginTop: 'auto',
-//   },
-//   skipButtonText: {
-//     color: '#FFFFFF',
-//     fontSize: 16,
-//     fontWeight: '500',
-//   },
-//   nextButton:{
-//     paddingVertical: 5,
-//     borderWidth: 1,
-//     borderColor: '#FFFFFF',
-//     borderRadius: 12,
-//     alignItems: 'center',
-//     // marginTop: 'auto',
-
-//   },
-//   nextButtonText:{
-//     color: '#FFFFFF',
-//     fontSize: 16,
-//     fontWeight: '500',
-//   }
-
-  
-// });

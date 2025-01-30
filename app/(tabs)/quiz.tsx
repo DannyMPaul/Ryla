@@ -243,7 +243,7 @@ const Quiz = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor:  'rgba(78, 13, 22, 0.23)',  // Dark background for a sleek, modern feel
+    backgroundColor:  'rgba(10, 0, 1, 0.91)',  // Dark background for a sleek, modern feel
     padding: 20,
   },
   title: {
