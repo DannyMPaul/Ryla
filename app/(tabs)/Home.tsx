@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 import React, { useState, useEffect, useRef } from 'react';
+=======
+import React, { useState, useEffect,useRef  } from 'react';
+>>>>>>> Stashed changes
 import {
   View,
   Text,
@@ -16,7 +20,16 @@ import TabNavigator from './TabNavigator';
 import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref, onValue, update, get } from 'firebase/database';
-import { Video, ResizeMode } from 'expo-av';
+import { Video } from 'expo-av';
+import { ResizeMode } from 'expo-av';
+
+import { BackHandler } from 'react-native';
+import Video, { ResizeMode } from 'react-native-video';
+// import { renderPathNode } from './path-to-file';
+
+
+
+
 
 const { width } = Dimensions.get('window');
 
@@ -347,6 +360,18 @@ const HomeScreen: React.FC = () => {
       </View>
 
       <ScrollView style={styles.scrollView}>
+<<<<<<< Updated upstream
+=======
+        
+       <Video
+              source={require('@/assets/videos/bg4.mp4')} 
+              style={styles.backgroundVideo}
+              resizeMode={ResizeMode.STRETCH}
+              shouldPlay
+              isLooping
+              isMuted
+            />
+>>>>>>> Stashed changes
         <View style={styles.content}>
           {/* Learning Path */}
           <View style={styles.learningPath}>
@@ -417,19 +442,6 @@ const HomeScreen: React.FC = () => {
                 <Text style={styles.viewAllText}>VIEW ALL</Text>
               </TouchableOpacity>
             </ExpandableCard>
-
-            {/* <ExpandableCard
-              title="Create a profile to save your progress!"
-              isExpanded={expandedCards.profile}
-              onToggle={() => toggleCard('profile')}
-            >
-              <TouchableOpacity style={styles.createProfileButton}>
-                <Text style={styles.buttonText}>CREATE A PROFILE</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.signInButton}>
-                <Text style={styles.buttonText}>SIGN IN</Text>
-              </TouchableOpacity>
-            </ExpandableCard> */}
           </View>
         </View>
       </ScrollView>
@@ -487,7 +499,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0657A',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 18,
     marginBottom: 16,
   },
   startButtonText: {
@@ -496,18 +508,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   pathNode: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 74,
+    height: 74,
+    borderRadius: 42,
     backgroundColor: '#2b3940',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   pathLine: {
-    width: 4,
+    width: 3,
     height: 40,
     backgroundColor: '#2b3940',
+
+    // background: linear-gradient(to bottom, #FF7E5F, #FEB47B); /* Replace with your desired gradient colors */
+
   },
   lockIconContainer: {
     position: 'absolute',
@@ -648,6 +663,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+  },
+  backgroundVideo: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
+    zIndex: -1,
+    width: width, // Use window width
+    // height: height, // Use window height  
   },
 });
 
