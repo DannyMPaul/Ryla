@@ -15,9 +15,9 @@ import { router } from 'expo-router';
 import TabNavigator from './TabNavigator';
 import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
-import { getDatabase, ref, onValue, update, get } from 'firebase/database';
+import { ref, onValue, update, get } from 'firebase/database';
 import { Video, ResizeMode } from 'expo-av';
-import { database } from '../../firebase/firebase';
+import { database } from '../firebase/firebase';
 
 const { width } = Dimensions.get('window');
 
@@ -188,8 +188,7 @@ const HomeScreen: React.FC = () => {
     const auth = getAuth();
     const user = auth.currentUser;
     if (user) {
-      const db = getDatabase();
-      const userRef = ref(db, `users/${user.uid}`);
+      const userRef = ref(database, `users/${user.uid}`);
       
       // Load initial state
       const loadUserProgress = async () => {

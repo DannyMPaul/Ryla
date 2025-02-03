@@ -15,7 +15,10 @@ import { RootStackParamList } from '../../hooks/types';
 import {useRouter} from 'expo-router';
 import { app, database } from '../firebase/firebase';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { getDatabase, ref as dbRef, set, update, get } from 'firebase/database';
+import { ref as dbRef, set, update, get } from 'firebase/database';
+
+
+
 
 const COLORS = {
   primary: '#F0657A', 
@@ -151,32 +154,24 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'AuthScreen'>>();
 
   const checkUserProgress = async (user: any) => {
-    const db = getDatabase();
-    const userRef = dbRef(db, `users/${user.uid}`);
+    const userRef = dbRef(database, `users/${user.uid}`);
+    const snapshot = await get(userRef);
+    const userData = snapshot.val();
     
-    try {
-      const snapshot = await get(userRef);
-      const userData = snapshot.val();
-      
-      if (userData) {
-        // User exists, check if they completed onboarding
-        if (userData.quizResults?.isAssessmentComplete) {
-          // User has completed onboarding, go to home
-          router.replace('./home');
-        } else if (userData.currentStep) {
-          // User was in the middle of onboarding, resume from their last step
-          router.replace(`./${userData.currentStep}`);
-        } else {
-          // User hasn't started onboarding
-          router.replace('./qn1');
-        }
+    if (userData) {
+      // User exists, check if they completed onboarding
+      if (userData.quizResults?.isAssessmentComplete) {
+        // User has completed onboarding, go to home
+        router.replace('./home');
+      } else if (userData.currentStep) {
+        // User was in the middle of onboarding, resume from their last step
+        router.replace(`./${userData.currentStep}`);
       } else {
-        // New user, start onboarding
+        // User hasn't started onboarding
         router.replace('./qn1');
       }
-    } catch (error) {
-      console.error('Error checking user progress:', error);
-      // Default to qn1 if there's an error
+    } else {
+      // New user, start onboarding
       router.replace('./qn1');
     }
   };
@@ -191,9 +186,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
-            // Get user data and check quiz status
-            const db = getDatabase();
-            const userRef = dbRef(db, `users/${user.uid}`);
+            // Use database instead of getDatabase()
+            const userRef = dbRef(database, `users/${user.uid}`);
             const snapshot = await get(userRef);
             const userData = snapshot.val();
 
@@ -234,8 +228,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
             progress: {
               currentQuestion: 1,
               totalCorrect: 0,
-              questions: {},
-              lastUpdated: new Date().toISOString()
+              hearts: 5
             },
             quizResponses: {},
             currentStep: 'qn1'  // Add this to track onboarding progress
@@ -323,8 +316,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
       const user = auth.currentUser;
       
       if (user) {
-        const db = getDatabase();
-        const userRef = dbRef(db, `users/${user.uid}`);
+        const userRef = dbRef(database, `users/${user.uid}`);
         const snapshot = await get(userRef);
         const userData = snapshot.val();
 
@@ -623,8 +615,7 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     color: '#F0657A',
-    fontSize: 14,
-    fontWeight:'bold',
+    fontSize: 16,
     textAlign: 'center',
   },
 });
