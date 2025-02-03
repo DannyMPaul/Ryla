@@ -234,7 +234,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
             progress: {
               currentQuestion: 1,
               totalCorrect: 0,
-              hearts: 5
+              questions: {},
+              lastUpdated: new Date().toISOString()
             },
             quizResponses: {},
             currentStep: 'qn1'  // Add this to track onboarding progress
