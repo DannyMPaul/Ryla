@@ -2,17 +2,19 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAZa-4_hE28MzOYp3STMZlIdVU4IXVJbOw",
-  authDomain: "rylang-c9742.firebaseapp.com",
-  projectId: "rylang-c9742",
-  storageBucket: "rylang-c9742.firebasestorage.app",
-  messagingSenderId: "106165605904",
-  appId: "1:106165605904:web:82494dd7947fa3dbc99c95",
-  measurementId: "G-YW6HDE23G1",
-  databaseURL: "https://rylang-c9742-default-rtdb.asia-southeast1.firebasedatabase.app/"
+  apiKey: "AIzaSyDAizBi4X54TLNuv5KwYOv_vxdtKl9vZrA",
+  authDomain: "rylang-afb7c.firebaseapp.com",
+  databaseURL: "https://rylang-afb7c-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "rylang-afb7c",
+  storageBucket: "rylang-afb7c.firebasestorage.app",
+  messagingSenderId: "1086073935202",
+  appId: "1:1086073935202:web:3d531194b4b0f0ef2f883b"
 };
 
-export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const database = getDatabase(app); 
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);  // Simplified auth initialization
+export const database = getDatabase(app);
+export { app };
