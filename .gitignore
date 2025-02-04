@@ -9,6 +9,8 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 web-build/
+package-lock.json
+Ryla/modules/test_env/
 
 # macOS
 .DS_Store
@@ -21,7 +23,6 @@ expo-env.d.ts
 
 
 # Ignore Learn_With_AI folder and all its contents
-Learn_With_AI/
 
 
 package-lock.json/

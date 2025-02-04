@@ -1,3 +1,82 @@
+------------ALL OF THE BELOW CODES ARE TO BE RUN ON TEH TERMINAL------------------
+
+#VM for windows
+python -m venv ryla_env
+
+#Activate VM for windows
+ryla_env\Scripts\activate
+
+#Install requirement
+pip install -r requirements.txt
+
+#TTS engine
+pip install pyttsx3
+
+#Plan : 
+-host the model in google consel
+-connect the consel and the firebase
+-api key then use sockets
+
+#to do :
+-voice recognition model for fr/en {react-native-voice}
+-tts model for fr and en {react-native-tts}
+-integrating the entire project into a single application
+
+
+# backend/requirements.txt
+fastapi==0.104.1
+uvicorn==0.24.0
+firebase-admin==6.2.0
+torch==2.1.0
+transformers==4.34.1
+python-dotenv==1.0.0
+pydantic==2.4.2
+gunicorn==21.2.0
+
+# backend/.env
+FIREBASE_CREDENTIALS_PATH="path/to/your/firebase-credentials.json"
+FIREBASE_DATABASE_URL="https://your-project.firebaseio.com"
+MODEL_CACHE_DIR="./model_cache"
+PORT=8000
+HOST="0.0.0.0"
+ENVIRONMENT="production"
+
+# backend/config.py
+from pydantic import BaseSettings
+
+class Settings(BaseSettings):
+    firebase_credentials_path: str
+    firebase_database_url: str
+    model_cache_dir: str
+    port: int
+    host: str
+    environment: str
+
+    class Config:
+        env_file = ".env"
+
+settings = Settings()
+
+# backend/models.py
+from pydantic import BaseModel
+from typing import Optional, Dict, Any
+
+class UserInput(BaseModel):
+    text: str
+    user_id: str
+
+class UserPreferences(BaseModel):
+    lang_to_learn: str
+    proficiency_level: str
+    target_use: str
+
+class ProcessedResponse(BaseModel):
+    original_text: str
+    corrected_text: str
+    response: str
+    metadata: Optional[Dict[str, Any]] = None
+
+# backend/assistant.py
 import torch
 from transformers import (
     AutoTokenizer,
@@ -6,14 +85,9 @@ from transformers import (
     AutoModelForCausalLM,
     AutoModelForSeq2SeqLM
 )
-
 from typing import Optional, Dict, Any
 import os
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-
-from config import get_settings
-settings = get_settings()
-
+from config import settings
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -212,3 +286,150 @@ class MultilingualAssistant:
         except Exception as e:
             logger.error(f"Response generation error: {e}")
             return "I'm having trouble understanding. Could you rephrase that?"
+
+# backend/main.py
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+import firebase_admin
+from firebase_admin import credentials, db
+from models import UserInput, ProcessedResponse
+from assistant import MultilingualAssistant
+from config import settings
+import logging
+from datetime import datetime
+
+# Initialize Firebase
+cred = credentials.Certificate(settings.firebase_credentials_path)
+firebase_admin.initialize_app(cred, {
+    'databaseURL': settings.firebase_database_url
+})
+
+# Initialize FastAPI
+app = FastAPI(
+    title="Multilingual Assistant API",
+    description="API for processing multilingual text with grammar correction and response generation",
+    version="1.0.0"
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Update this with your React Native app's URL in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Initialize the assistant
+assistant = MultilingualAssistant()
+
+@app.post("/process_text", response_model=ProcessedResponse)
+async def process_text(user_input: UserInput):
+    try:
+        # Get user preferences from Firebase
+        user_ref = db.reference(f'users/{user_input.user_id}')
+        user_data = user_ref.get()
+        
+        if not user_data:
+            raise HTTPException(status_code=404, detail="User preferences not found")
+        
+        # Process the input
+        result = await assistant.process_input(
+            text=user_input.text,
+            language=user_data['lang_to_learn'],
+            proficiency=user_data['proficiency_level'],
+            target=user_data['target_use']
+        )
+        
+        return ProcessedResponse(**result)
+        
+    except Exception as e:
+        logging.error(f"Error processing text: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": str(datetime.now()),
+        "environment": settings.environment
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=settings.environment == "development"
+    )
+
+# frontend/api.ts
+
+import { Alert } from 'react-native';
+
+const API_URL = 'http://localhost:8000';  // Replace with your actual backend URL
+
+interface ProcessTextResponse {
+    original_text: string;
+    corrected_text: string;
+    response: string;
+    metadata?: {
+        language: string;
+        proficiency: string;
+        target: string;
+        processed_timestamp: string;
+    };
+}
+
+export async function processText(text: string, userId: string): Promise<ProcessTextResponse> {
+    try {
+        const response = await fetch(`${API_URL}/process_text`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text,
+                user_id: userId
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Network response was not ok');
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error processing text:', error);
+        Alert.alert(
+            'Error',
+            'Failed to process text. Please try again.',
+            [{ text: 'OK' }]
+        );
+        throw error;
+    }
+}
+
+export async function checkServerHealth(): Promise<{
+    status: string;
+    timestamp: string;
+    environment: string;
+}> {
+    try {
+        const response = await fetch(`${API_URL}/health`);
+        if (!response.ok) {
+            throw new Error('Health check failed');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Health check failed:', error);
+        Alert.alert(
+            'Server Error',
+            'Unable to connect to the server. Please try again later.',
+            [{ text: 'OK' }]
+        );
+        throw error;
+    }
+}
