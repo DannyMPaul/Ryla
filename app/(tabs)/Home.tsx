@@ -1,8 +1,4 @@
-<<<<<<< Updated upstream
 import React, { useState, useEffect, useRef } from 'react';
-=======
-import React, { useState, useEffect,useRef  } from 'react';
->>>>>>> Stashed changes
 import {
   View,
   Text,
@@ -19,17 +15,9 @@ import { router } from 'expo-router';
 import TabNavigator from './TabNavigator';
 import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
-import { getDatabase, ref, onValue, update, get } from 'firebase/database';
-import { Video } from 'expo-av';
-import { ResizeMode } from 'expo-av';
-
-import { BackHandler } from 'react-native';
-import Video, { ResizeMode } from 'react-native-video';
-// import { renderPathNode } from './path-to-file';
-
-
-
-
+import { ref, onValue, update, get } from 'firebase/database';
+import { Video, ResizeMode } from 'expo-av';
+import { database } from '../firebase/firebase';
 
 const { width } = Dimensions.get('window');
 
@@ -404,6 +392,14 @@ const HomeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Video
+        source={require('@/assets/videos/bg4.mp4')} 
+        style={styles.backgroundVideo}
+        resizeMode={ResizeMode.COVER}
+        shouldPlay={false}
+        isLooping
+        isMuted
+      />
       {/* Header with Quiz Results */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -429,18 +425,6 @@ const HomeScreen: React.FC = () => {
       </View>
 
       <ScrollView style={styles.scrollView}>
-<<<<<<< Updated upstream
-=======
-        
-       <Video
-              source={require('@/assets/videos/bg4.mp4')} 
-              style={styles.backgroundVideo}
-              resizeMode={ResizeMode.STRETCH}
-              shouldPlay
-              isLooping
-              isMuted
-            />
->>>>>>> Stashed changes
         <View style={styles.content}>
           {/* Learning Path */}
           <View style={styles.learningPath}>
