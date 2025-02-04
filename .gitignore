@@ -11,6 +11,8 @@ npm-debug.*
 web-build/
 package-lock.json
 Ryla/modules/test_env/
+ryla_env/
+package.json
 
 # macOS
 .DS_Store
@@ -23,6 +25,3 @@ expo-env.d.ts
 
 
 # Ignore Learn_With_AI folder and all its contents
-
-
-package-lock.json/
