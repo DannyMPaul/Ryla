@@ -27,6 +27,19 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "@react-native-voice/voice",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access the microphone",
+          "speechRecognitionPermission": "Allow $(PRODUCT_NAME) to access speech recognition"
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "audioRecordingPermission": "Allow recording audio"
+        }
+      ],
       "expo-router",
       "expo-font",
       "expo-video",
