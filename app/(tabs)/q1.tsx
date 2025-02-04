@@ -33,26 +33,54 @@ const QuizScreen = () => {
   const [showNextButton, setShowNextButton] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [correctAnswers, setCorrectAnswers] = useState(0); // Track correct answers
-  const [showResultCard, setShowResultCard] = useState(false); // Control visibility of ResultCard
 
   const questions: QuizQuestion[] = [
     {
       id: '1',
-      question: 'Which one means "le garçon" in English?',
+      question: 'What is this?',
       options: [
-        { id: '1', label: 'woman', image: require('../../assets/images/roadMapImgs/women.jpg'), isCorrect: false },
-        { id: '2', label: 'boy', image: require('../../assets/images/roadMapImgs/boy.jpg'), isCorrect: true },
-        { id: '3', label: 'man', image: require('../../assets/images/roadMapImgs/man.jpg'), isCorrect: false },
+        {
+          id: '1',
+          label: 'woman',
+          image: require('../../assets/images/women.jpg'),
+          isCorrect: false
+        },
+        {
+          id: '2',
+          label: 'boy',
+          image: require('../../assets/images/boy.jpg'),
+          isCorrect: true
+        },
+        {
+          id: '3',
+          label: 'man',
+          image: require('../../assets/images/man.jpg'),
+          isCorrect: false
+        },
       ],
     },
     {
       id: '2',
-      question: 'Which one means "la fille" in English?',
+      question: 'Choose the correct image',
       options: [
-        { id: '1', label: 'woman', image: require('../../assets/images/roadMapImgs/women.jpg'), isCorrect: false },
-        { id: '2', label: 'girl', image: require('../../assets/images/roadMapImgs/girl.jpg'), isCorrect: true },
-        { id: '3', label: 'man', image: require('../../assets/images/roadMapImgs/man.jpg'), isCorrect: false },
+        {
+          id: '1',
+          label: 'woman',
+          image: require('../../assets/images/women.jpg'),
+          isCorrect: false
+        },
+        {
+          id: '2',
+          label: 'boy',
+          image: require('../../assets/images/boy.jpg'),
+          isCorrect: true
+        },
+        {
+          id: '3',
+          label: 'man',
+          image: require('../../assets/images/man.jpg'),
+          isCorrect: false
+        },
       ],
     },
     {
@@ -69,7 +97,7 @@ const QuizScreen = () => {
       question: 'Which one means "la pomme" in English?',
       options: [
         { id: '1', label: 'banana', image: require('../../assets/images/roadMapImgs/banana.jpg'), isCorrect: false },
-        { id: '2', label: 'apple', image: require('../../assets/images/roadMapImgs/apple.jpg'), isCorrect: true },
+        { id: '2', label: 'apple', image: require('../../assets/images/roadMapImgs/banana.jpg'), isCorrect: true },
         { id: '3', label: 'grape', image: require('../../assets/images/roadMapImgs/grape.jpg'), isCorrect: false },
       ],
     },
@@ -94,7 +122,7 @@ const QuizScreen = () => {
   const handleCheck = async () => {
     if (!selectedOption) return;
 
-    const selectedAnswer = currentQuestion.options?.find(opt => opt.id === selectedOption);
+    const selectedAnswer = currentQuestion.options.find(opt => opt.id === selectedOption);
     const auth = getAuth();
     const user = auth.currentUser;
 
@@ -103,13 +131,10 @@ const QuizScreen = () => {
       return;
     }
 
-    try {
-      const userRef = ref(database, `users/${user.uid}`);
+      const selectedAnswer = currentQuestion.options.find(opt => opt.id === selectedOption);
+      const isCorrect = selectedAnswer?.isCorrect || false;
       
       if (selectedAnswer && selectedAnswer.isCorrect) {
-        // Increment correct answers
-        setCorrectAnswers(prev => prev + 1);
-
         // Store the learned word when correct
         await update(userRef, {
           [`learnedWords/${new Date().getTime()}`]: {
@@ -123,52 +148,16 @@ const QuizScreen = () => {
           [`quizResponses/q${currentQuestion.id}/completedAt`]: new Date().toISOString()
         });
 
-        // Show success modal
-        Vibration.vibrate(200);
-        setShowSuccessModal(true);
-        
-        // Rest of your existing success handling code...
+      setIsCorrect(isCorrect);
+      setShowModal(true);
+      
+      if (isCorrect) {
+        // Success handling...
       } else {
-        // Wrong answer
-        setHearts(prev => Math.max(0, prev - 1));
-        
-        // Store the incorrect attempt
-        const userSnapshot = await get(userRef);
-        const userData = userSnapshot.val();
-        
-        await update(userRef, {
-          [`quizResponses/q${currentQuestion.id}/attempts`]: (userData?.quizResponses?.[`q${currentQuestion.id}`]?.attempts || 0) + 1,
-          hearts: Math.max(0, hearts - 1)
-        });
-
-        Alert.alert(
-          '❌ Incorrect',
-          'Sorry, that\'s not right. Try again!',
-          [{ text: 'OK', onPress: () => setSelectedOption(null) }]
-        );
-        
-        if (hearts <= 1) {
-          await update(userRef, {
-            hearts: 5,
-            [`quizResponses/q${currentQuestion.id}/failed`]: true
-          });
-
-          Alert.alert(
-            '💔 Game Over',
-            'You ran out of hearts!',
-            [{ 
-              text: 'Restart', 
-              onPress: () => {
-                setHearts(5);
-                setSelectedOption(null);
-              }
-            }]
-          );
-        }
+        // Failure handling...
       }
     } catch (error) {
-      console.error('Error updating database:', error);
-      Alert.alert('Error', 'Failed to save progress');
+      console.error('Error updating progress:', error);
     }
   };
 
@@ -296,31 +285,29 @@ const QuizScreen = () => {
             </View>
           )}
 
-          <Modal
-            animationType="fade"
-            transparent={true}
-            visible={showSuccessModal}
-            onRequestClose={() => setShowSuccessModal(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <Icon name="check-circle" size={50} color="#58cc02" />
-                <Text style={styles.modalTitle}>🎉 Excellent!</Text>
-                <Text style={styles.modalText}>That's correct! You're making great progress.</Text>
-                <TouchableOpacity 
-                  style={styles.modalButton}
-                  onPress={() => {
-                    setShowSuccessModal(false);
-                    setShowNextButton(true);
-                  }}
-                >
-                  <Text style={styles.modalButtonText}>Continue</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-        </>
-      )}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showSuccessModal}
+        onRequestClose={() => setShowSuccessModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Icon name="check-circle" size={50} color="#58cc02" />
+            <Text style={styles.modalTitle}>🎉 Excellent!</Text>
+            <Text style={styles.modalText}>That's correct! You're making great progress.</Text>
+            <TouchableOpacity 
+              style={styles.modalButton}
+              onPress={() => {
+                setShowSuccessModal(false);
+                setShowNextButton(true);
+              }}
+            >
+              <Text style={styles.modalButtonText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -502,7 +489,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: 'rgb(15, 0, 25)',
     borderRadius: 20,
     padding: 30,
     alignItems: 'center',
@@ -514,12 +501,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    width: '80%',
+    borderWidth: 2,
+    borderColor: 'rgba(127, 17, 224, 1)',
   },
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginVertical: 15,
+    color: '#fff',
+    marginBottom: 20,
   },
   modalText: {
     fontSize: 16,
@@ -527,14 +516,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalButton: {
-    backgroundColor: '#58cc02',
+    backgroundColor: 'rgba(120, 16, 210, 0.83)',
     paddingVertical: 12,
     paddingHorizontal: 30,
-    borderRadius: 30,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: 'rgba(127, 17, 224, 0.64)',
   },
   modalButtonText: {
-    color: 'white',
-    fontSize: 16,
+    color: '#fff',
+    fontSize: 18,
     fontWeight: 'bold',
   },
 });

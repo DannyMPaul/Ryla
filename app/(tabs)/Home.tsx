@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
+import React, { useState, useEffect, useRef } from 'react';
+=======
 import React, { useState, useEffect,useRef  } from 'react';
+>>>>>>> Stashed changes
 import {
   View,
   Text,
@@ -16,11 +20,16 @@ import TabNavigator from './TabNavigator';
 import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref, onValue, update, get } from 'firebase/database';
+import { Video } from 'expo-av';
+import { ResizeMode } from 'expo-av';
 
-// import Video, { ResizeMode } from 'react-native-video';
-import { Video, ResizeMode } from 'expo-av';
-
+import { BackHandler } from 'react-native';
+import Video, { ResizeMode } from 'react-native-video';
 // import { renderPathNode } from './path-to-file';
+
+
+
+
 
 const { width } = Dimensions.get('window');
 
@@ -112,6 +121,14 @@ interface UserProgress {
   name?: string;
 }
 
+interface StarProgress {
+  star1: boolean;
+  star2: boolean;
+  star3: boolean;
+  star4: boolean;
+  star5: boolean;
+}
+
 const HomeScreen: React.FC = () => {
   const [userData, setUserData] = useState<UserProgress | null>(null);
   const [expandedCards, setExpandedCards] = useState({
@@ -126,13 +143,63 @@ const HomeScreen: React.FC = () => {
   const starOpacity = useRef(new Animated.Value(1)).current;
   const [showUnlockAnimation, setShowUnlockAnimation] = useState(false);
   const unlockScale = useRef(new Animated.Value(1)).current;
+  const [starProgress, setStarProgress] = useState<StarProgress>({
+    star1: true, // First star always unlocked
+    star2: false,
+    star3: false,
+    star4: false,
+    star5: false
+  });
+  const starAnimations = {
+    scale: useRef(new Animated.Value(1)).current,
+    opacity: useRef(new Animated.Value(1)).current,
+  };
+  const [isFirstLogin, setIsFirstLogin] = useState(true);
+
+  useEffect(() => {
+    checkUserProgress();
+  }, []);
+
+  const checkUserProgress = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user) return;
+
+      const userRef = ref(database, `users/${user.uid}/progress`);
+      const snapshot = await get(userRef);
+      const progress = snapshot.val();
+
+      if (progress) {
+        const currentQuestion = progress.currentQuestion || 1;
+        const questions = progress.questions || {};
+        
+        // Find first incomplete question
+        for (let i = 1; i <= 10; i++) { // Assuming 10 questions
+          if (!questions[`q${i}`]?.completed) {
+            router.replace(`/(tabs)/q${i}` as any);
+            return;
+          }
+        }
+        
+        // All questions completed
+        router.replace('/(tabs)/completion' as any);
+      } else {
+        // No progress, start from first question
+        router.replace('/(tabs)/q1' as any);
+      }
+    } catch (error) {
+      console.error('Error checking progress:', error);
+      router.replace('/(tabs)/q1' as any); // Default to first question on error
+    }
+  };
 
   useEffect(() => {
     const auth = getAuth();
     const user = auth.currentUser;
     if (user) {
-      const db = getDatabase();
-      const userRef = ref(db, `users/${user.uid}`);
+      const userRef = ref(database, `users/${user.uid}`);
       
       // Load initial state
       const loadUserProgress = async () => {
@@ -149,6 +216,14 @@ const HomeScreen: React.FC = () => {
           setCompletedQuestions(completed);
           setUnlockedStars(data.unlockedStars || 1);
           setLastCompletedStar(data.lastCompletedStar || 0);
+          // Check if this is first login after quiz
+          if (data.lastLogin && data.quizResults) {
+            setIsFirstLogin(false);
+          }
+          // Update last login time
+          await update(userRef, {
+            lastLogin: new Date().toISOString()
+          });
         }
       };
       
@@ -223,32 +298,39 @@ const HomeScreen: React.FC = () => {
     }));
   };
 
-  const animateStarUnlock = () => {
+  const animateStarUnlock = (starNumber: number) => {
     Animated.sequence([
-      Animated.timing(starOpacity, {
-        toValue: 0.3,
-        duration: 500,
-        useNativeDriver: true,
-      }),
       Animated.parallel([
-        Animated.timing(starScale, {
+        Animated.timing(starAnimations.scale, {
           toValue: 1.5,
-          duration: 800,
+          duration: 500,
           useNativeDriver: true,
         }),
-        Animated.timing(starOpacity, {
-          toValue: 1,
-          duration: 800,
+        Animated.timing(starAnimations.opacity, {
+          toValue: 0.4,
+          duration: 200,
           useNativeDriver: true,
         }),
       ]),
-      Animated.spring(starScale, {
-        toValue: 1,
-        friction: 3,
-        tension: 40,
-        useNativeDriver: true,
-      }),
+      Animated.parallel([
+        Animated.timing(starAnimations.scale, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(starAnimations.opacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]),
     ]).start();
+
+    // Update star progress
+    setStarProgress(prev => ({
+      ...prev,
+      [`star${starNumber}`]: true
+    }));
   };
 
   const renderPathNode = (level: number, icon: string, onPress: () => void) => {
@@ -260,6 +342,7 @@ const HomeScreen: React.FC = () => {
       false;
     const isNextToUnlock = level === unlockedStars + 1;
     
+    // Determine which route to navigate to based on progress
     const handlePress = () => {
       if (!isUnlocked) return;
       
@@ -279,23 +362,23 @@ const HomeScreen: React.FC = () => {
     
     return (
       <TouchableOpacity 
-        onPress={handlePress}
+        onPress={onPress}
         disabled={!isUnlocked}
       >
         <Animated.View
           style={[
             styles.pathNode,
-            isCompleted && styles.completedNode,
-            isNextToUnlock && {
-              transform: [{ scale: starScale }],
-              opacity: starOpacity,
-            },
+            isUnlocked && styles.unlockedNode,
+            level === 2 && !starProgress.star2 && {
+              transform: [{ scale: starAnimations.scale }],
+              opacity: starAnimations.opacity,
+            }
           ]}
         >
           <Icon 
-            name={isCompleted ? "star" : icon} 
+            name={icon} 
             size={32} 
-            color={isCompleted ? "#58cc02" : isUnlocked ? "#58cc02" : "#666"} 
+            color={isUnlocked ? "#58cc02" : "#666"} 
           />
           {!isUnlocked && (
             <View style={styles.lockIconContainer}>
@@ -328,7 +411,7 @@ const HomeScreen: React.FC = () => {
             <Text style={styles.welcomeText}>
               Welcome, {userData?.name || 'Learner'}!
             </Text>
-            {userData?.quizResults && (
+            {isFirstLogin && userData?.quizResults && (
               <View style={styles.quizResultsContainer}>
                 <Text style={styles.levelText}>
                   Level: {userData.quizResults.finalLevel}
@@ -346,27 +429,29 @@ const HomeScreen: React.FC = () => {
       </View>
 
       <ScrollView style={styles.scrollView}>
+<<<<<<< Updated upstream
+=======
         
-      <Video
-          source={require('@/assets/videos/bg4.mp4')}
-          style={styles.backgroundVideo}
-          resizeMode={ResizeMode.STRETCH}
-          shouldPlay 
-          isLooping
-          isMuted
-      />
-
+       <Video
+              source={require('@/assets/videos/bg4.mp4')} 
+              style={styles.backgroundVideo}
+              resizeMode={ResizeMode.STRETCH}
+              shouldPlay
+              isLooping
+              isMuted
+            />
+>>>>>>> Stashed changes
         <View style={styles.content}>
           {/* Learning Path */}
           <View style={styles.learningPath}>
             <TouchableOpacity 
               style={styles.startButton} 
-              onPress={() => router.replace('./q1')}
+              onPress={() => router.replace('/(tabs)/q1' as any)}
             >
               <Text style={styles.startButtonText}>START</Text>
             </TouchableOpacity>
 
-            {renderPathNode(1, "star", () => router.replace('./q1'))}
+            {renderPathNode(1, "star", () => router.replace('/(tabs)/q1' as any))}
             <View style={styles.pathLine} />
             
             <Animated.View style={[
@@ -374,7 +459,7 @@ const HomeScreen: React.FC = () => {
               showUnlockAnimation && { transform: [{ scale: unlockScale }] }
             ]}>
               <TouchableOpacity 
-                onPress={() => router.replace('./star2q1')}
+                onPress={() => router.replace('/(tabs)/star2q1' as any)}
                 disabled={!userData?.unlockedStars || userData.unlockedStars < 2}
               >
                 <Icon 
@@ -386,13 +471,13 @@ const HomeScreen: React.FC = () => {
             </Animated.View>
             <View style={styles.pathLine} />
             
-            {renderPathNode(3, "star", () => router.replace('./q3'))}
+            {renderPathNode(3, "star", () => router.replace(`/(tabs)/q3` as any))}
             <View style={styles.pathLine} />
             
-            {renderPathNode(4, "treasure-chest", () => router.replace('./bonus'))}
+            {renderPathNode(4, "treasure-chest", () => router.replace(`/(tabs)/bonus` as any))}
             <View style={styles.pathLine} />
             
-            {renderPathNode(5, "trophy", () => router.replace('./final'))}
+            {renderPathNode(5, "trophy", () => router.replace(`/(tabs)/final` as any))}
           </View>
 
           {/* Expandable Cards */}
@@ -504,14 +589,11 @@ const styles = StyleSheet.create({
     width: 3,
     height: 40,
     backgroundColor: '#2b3940',
-
-    // background: linear-gradient(to bottom, #FF7E5F, #FEB47B); /* Replace with your desired gradient colors */
-
   },
   lockIconContainer: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
+    top: -8,
+    right: -8,
     backgroundColor: '#1f2937',
     borderRadius: 12,
     padding: 4,
@@ -521,8 +603,10 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#1f2937',
-    borderRadius: 12,
-    overflow: 'hidden',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 18,
+    marginBottom: 16,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -655,7 +739,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     right: 0,
     zIndex: -1,
-    width: width, 
+    width: width, // Use window width
+    // height: height, // Use window height  
   },
 });
 
