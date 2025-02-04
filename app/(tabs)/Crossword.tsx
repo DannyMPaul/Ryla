@@ -72,7 +72,7 @@ const clues: ClueType[] = [
   {
     number: 6,
     direction: 'down',
-    question: 'Parles-tu d'autres langues ?',
+    question: 'Parles-tu d\'autres langues ?',
     answer: 'ANGLAIS',
     length: 7,
     startX: 6,

@@ -1,8 +1,4 @@
-<<<<<<< Updated upstream
-import React, { useState, useEffect, useRef } from 'react';
-=======
 import React, { useState, useEffect,useRef  } from 'react';
->>>>>>> Stashed changes
 import {
   View,
   Text,
@@ -20,16 +16,11 @@ import TabNavigator from './TabNavigator';
 import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref, onValue, update, get } from 'firebase/database';
-import { Video } from 'expo-av';
-import { ResizeMode } from 'expo-av';
 
-import { BackHandler } from 'react-native';
-import Video, { ResizeMode } from 'react-native-video';
+// import Video, { ResizeMode } from 'react-native-video';
+import { Video, ResizeMode } from 'expo-av';
+
 // import { renderPathNode } from './path-to-file';
-
-
-
-
 
 const { width } = Dimensions.get('window');
 
@@ -79,7 +70,6 @@ const ExpandableCard: React.FC<CardProps> = ({ title, isExpanded, onToggle, chil
   );
 };
 
-// Add this interface for type safety
 interface UserProgress {
   quizResponses: {
     q1?: {
@@ -164,7 +154,7 @@ const HomeScreen: React.FC = () => {
       
       loadUserProgress();
       
-      // Listen for real-time updates
+      // Listen for real-time updates;'c b
       const unsubscribe = onValue(userRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -188,7 +178,6 @@ const HomeScreen: React.FC = () => {
         }
       });
 
-      // Check if new star was just unlocked
       if (user) {
         onValue(userRef, (snapshot) => {
           const data = snapshot.val();
@@ -207,7 +196,6 @@ const HomeScreen: React.FC = () => {
               })
             ]).start();
             
-            // Update lastViewedStar
             update(userRef, {
               lastViewedStar: data.unlockedStars
             });
@@ -263,7 +251,6 @@ const HomeScreen: React.FC = () => {
     ]).start();
   };
 
-  // Update the renderPathNode to show proper progress
   const renderPathNode = (level: number, icon: string, onPress: () => void) => {
     const isUnlocked = level <= unlockedStars;
     const isCompleted = level === 1 ? 
@@ -273,7 +260,6 @@ const HomeScreen: React.FC = () => {
       false;
     const isNextToUnlock = level === unlockedStars + 1;
     
-    // Determine which route to navigate to based on progress
     const handlePress = () => {
       if (!isUnlocked) return;
       
@@ -360,18 +346,16 @@ const HomeScreen: React.FC = () => {
       </View>
 
       <ScrollView style={styles.scrollView}>
-<<<<<<< Updated upstream
-=======
         
-       <Video
-              source={require('@/assets/videos/bg4.mp4')} 
-              style={styles.backgroundVideo}
-              resizeMode={ResizeMode.STRETCH}
-              shouldPlay
-              isLooping
-              isMuted
-            />
->>>>>>> Stashed changes
+      <Video
+          source={require('@/assets/videos/bg4.mp4')}
+          style={styles.backgroundVideo}
+          resizeMode={ResizeMode.STRETCH}
+          shouldPlay 
+          isLooping
+          isMuted
+      />
+
         <View style={styles.content}>
           {/* Learning Path */}
           <View style={styles.learningPath}>
@@ -671,8 +655,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     right: 0,
     zIndex: -1,
-    width: width, // Use window width
-    // height: height, // Use window height  
+    width: width, 
   },
 });
 
