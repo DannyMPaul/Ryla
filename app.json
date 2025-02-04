@@ -42,7 +42,14 @@
       ],
       "expo-router",
       "expo-font",
-      "expo-video"
+      "expo-video",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone.",
+          "videoPermission": "Allow $(PRODUCT_NAME) to access your camera roll."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

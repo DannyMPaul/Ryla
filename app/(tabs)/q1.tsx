@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Alert,
-  Vibration,
-  Modal,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Vibration, Modal } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useRouter } from 'expo-router';
 import { getDatabase, ref, update, get } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import { database } from '../firebase/firebase';
+import MatchPair1 from '../../components/MatchPair1';
+import ResultCard from '../../components/ResultCardq1'; // Import the ResultCard component
+
+
+import { Audio } from 'expo-av';
+
 
 interface QuizOption {
   id: string;
@@ -25,7 +22,8 @@ interface QuizOption {
 interface QuizQuestion {
   id: string;
   question: string;
-  options: QuizOption[];
+  options?: QuizOption[];
+  type?: 'match';
 }
 
 const QuizScreen = () => {
@@ -35,8 +33,6 @@ const QuizScreen = () => {
   const [showNextButton, setShowNextButton] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [showModal, setShowModal] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
 
   const questions: QuizQuestion[] = [
     {
@@ -114,34 +110,43 @@ const QuizScreen = () => {
         { id: '3', label: 'fish', image: require('../../assets/images/roadMapImgs/fish.jpg'), isCorrect: false },
       ],
     },
+    {
+      id: '6',
+      type: 'match',
+      question: 'Match the Following',
+    },
   ];
 
   const currentQuestion = questions[currentQuestionIndex];
 
   const handleCheck = async () => {
     if (!selectedOption) return;
-    
-    try {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      
-      if (!user) return;
+
+    const selectedAnswer = currentQuestion.options.find(opt => opt.id === selectedOption);
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to continue');
+      return;
+    }
 
       const selectedAnswer = currentQuestion.options.find(opt => opt.id === selectedOption);
       const isCorrect = selectedAnswer?.isCorrect || false;
       
-      // Update progress in database
-      const userRef = ref(database, `users/${user.uid}`);
-      await update(userRef, {
-        [`progress/questions/q${currentQuestionIndex + 1}`]: {
-          completed: true,
-          isCorrect: isCorrect,
-          completedAt: new Date().toISOString(),
-          selectedAnswer: selectedAnswer?.label
-        },
-        'progress/currentQuestion': currentQuestionIndex + 2, // Next question
-        'progress/lastUpdated': new Date().toISOString()
-      });
+      if (selectedAnswer && selectedAnswer.isCorrect) {
+        // Store the learned word when correct
+        await update(userRef, {
+          [`learnedWords/${new Date().getTime()}`]: {
+            french: currentQuestion.question.split('"')[1],
+            english: selectedAnswer.label,
+            learnedAt: new Date().toISOString(),
+            section: "Quiz 1",
+            context: "Basic nouns - Articles"
+          },
+          [`quizResponses/q${currentQuestion.id}/completed`]: true,
+          [`quizResponses/q${currentQuestion.id}/completedAt`]: new Date().toISOString()
+        });
 
       setIsCorrect(isCorrect);
       setShowModal(true);
@@ -162,8 +167,17 @@ const QuizScreen = () => {
       setSelectedOption(null);
       setShowNextButton(false);
     } else {
-      router.push('/(tabs)/Home' as const);
+      // Show ResultCard when all questions are answered
+      setShowResultCard(true);
     }
+  };
+
+  const handleRestart = () => {
+    setCurrentQuestionIndex(0);
+    setCorrectAnswers(0);
+    setHearts(5);
+    setSelectedOption(null);
+    setShowResultCard(false);
   };
 
   const handleSkip = () => {
@@ -174,22 +188,13 @@ const QuizScreen = () => {
     router.back();
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-          <Icon name="x" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }]} />
-        </View>
-        <View style={styles.heartsContainer}>
-          <Icon name="heart" size={24} color="#FF4B4B" />
-          <Text style={styles.heartsText}>{hearts}</Text>
-        </View>
-      </View>
+  const renderQuestion = () => {
+    if (currentQuestion.type === 'match') {
+      return <MatchPair1 onComplete={handleNextQuestion} />;
+    }
 
-      <View style={styles.content}>
+    return (
+      <>
         <View style={styles.newWordBadge}>
           <Icon name="plus-circle" size={20} color="#A56EFF" />
           <Text style={styles.newWordText}>NEW WORD</Text>
@@ -198,7 +203,7 @@ const QuizScreen = () => {
         <Text style={styles.question}>{currentQuestion.question}</Text>
 
         <View style={styles.optionsContainer}>
-          {currentQuestion.options.map((option) => (
+          {currentQuestion.options?.map((option) => (
             <TouchableOpacity
               key={option.id}
               style={[
@@ -215,39 +220,70 @@ const QuizScreen = () => {
             </TouchableOpacity>
           ))}
         </View>
-      </View>
+      </>
+    );
+  };
 
-      <View style={styles.footer}>
-        <TouchableOpacity 
-          style={styles.skipButton} 
-          onPress={handleSkip}
-          disabled={showNextButton}
-        >
-          <Text style={styles.skipButtonText}>SKIP</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[
-            styles.nextButton,
-            !selectedOption && styles.nextButtonDisabled
-          ]}
-          onPress={handleNextQuestion}
-          disabled={!selectedOption}
-        >
-          <Text style={styles.nextButtonText}>NEXT</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[
-            styles.checkButton, 
-            (!selectedOption || showNextButton) && styles.checkButtonDisabled
-          ]}
-          onPress={handleCheck}
-          disabled={!selectedOption || showNextButton}
-        >
-          <Text style={styles.checkButtonText}>CHECK</Text>
-        </TouchableOpacity>
-      </View>
+  return (
+    <View style={styles.container}>
+      {showResultCard ? (
+        <ResultCard
+          correctAnswers={correctAnswers}
+          totalQuestions={questions.length}
+          onRestart={handleRestart}
+        />
+      ) : (
+        <>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+              <Icon name="x" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }]} />
+            </View>
+            <View style={styles.heartsContainer}>
+              <Icon name="heart" size={24} color="#FF4B4B" />
+              <Text style={styles.heartsText}>{hearts}</Text>
+            </View>
+          </View>
+
+          <View style={styles.content}>
+            {renderQuestion()}
+          </View>
+
+          {currentQuestion.type !== 'match' && (
+            <View style={styles.footer}>
+              <TouchableOpacity 
+                style={styles.skipButton} 
+                onPress={handleSkip}
+                disabled={showNextButton}
+              >
+                <Text style={styles.skipButtonText}>SKIP</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.nextButton,
+                  !selectedOption && styles.nextButtonDisabled
+                ]}
+                onPress={handleNextQuestion}
+                disabled={!selectedOption}
+              >
+                <Text style={styles.nextButtonText}>NEXT</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.checkButton, 
+                  (!selectedOption || showNextButton) && styles.checkButtonDisabled
+                ]}
+                onPress={handleCheck}
+                disabled={!selectedOption || showNextButton}
+              >
+                <Text style={styles.checkButtonText}>CHECK</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
       <Modal
         animationType="fade"
@@ -268,34 +304,6 @@ const QuizScreen = () => {
               }}
             >
               <Text style={styles.modalButtonText}>Continue</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={showModal}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {isCorrect ? 'Correct! 🎉' : 'Try Again 😅'}
-            </Text>
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => {
-                setShowModal(false);
-                if (isCorrect) {
-                  // Navigate to next question or handle completion
-                  router.replace('/q2');
-                }
-              }}
-            >
-              <Text style={styles.modalButtonText}>
-                {isCorrect ? 'Continue' : 'Try Again'}
-              </Text>
             </TouchableOpacity>
           </View>
         </View>
