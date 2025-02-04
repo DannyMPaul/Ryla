@@ -13,8 +13,8 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../hooks/types';
 import {useRouter} from 'expo-router';
-import { app, database } from '../firebase/firebase';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { app, auth, database } from '../firebase/firebase';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { ref as dbRef, set, update, get } from 'firebase/database';
 
 
@@ -179,69 +179,30 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   const handleSubmit = async () => {
     if (validateForm()) {
       try {
-        const auth = getAuth(app);
-        
         if (isLogin) {
-          try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-            
-            // Use database instead of getDatabase()
-            const userRef = dbRef(database, `users/${user.uid}`);
-            const snapshot = await get(userRef);
-            const userData = snapshot.val();
-
-            // Update last login
-            await update(userRef, {
-              lastLogin: new Date().toISOString(),
-              email: user.email,
-            });
-
-            if (userData?.quizResults?.completedAt) {
-              // Quiz completed - go to Home
-              router.replace('/(tabs)/Home1');
-            } else {
-              // Quiz not completed - start onboarding
-              router.replace('/(tabs)/qn1');
-            }
-
-          } catch (error: any) {
-            console.log('Firebase error:', error.code);
-            if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-              Alert.alert('Invalid Password', 'The password you entered is incorrect.');
-            } else {
-              Alert.alert('Login Failed', error.message);
-            }
-          }
-        } else {
-          // Sign up logic with database storage
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          // Login
+          const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
           const user = userCredential.user;
-
-          // Store user data in Firebase Realtime Database
+          router.replace('/(tabs)/Home1');
+        } else {
+          // Sign up
+          const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+          const user = userCredential.user;
+          
+          // Create user profile
           const userRef = dbRef(database, `users/${user.uid}`);
           await set(userRef, {
-            name: name,
-            email: email,
+            name,
+            email: email.trim(),
             createdAt: new Date().toISOString(),
-            lastLogin: new Date().toISOString(),
-            progress: {
-              currentQuestion: 1,
-              totalCorrect: 0,
-              hearts: 5
-            },
-            quizResponses: {},
-            currentStep: 'qn1'  // Add this to track onboarding progress
+            lastLogin: new Date().toISOString()
           });
-
-          router.replace('./qn1');
+          
+          router.replace('/(tabs)/qn1');
         }
       } catch (error: any) {
-        Alert.alert(
-          isLogin ? 'Login Failed' : 'Sign Up Failed',
-          error.message,
-          [{ text: 'OK', onPress: () => shakeAnimation() }]
-        );
+        console.error('Auth error:', error);
+        Alert.alert('Error', error.message);
       }
     }
   };

@@ -13,13 +13,21 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app needs access to the microphone to record your speech",
+        "NSSpeechRecognitionUsageDescription": "This app needs access to speech recognition to transcribe your speech"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.RylaV0"
     },
     "web": {
       "bundler": "metro",
@@ -48,6 +56,18 @@
         {
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone.",
           "videoPermission": "Allow $(PRODUCT_NAME) to access your camera roll."
+        }
+      ],
+      [
+        "react-native-permissions",
+        {
+          "iosPermissions": [
+            "Microphone",
+            "Speech"
+          ],
+          "androidPermissions": [
+            "android.permission.RECORD_AUDIO"
+          ]
         }
       ]
     ],
