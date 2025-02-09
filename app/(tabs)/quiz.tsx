@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getAuth } from 'firebase/auth';
-import { getDatabase, ref as dbRef, update } from 'firebase/database';
+import { getDatabase, ref as dbRef, update, onValue } from 'firebase/database';
 
 // Add interface at the top
 interface QuizQuestion {
@@ -24,146 +24,169 @@ const questions: Record<string, QuizQuestion[]> = {
   beginner: [
     { 
       question: "Hier, nous ................ un film intéressant.", 
-      options: ["regardons", "avons regardé", "regardions"], 
+      options: ["regardons", "avons regardé", "regardions", "Don't Know"], 
       answer: "avons regardé",
       context: "Past tense usage" 
     },
-    { question: "Translate into English: Bonjour.", options: ["Goodbye", "Hello", "Please"], answer: "Hello" },
-    { question: "What does 'merci' mean?", options: ["Thank you", "Yes", "Goodbye"], answer: "Thank you" },
-    { question: "Choose the correct article for 'pomme':", options: ["Le", "La", "Les"], answer: "La" },
-    { question: "Which is a French color?", options: ["Rouge", "Livre", "Porte"], answer: "Rouge" },
-    { question: "J'aime ................... chocolat.", options: ["le", "la", "les"], answer: "le" },
+    { 
+      question: "Translate into English: Bonjour.", 
+      options: ["Goodbye", "Hello", "Please", "Don't Know"], 
+      answer: "Hello" 
+    },
+    { 
+      question: "What does 'merci' mean?", 
+      options: ["Thank you", "Yes", "Goodbye", "Don't Know"], 
+      answer: "Thank you" 
+    },
+    { 
+      question: "Choose the correct article for 'pomme':", 
+      options: ["Le", "La", "Les", "Don't Know"], 
+      answer: "La" 
+    },
+    { 
+      question: "Which is a French color?", 
+      options: ["Rouge", "Livre", "Porte", "Don't Know"], 
+      answer: "Rouge" 
+    },
+    { 
+      question: "J'aime ................... chocolat.", 
+      options: ["le", "la", "les", "Don't Know"], 
+      answer: "le" 
+    },
   ],
   intermediate: [
-    { question: "J'aime beaucoup ................ étudiant. Il est très sympathique.", options: ["cette", "ce", "cet"], answer: "cet" },
-    { question: "Nous ................ au cinéma demain.", options: ["allons", "allez", "va"], answer: "allons" },
-    { question: "Translate: Je voudrais un café, s'il vous plaît.", options: ["I want a coffee, please.", "I would like a coffee, please.", "I am drinking a coffee, please."], answer: "I would like a coffee, please." },
-    { question: "Elle parle ................ son professeur.", options: ["à", "avec", "de"], answer: "à" },
-    { question: "Which sentence is correct?", options: ["Elle a un chat noir.", "Elle as un chat noir.", "Elle a une chat noir."], answer: "Elle a un chat noir." },
+    { 
+      question: "J'aime beaucoup ................ étudiant. Il est très sympathique.", 
+      options: ["cette", "ce", "cet", "Don't Know"], 
+      answer: "cet" 
+    },
+    { 
+      question: "Nous ................ au cinéma demain.", 
+      options: ["allons", "allez", "va", "Don't Know"], 
+      answer: "allons" 
+    },
+    { 
+      question: "Translate: Je voudrais un café, s'il vous plaît.", 
+      options: ["I want a coffee, please.", "I would like a coffee, please.", "I am drinking a coffee, please.", "Don't Know"], 
+      answer: "I would like a coffee, please." 
+    },
+    { 
+      question: "Elle parle ................ son professeur.", 
+      options: ["à", "avec", "de", "Don't Know"], 
+      answer: "à" 
+    },
+    { 
+      question: "Which sentence is correct?", 
+      options: ["Elle a un chat noir.", "Elle as un chat noir.", "Elle a une chat noir.", "Don't Know"], 
+      answer: "Elle a un chat noir." 
+    },
   ],
   hard: [
-    { question: "She is smarter than her brother.", options: ["Elle est plus intelligente que son frère.", "Elle est moins intelligente que son frère.", "Elle est aussi intelligente que son frère."], answer: "Elle est plus intelligente que son frère." },
-    { question: "What does 'faire la cuisine' mean?", options: ["To eat in the kitchen", "To cook", "To clean the kitchen"], answer: "To cook" },
-    { question: "Choose the correct conjugation: Si j'avais de l'argent, je ................ une nouvelle voiture.", options: ["achète", "achèterai", "achèterais"], answer: "achèterais" },
-    { question: "Identify the past participle: Écrire -> ................", options: ["Écrivé", "Écrit", "Écrivant"], answer: "Écrit" },
+    { 
+      question: "She is smarter than her brother.", 
+      options: ["Elle est plus intelligente que son frère.", 
+               "Elle est moins intelligente que son frère.", 
+               "Elle est aussi intelligente que son frère.",
+               "Don't Know"], 
+      answer: "Elle est plus intelligente que son frère." 
+    },
+    { 
+      question: "What does 'faire la cuisine' mean?", 
+      options: ["To eat in the kitchen", "To cook", "To clean the kitchen", "Don't Know"], 
+      answer: "To cook" 
+    },
+    { 
+      question: "Choose the correct conjugation: Si j'avais de l'argent, je ................ une nouvelle voiture.", 
+      options: ["achète", "achèterai", "achèterais", "Don't Know"], 
+      answer: "achèterais" 
+    },
+    { 
+      question: "Identify the past participle: Écrire -> ................", 
+      options: ["Écrivé", "Écrit", "Écrivant", "Don't Know"], 
+      answer: "Écrit" 
+    },
   ],
 };
 
 const getRandomQuestions = (section: "beginner" | "intermediate" | "hard", count: number) => {
   const sectionQuestions = questions[section];
-  return sectionQuestions.sort(() => 0.5 - Math.random()).slice(0, count).map(q => ({
-    ...q,
-    options: [...q.options, "Don't Know"]
-  }));
+  return sectionQuestions.sort(() => 0.5 - Math.random()).slice(0, count);
 };
 
-const Quiz = () => {
-  const [score, setScore] = useState({ beginner: 0, intermediate: 0, hard: 0 });
-  const [currentQuestion, setCurrentQuestion] = useState<number>(0);
+const QuizScreen = () => {
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [section, setSection] = useState<"beginner" | "intermediate" | "hard">("beginner");
-  const [quizQuestions, setQuizQuestions] = useState(() => getRandomQuestions(section, 5));
-  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [finalScore, setFinalScore] = useState({ total: 0, correct: 0 });
   const router = useRouter();
-  const auth = getAuth();
 
-  const saveFinalResult = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
+  useEffect(() => {
+    // Use the global questions object
+    const predefinedQuestions = [
+      ...questions.beginner,
+      ...questions.intermediate,
+      ...questions.hard
+    ];
 
-    const db = getDatabase();
-    const userRef = dbRef(db, `users/${user.uid}`);
-    const finalLevel = calculateResult();
-    const totalScore = score.beginner + score.intermediate + score.hard;
-    
-    try {
-      await update(userRef, {
-        'model_data': {
-          proficiency_level: finalLevel.toLowerCase(),
-          lang_to_learn: 'fr'
-        },
-        'quiz_details': {
-          finalLevel,
-          totalScore,
-          scores: {
-            beginner: score.beginner,
-            intermediate: score.intermediate,
-            hard: score.hard
-          },
-          details: {
-            totalQuestions: 15,
-            correctAnswers: totalScore,
-            accuracy: `${((totalScore / 15) * 100).toFixed(1)}%`
-          },
-          completedAt: new Date().toISOString()
-        }
-      });
-    } catch (error) {
-      console.error('Error saving final results:', error);
-      Alert.alert('Error', 'Failed to save your results');
-    }
-  };
+    const quizzesRef = dbRef(getDatabase(), 'quizzes');
+    onValue(quizzesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const adminQuestions = Object.values(data).flatMap((quiz: any) => 
+          Object.values(quiz.questions || {}).map((q: any) => ({
+            question: q.text,
+            options: [...q.options, "Don't Know"],
+            answer: q.correctAnswer,
+            context: 'Admin Created'
+          }))
+        );
+        setQuizQuestions([...predefinedQuestions, ...adminQuestions]);
+      }
+    });
+  }, []);
 
-  const handleAnswer = async (answer: string) => {
-    const user = auth.currentUser;
-    
+  const handleAnswer = async (selectedOption: string) => {
+    const currentQ = quizQuestions[currentQuestion];
+    const isCorrect = selectedOption === currentQ.answer;
+
+    // Update final score as we go
+    setFinalScore(prev => ({
+      total: prev.total + 1,
+      correct: isCorrect ? prev.correct + 1 : prev.correct
+    }));
+
+    const user = getAuth().currentUser;
     if (user) {
       const db = getDatabase();
       const userRef = dbRef(db, `users/${user.uid}`);
       
       try {
-        if (answer === "Don't Know") {
+        if (selectedOption === "Don't Know") {
           await update(userRef, {
-            [`responses/quiz/${section}/${currentQuestion}`]: {
-              question: quizQuestions[currentQuestion].question,
+            [`responses/quiz/${currentQ.context || ''}/${currentQuestion}`]: {
+              question: currentQ.question,
               unmarked: true,
               skippedAt: new Date().toISOString()
             }
           });
         } else {
-          const isCorrect = answer === quizQuestions[currentQuestion].answer;
           await update(userRef, {
-            [`responses/quiz/${section}/${currentQuestion}`]: {
-              question: quizQuestions[currentQuestion].question,
-              userAnswer: answer,
-              correctAnswer: quizQuestions[currentQuestion].answer,
+            [`responses/quiz/${currentQ.context || ''}/${currentQuestion}`]: {
+              question: currentQ.question,
+              userAnswer: selectedOption,
+              correctAnswer: currentQ.answer,
               isCorrect,
               timestamp: new Date().toISOString()
             }
           });
-
-          if (isCorrect) {
-            setScore((prev) => ({ ...prev, [section]: prev[section] + 1 }));
-            
-            // Store the learned word
-            await update(userRef, {
-              [`learnedWords/${new Date().getTime()}`]: {
-                french: quizQuestions[currentQuestion].question,
-                english: answer,
-                learnedAt: new Date().toISOString(),
-                section: section,
-                context: quizQuestions[currentQuestion].context || ''
-              }
-            });
-          }
         }
 
         if (currentQuestion === quizQuestions.length - 1) {
-          if (section === "hard") {
-            await saveFinalResult();
-            setQuizCompleted(true);
-          } else {
-            if (section === "beginner") {
-              setSection("intermediate");
-              setQuizQuestions(getRandomQuestions("intermediate", 5));
-            } else if (section === "intermediate") {
-              setSection("hard");
-              setQuizQuestions(getRandomQuestions("hard", 5));
-            }
-            setCurrentQuestion(0);
-          }
+          await saveFinalResult();
+          setShowResults(true);
         } else {
-          setCurrentQuestion((prev) => prev + 1);
+          setCurrentQuestion(prev => prev + 1);
         }
         setSelectedAnswer(null);
       } catch (error) {
@@ -173,69 +196,134 @@ const Quiz = () => {
     }
   };
 
-  const calculateResult = () => {
-    const totalScore = score.beginner + score.intermediate + score.hard;
-    if (totalScore <= 5) return "beginner";
-    if (totalScore > 5 && totalScore <= 7) return "intermediate";
-    return "advanced";
+  const saveFinalResult = async () => {
+    const user = getAuth().currentUser;
+    if (!user) return;
+
+    const db = getDatabase();
+    const userRef = dbRef(db, `users/${user.uid}`);
+    
+    // Calculate scores per section
+    const beginnerScore = quizQuestions
+      .filter(q => q.context === 'beginner')
+      .reduce((acc, q) => acc + (selectedAnswer === q.answer ? 1 : 0), 0);
+    
+    const intermediateScore = quizQuestions
+      .filter(q => q.context === 'intermediate')
+      .reduce((acc, q) => acc + (selectedAnswer === q.answer ? 1 : 0), 0);
+    
+    const hardScore = quizQuestions
+      .filter(q => q.context === 'hard')
+      .reduce((acc, q) => acc + (selectedAnswer === q.answer ? 1 : 0), 0);
+    
+    const adminScore = quizQuestions
+      .filter(q => q.context === 'Admin Created')
+      .reduce((acc, q) => acc + (selectedAnswer === q.answer ? 1 : 0), 0);
+
+    const totalCorrect = finalScore.correct;
+    const accuracy = (totalCorrect / finalScore.total) * 100;
+    
+    // New categorization logic based on accuracy
+    let userLevel = "beginner";
+    if (accuracy > 50) {
+      userLevel = "advanced";
+    } else if (accuracy > 25) {
+      userLevel = "intermediate";
+    }
+
+    try {
+      await update(userRef, {
+        'quiz_results': {
+          scores: {
+            beginner: beginnerScore,
+            intermediate: intermediateScore,
+            hard: hardScore,
+            admin: adminScore
+          },
+          details: {
+            totalQuestions: finalScore.total,
+            correctAnswers: totalCorrect,
+            accuracy: `${accuracy.toFixed(1)}%`,
+            userLevel,
+            sectionScores: {
+              beginnerAccuracy: `${((beginnerScore / quizQuestions.filter(q => q.context === 'beginner').length) * 100).toFixed(1)}%`,
+              intermediateAccuracy: `${((intermediateScore / quizQuestions.filter(q => q.context === 'intermediate').length) * 100).toFixed(1)}%`,
+              hardAccuracy: `${((hardScore / quizQuestions.filter(q => q.context === 'hard').length) * 100).toFixed(1)}%`,
+              adminAccuracy: `${((adminScore / quizQuestions.filter(q => q.context === 'Admin Created').length) * 100).toFixed(1)}%`
+            }
+          },
+          completedAt: new Date().toISOString()
+        },
+        'user_level': userLevel,
+        'accuracy_percentage': accuracy.toFixed(1)
+      });
+    } catch (error) {
+      console.error('Error saving final results:', error);
+      Alert.alert('Error', 'Failed to save your results');
+    }
   };
+
+  if (showResults) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.resultContainer}>
+          <Text style={styles.resultText}>Quiz Complete!</Text>
+          
+          <Text style={styles.levelText}>
+            Level: {
+              finalScore.correct / finalScore.total * 100 <= 25 ? "Beginner" :
+              finalScore.correct / finalScore.total * 100 <= 50 ? "Intermediate" : 
+              "Advanced"
+            }
+          </Text>
+
+          <Text style={styles.scoreText}>
+            Score: {finalScore.correct} / {finalScore.total}
+          </Text>
+          
+          <Text style={styles.accuracyText}>
+            Accuracy: {((finalScore.correct / finalScore.total) * 100).toFixed(1)}%
+          </Text>
+
+          <Text style={styles.feedbackText}>
+            {finalScore.correct / finalScore.total * 100 <= 25 
+              ? "Keep practicing! You're at the beginning of your journey."
+              : finalScore.correct / finalScore.total * 100 <= 50 
+              ? "Good progress! You're at an intermediate level."
+              : "Excellent work! You've reached an advanced level!"
+            }
+          </Text>
+
+          <TouchableOpacity 
+            style={styles.continueButton}
+            onPress={() => router.replace('./welcome')}
+          >
+            <Text style={styles.continueButtonText}>Return to Welcome</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      {!quizCompleted ? (
-        <>
-          <Text style={styles.title}>{`Section: ${section.toUpperCase()}`}</Text>
-          <Text style={styles.question}>{quizQuestions[currentQuestion].question}</Text>
-          <ScrollView style={styles.scrollView}>
-            {quizQuestions[currentQuestion].options.map((option, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.optionButton,
-                  selectedAnswer === option && styles.selectedOption,
-                  option === "Don't Know" && styles.dontKnowOption,
-                ]}
-                onPress={() => setSelectedAnswer(option)}
-              >
-                <Text style={[
-                  styles.optionText,
-                  option === "Don't Know" && styles.dontKnowText
-                ]}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          <TouchableOpacity
-            style={[
-              styles.continueButton,
-              !selectedAnswer && styles.continueButtonDisabled,
-            ]}
-            disabled={!selectedAnswer}
-            onPress={() => handleAnswer(selectedAnswer!)}
-          >
-            <Text style={styles.continueButtonText}>NEXT</Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <View style={styles.resultContainer}>
-          <Text style={styles.resultText}>
-            Your French level is: {calculateResult()}
-          </Text>
-          <Text style={styles.scoreText}>
-            Total Score: {score.beginner + score.intermediate + score.hard}/15
-          </Text>
-          <Text style={styles.accuracyText}>
-            Accuracy: {((score.beginner + score.intermediate + score.hard) / 15 * 100).toFixed(1)}%
-          </Text>
-          <TouchableOpacity
-            style={styles.continueButton}
-            onPress={() => {
-              router.replace('/(tabs)/Home1');
-            }}
-          >
-            <Text style={styles.continueButtonText}>Start Learning!</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <Text style={styles.questionText}>
+        Question {currentQuestion + 1} of {quizQuestions.length}
+      </Text>
+      <Text style={styles.question}>{quizQuestions[currentQuestion]?.question}</Text>
+
+      {quizQuestions[currentQuestion]?.options.map((option, index) => (
+        <TouchableOpacity
+          key={index}
+          style={[
+            styles.optionButton,
+            selectedAnswer === option && styles.selectedOption
+          ]}
+          onPress={() => handleAnswer(option)}
+        >
+          <Text style={styles.optionText}>{option}</Text>
+        </TouchableOpacity>
+      ))}
     </SafeAreaView>
   );
 };
@@ -351,7 +439,26 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontStyle: 'italic',
   },
+  questionText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 10,
+  },
+  levelText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#F04A63',
+    marginVertical: 15,
+  },
+  feedbackText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginVertical: 20,
+    paddingHorizontal: 20,
+    fontStyle: 'italic'
+  },
 });
 
-
-export default Quiz;
+export default QuizScreen;

@@ -1,20 +1,31 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
+import { getAnalytics } from 'firebase/analytics';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDAizBi4X54TLNuv5KwYOv_vxdtKl9vZrA",
-  authDomain: "rylang-afb7c.firebaseapp.com",
-  databaseURL: "https://rylang-afb7c-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "rylang-afb7c",
-  storageBucket: "rylang-afb7c.firebasestorage.app",
-  messagingSenderId: "1086073935202",
-  appId: "1:1086073935202:web:3d531194b4b0f0ef2f883b"
+  apiKey: "AIzaSyBHC5tZP6ojRJifuEqYFnKKy86Ji1qGZMw",
+  authDomain: "rylaang-64c80.firebaseapp.com",
+  databaseURL: "https://rylaang-64c80-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "rylaang-64c80",
+  storageBucket: "rylaang-64c80.firebasestorage.app",
+  messagingSenderId: "888934332474",
+  appId: "1:888934332474:web:68d1dfc2b6e61a3304dd03",
+  measurementId: "G-28Y7281B9H"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);  // Simplified auth initialization
-export const database = getDatabase(app);
-export { app };
+// Initialize Firebase only if it hasn't been initialized
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+
+// Initialize services
+const auth = getAuth(app);
+const database = getDatabase(app);
+
+// Initialize analytics only in browser environment
+let analytics = null;
+if (typeof window !== 'undefined') {
+  analytics = getAnalytics(app);
+}
+
+export { app, auth, database, analytics };

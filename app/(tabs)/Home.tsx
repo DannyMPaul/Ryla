@@ -143,6 +143,10 @@ const HomeScreen: React.FC = () => {
     opacity: useRef(new Animated.Value(1)).current,
   };
   const [isFirstLogin, setIsFirstLogin] = useState(true);
+  const [quizResults, setQuizResults] = useState<{
+    finalLevel?: string;
+    accuracy?: string;
+  }>({});
 
   useEffect(() => {
     checkUserProgress();
@@ -268,6 +272,26 @@ const HomeScreen: React.FC = () => {
 
       return () => unsubscribe();
     }
+  }, []);
+
+  useEffect(() => {
+    const fetchQuizResults = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (user) {
+        const db = getAuth();
+        const userRef = ref(database, `users/${user.uid}`);
+        const snapshot = await get(userRef);
+        const userData = snapshot.val();
+
+        if (userData?.quizResults) {
+          setQuizResults(userData.quizResults);
+        }
+      }
+    };
+
+    fetchQuizResults();
   }, []);
 
   const getMotivationalQuote = (level: string) => {
@@ -423,6 +447,14 @@ const HomeScreen: React.FC = () => {
           </View>
         </View>
       </View>
+
+      {quizResults && (
+        <View style={styles.quizResultsContainer}>
+          <Text style={styles.welcomeText}>Quiz Results</Text>
+          <Text style={styles.levelText}>Level: {quizResults.finalLevel}</Text>
+          <Text style={styles.accuracyText}>Accuracy: {quizResults.accuracy}</Text>
+        </View>
+      )}
 
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
@@ -675,9 +707,9 @@ const styles = StyleSheet.create({
   },
   quizResultsContainer: {
     backgroundColor: 'rgba(255,255,255,0.1)',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
+    padding: 16,
+    margin: 16,
+    borderRadius: 12,
   },
   levelText: {
     color: '#fff',
