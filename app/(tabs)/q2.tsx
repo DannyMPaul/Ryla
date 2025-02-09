@@ -6,7 +6,7 @@ import { getDatabase, ref, update, get } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import { database } from '../firebase/firebase';
 import MatchPair1 from '../../components/MatchPair1';
-import ResultCard from '../../components/ResultCardq1'; // Import the ResultCard component
+import ResultCard from '../../components/ResultCardq1'; 
 
 interface QuizOption {
   id: string;
@@ -31,6 +31,7 @@ const QuizScreen = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0); // Track correct answers
   const [showResultCard, setShowResultCard] = useState(false); // Control visibility of ResultCard
+  const [backgroundColor, setBackgroundColor] = useState('rgb(15, 0, 25)'); // State for background color
 
   const questions: QuizQuestion[] = [
     {
@@ -103,10 +104,9 @@ const QuizScreen = () => {
       const userRef = ref(database, `users/${user.uid}`);
       
       if (selectedAnswer && selectedAnswer.isCorrect) {
-        // Increment correct answers
         setCorrectAnswers(prev => prev + 1);
+        setBackgroundColor('rgb(0, 255, 0)'); // Change background color to green
 
-        // Store the learned word when correct
         await update(userRef, {
           [`learnedWords/${new Date().getTime()}`]: {
             french: currentQuestion.question.split('"')[1],
@@ -119,16 +119,13 @@ const QuizScreen = () => {
           [`quizResponses/q${currentQuestion.id}/completedAt`]: new Date().toISOString()
         });
 
-        // Show success modal
         Vibration.vibrate(200);
         setShowSuccessModal(true);
         
-        // Rest of your existing success handling code...
       } else {
-        // Wrong answer
         setHearts(prev => Math.max(0, prev - 1));
-        
-        // Store the incorrect attempt
+        setBackgroundColor('rgb(208, 56, 56)');
+
         const userSnapshot = await get(userRef);
         const userData = userSnapshot.val();
         
@@ -162,6 +159,11 @@ const QuizScreen = () => {
           );
         }
       }
+
+      setTimeout(() => {
+        setBackgroundColor('rgb(15, 0, 25)');
+      }, 5000);
+
     } catch (error) {
       console.error('Error updating database:', error);
       Alert.alert('Error', 'Failed to save progress');
@@ -174,7 +176,6 @@ const QuizScreen = () => {
       setSelectedOption(null);
       setShowNextButton(false);
     } else {
-      // Show ResultCard when all questions are answered
       setShowResultCard(true);
     }
   };
@@ -232,7 +233,7 @@ const QuizScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor }]}>
       {showResultCard ? (
         <ResultCard
           correctAnswers={correctAnswers}
@@ -360,7 +361,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: 12,
     alignItems: 'center',
   },
   newWordBadge: {
@@ -399,8 +400,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgb(12, 1, 22)',
   },
   optionImage: {
-    width: 90,
-    height: 90,
+    width: 100,
+    height: 100,
     borderRadius: 20,
     marginRight: 16,
   },
