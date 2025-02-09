@@ -9,7 +9,7 @@ import {
   SafeAreaView,
   BackHandler,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -76,7 +76,7 @@ const AIConversationsScreen = () => {
         <Text style={styles.title}>AI Conversations</Text>
         
         <View style={styles.header}>
-          <Icon name="message-circle" size={24} color="#666" />
+          <Feather name="message-circle" size={24} color="#666" />
           <Text style={styles.headerText}>
             Practice speaking in real-life situations at your level and get personalized feedback.
           </Text>
@@ -112,7 +112,7 @@ const AIConversationsScreen = () => {
                 <Text style={styles.itemSubtitle}>{item.subtitle}</Text>
                 <Text style={styles.itemLevel}>{item.level}</Text>
               </View>
-              <Icon name="chevron-right" size={24} color="#1cb0f6" />
+              <Feather name="chevron-right" size={24} color="#1cb0f6" />
             </View>
           </TouchableOpacity>
         ))}

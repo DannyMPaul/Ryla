@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import { Feather } from '@expo/vector-icons';
 import { getAuth, onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -137,9 +137,9 @@ const ProfileScreen = () => {
             <Image source={{ uri: profileImage }} style={styles.profileImage} />
           ) : (
             <View style={styles.profileIcon}>
-              <Icon name="user" size={40} color="#0066FF" />
+              <Feather name="user" size={40} color="#0066FF" />
               <View style={styles.addImageIcon}>
-                <Icon name="plus-circle" size={24} color="#58cc02" />
+                <Feather name="plus-circle" size={24} color="#58cc02" />
               </View>
             </View>
           )}
@@ -167,10 +167,10 @@ const ProfileScreen = () => {
           onPress={() => setIsLearnedWordsOpen(!isLearnedWordsOpen)}
         >
           <Text style={styles.sectionTitle}>Learned Words</Text>
-          <Icon 
+          <Feather 
             name={isLearnedWordsOpen ? "chevron-up" : "chevron-down"} 
             size={24} 
-            color="#FFFFFF" 
+            color="#666666"
           />
         </TouchableOpacity>
         
@@ -204,12 +204,12 @@ const ProfileScreen = () => {
       </View>
 
       <TouchableOpacity style={styles.settingsButton}>
-        <Icon name="settings" size={24} color="#666666" />
+        <Feather name="settings" size={24} color="#666666" />
         <Text style={styles.settingsText}>Settings</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-        <Icon name="log-out" size={24} color="#FF3B30" />
+        <Feather name="log-out" size={24} color="#FF3B30" />
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
 

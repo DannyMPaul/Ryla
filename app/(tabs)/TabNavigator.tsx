@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, Platform, BackHandler } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/Feather';
+import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 // Import your screens
@@ -43,7 +43,7 @@ const TabNavigator = () => {
         component={HomeScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Icon name="globe" size={24} color={color} />
+            <Feather name="globe" size={24} color={color} />
           ),
         }}
       />
@@ -52,7 +52,7 @@ const TabNavigator = () => {
         component={LearnScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Icon name="users" size={24} color={color} />
+            <Feather name="users" size={24} color={color} />
           ),
         }}
       />
@@ -61,7 +61,7 @@ const TabNavigator = () => {
         component={SpeakScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Icon name="message-circle" size={24} color={color} />
+            <Feather name="message-circle" size={24} color={color} />
           ),
         }}
       />
@@ -70,7 +70,7 @@ const TabNavigator = () => {
         component={ReviewScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Icon name="trending-up" size={24} color={color} />
+            <Feather name="trending-up" size={24} color={color} />
           ),
         }}
       />

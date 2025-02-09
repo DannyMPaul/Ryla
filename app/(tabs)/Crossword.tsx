@@ -9,7 +9,7 @@ import {
   ScrollView,
   ImageBackground,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import { Feather } from '@expo/vector-icons';
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref, set, get } from 'firebase/database';
 
@@ -312,7 +312,7 @@ const CrosswordScreen = () => {
             style={styles.newGameButton}
             onPress={handleNewGame}
           >
-            <Icon name="refresh-cw" size={20} color="#FFFFFF" />
+            <Feather name="refresh-cw" size={20} color="#FFFFFF" />
             <Text style={styles.buttonText}>New game</Text>
           </TouchableOpacity>
 
@@ -325,7 +325,7 @@ const CrosswordScreen = () => {
               style={styles.actionButton}
               onPress={handleShowSolution}
             >
-              <Icon name="eye" size={20} color="#FFFFFF" />
+              <Feather name="eye" size={20} color="#FFFFFF" />
               <Text style={styles.buttonText}>Show solution</Text>
             </TouchableOpacity>
           </View>

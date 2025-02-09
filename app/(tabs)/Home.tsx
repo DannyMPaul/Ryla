@@ -9,7 +9,7 @@ import {
   Dimensions,
   BackHandler,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import TabNavigator from './TabNavigator';
@@ -43,7 +43,7 @@ const ExpandableCard: React.FC<CardProps> = ({ title, isExpanded, onToggle, chil
     <View style={styles.card}>
       <TouchableOpacity onPress={onToggle} style={styles.cardHeader}>
         <Text style={styles.cardTitle}>{title}</Text>
-        <Icon 
+        <MaterialCommunityIcons 
           name={isExpanded ? 'chevron-up' : 'chevron-down'} 
           size={24} 
           color="#fff" 
@@ -116,6 +116,9 @@ interface StarProgress {
   star4: boolean;
   star5: boolean;
 }
+
+// Add type for valid icon names
+type MaterialCommunityIconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
 const HomeScreen: React.FC = () => {
   const [userData, setUserData] = useState<UserProgress | null>(null);
@@ -347,7 +350,7 @@ const HomeScreen: React.FC = () => {
     }));
   };
 
-  const renderPathNode = (level: number, icon: string, onPress: () => void) => {
+  const renderPathNode = (level: number, icon: MaterialCommunityIconName, onPress: () => void) => {
     const isUnlocked = level <= unlockedStars;
     const isCompleted = level === 1 ? 
       (completedQuestions.q1 && completedQuestions.q2) : 
@@ -389,14 +392,14 @@ const HomeScreen: React.FC = () => {
             }
           ]}
         >
-          <Icon 
+          <MaterialCommunityIcons 
             name={icon} 
             size={32} 
             color={isUnlocked ? "#58cc02" : "#666"} 
           />
           {!isUnlocked && (
             <View style={styles.lockIconContainer}>
-              <Icon name="lock" size={16} color="#fff" />
+              <MaterialCommunityIcons name="lock" size={16} color="#fff" />
             </View>
           )}
         </Animated.View>
@@ -494,7 +497,7 @@ const HomeScreen: React.FC = () => {
                 onPress={() => router.replace('/(tabs)/star2q1' as any)}
                 disabled={!userData?.unlockedStars || userData.unlockedStars < 2}
               >
-                <Icon 
+                <MaterialCommunityIcons 
                   name="star" 
                   size={40} 
                   color={(userData?.unlockedStars ?? 0) >= 2 ? "#FFD700" : "#666666"}
@@ -530,7 +533,7 @@ const HomeScreen: React.FC = () => {
               onToggle={() => toggleCard('quests')}
             >
               <View style={styles.questItem}>
-                <Icon name="lightning-bolt" size={24} color="#ffd700" />
+                <MaterialCommunityIcons name="lightning-bolt" size={24} color="#ffd700" />
                 <View style={styles.questContent}>
                   <Text style={styles.questText}>Earn 10 XP</Text>
                   <View style={styles.progressBar}>

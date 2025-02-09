@@ -9,7 +9,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref, get } from 'firebase/database';
@@ -144,25 +144,25 @@ const ChapterProgressScreen = () => {
           <Image source={lesson.image} style={styles.lessonImage} />
           {lesson.isCompleted && (
             <View style={styles.checkmark}>
-              <Icon name="check" size={16} color="#fff" />
+              <Feather name="check" size={16} color="#fff" />
             </View>
           )}
           {lesson.isLocked && (
             <View style={styles.lock}>
-              <Icon name="lock" size={16} color="#fff" />
+              <Feather name="lock" size={16} color="#fff" />
             </View>
           )}
         </TouchableOpacity>
         <View style={styles.lessonDetails}>
           {lesson.type === 'speaking' && (
             <View style={styles.lessonTypeBadge}>
-              <Icon name="mic" size={12} color="#fff" />
+              <Feather name="mic" size={12} color="#fff" />
               <Text style={styles.lessonTypeBadgeText}>SPEAKING PRACTICE</Text>
             </View>
           )}
           {lesson.type === 'ai' && (
             <View style={[styles.lessonTypeBadge, styles.aiBadge]}>
-              <Icon name="message-circle" size={12} color="#fff" />
+              <Feather name="message-circle" size={12} color="#fff" />
               <Text style={styles.lessonTypeBadgeText}>AI CONVERSATIONS</Text>
             </View>
           )}
@@ -209,7 +209,7 @@ const ChapterProgressScreen = () => {
         
         <View style={styles.checkpointContainer}>
           <View style={styles.checkpointIcon}>
-            <Icon name="award" size={24} color="#FFD700" />
+            <Feather name="award" size={24} color="#FFD700" />
           </View>
           <View style={styles.checkpointContent}>
             <Text style={styles.checkpointTitle}>Checkpoint</Text>

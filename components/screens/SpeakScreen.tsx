@@ -15,12 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Speech from "expo-speech";
-import Voice, { 
-  SpeechResultsEvent,
-  SpeechErrorEvent 
-} from '@react-native-voice/voice';
-import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
-import Icon from "@expo/vector-icons/MaterialIcons";
+import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Types
@@ -45,7 +40,6 @@ const HTTP_FALLBACK_URL = 'http://localhost:8000/process_text';
 
 export default function LanguageLearningScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(true);
   const [inputText, setInputText] = useState("");
@@ -61,9 +55,6 @@ export default function LanguageLearningScreen() {
   }, []);
 
   const setupVoiceAndWebSocket = async () => {
-    await Voice.destroy();
-    Voice.onSpeechResults = onSpeechResults;
-    Voice.onSpeechError = onSpeechError;
     await loadOrCreateUserId();
     initializeWebSocket();
   };
@@ -72,7 +63,6 @@ export default function LanguageLearningScreen() {
     if (wsConnection) {
       wsConnection.close();
     }
-    Voice.destroy().then(Voice.removeAllListeners);
   };
 
   const loadOrCreateUserId = async () => {
@@ -116,83 +106,9 @@ export default function LanguageLearningScreen() {
     }
   };
 
-  const checkPermission = async () => {
-    const permission = Platform.select({
-      ios: PERMISSIONS.IOS.MICROPHONE,
-      android: PERMISSIONS.ANDROID.RECORD_AUDIO,
-    });
-
-    if (!permission) return false;
-
-    try {
-      const result = await check(permission);
-      if (result === RESULTS.GRANTED) return true;
-      
-      const requestResult = await request(permission);
-      return requestResult === RESULTS.GRANTED;
-    } catch (error) {
-      console.error('Permission check failed:', error);
-      return false;
-    }
-  };
-
-  const startPulseAnimation = () => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(animatedValue, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.ease,
-          useNativeDriver: true,
-        }),
-        Animated.timing(animatedValue, {
-          toValue: 0,
-          duration: 1000,
-          easing: Easing.ease,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  };
-
-  const startListening = async () => {
-    try {
-      const hasPermission = await checkPermission();
-      if (!hasPermission) {
-        Alert.alert('Permission Denied', 'Microphone permission is required for voice input.');
-        return;
-      }
-
-      await Voice.start('en-US');
-      setIsListening(true);
-      startPulseAnimation();
-    } catch (error) {
-      console.error('Start listening error:', error);
-      Alert.alert('Error', 'Could not start voice recognition');
-    }
-  };
-
-  const stopListening = async () => {
-    try {
-      await Voice.stop();
-      setIsListening(false);
-      animatedValue.setValue(0);
-    } catch (error) {
-      console.error("Stop listening error:", error);
-    }
-  };
-
-  const onSpeechResults = async (e: SpeechResultsEvent) => {
-    if (e.value && e.value[0]) {
-      const transcription = e.value[0];
-      await processUserInput(transcription);
-    }
-  };
-
-  const onSpeechError = (e: SpeechErrorEvent) => {
-    console.error('Speech error:', e);
-    setIsListening(false);
-    Alert.alert('Error', 'Voice recognition failed');
+  const startListening = () => {
+    Alert.alert('Voice Input', 'Voice input is not available in Expo Go. Please use text input instead.');
+    setIsVoiceMode(false);
   };
 
   const handleSendText = async () => {
@@ -344,7 +260,7 @@ export default function LanguageLearningScreen() {
             onPress={() => setIsVoiceMode(!isVoiceMode)}
             style={styles.modeToggle}
           >
-            <Icon
+            <MaterialIcons
               name={isVoiceMode ? "keyboard" : "mic"}
               size={24}
               color="white"
@@ -373,15 +289,15 @@ export default function LanguageLearningScreen() {
                 style={[
                   styles.micButton,
                   {
-                    backgroundColor: isListening ? "#FF1493" : "#8B0000",
+                    backgroundColor: "#8B0000",
                     opacity: isProcessing ? 0.5 : 1,
                   },
                 ]}
-                onPress={isListening ? stopListening : startListening}
+                onPress={startListening}
                 disabled={isProcessing}
               >
-                <Icon
-                  name={isListening ? "stop" : "mic"}
+                <MaterialIcons
+                  name="mic"
                   size={30}
                   color="white"
                 />
@@ -403,7 +319,7 @@ export default function LanguageLearningScreen() {
                 onPress={handleSendText}
                 disabled={isProcessing || !inputText.trim()}
               >
-                <Icon name="send" size={24} color="white" />
+                <MaterialIcons name="send" size={24} color="white" />
               </TouchableOpacity>
             </View>
           )}
