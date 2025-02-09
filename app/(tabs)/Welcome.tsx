@@ -300,7 +300,7 @@ const VideoTranscriptionScreen: React.FC = () => {
       {!showButton && (
         <TouchableOpacity 
           style={styles.skipButton} 
-          onPress={() => router.replace('/Home')}
+          onPress={() => router.replace('./Home1')}
         >
           <Text style={styles.skipButtonText}>Skip</Text>
         </TouchableOpacity>
@@ -310,7 +310,7 @@ const VideoTranscriptionScreen: React.FC = () => {
       {showButton && (
         <TouchableOpacity 
           style={styles.nextButton} 
-          onPress={() => router.replace('/Home')}
+          onPress={() => router.replace('./Home1')}
         >
           <Text style={styles.nextButtonText}>Proceed</Text>
         </TouchableOpacity>

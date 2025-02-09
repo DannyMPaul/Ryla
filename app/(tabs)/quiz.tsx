@@ -296,7 +296,7 @@ const QuizScreen = () => {
 
           <TouchableOpacity 
             style={styles.continueButton}
-            onPress={() => router.replace('./welcome')}
+            onPress={() => router.replace('./Welcome')}
           >
             <Text style={styles.continueButtonText}>Return to Welcome</Text>
           </TouchableOpacity>
@@ -446,18 +446,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   levelText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#F04A63',
-    marginVertical: 15,
+    fontSize: 18,
+    color: '#FFFFFF',
+    marginBottom: 10,
   },
   feedbackText: {
     fontSize: 16,
     color: '#FFFFFF',
-    textAlign: 'center',
-    marginVertical: 20,
-    paddingHorizontal: 20,
-    fontStyle: 'italic'
+    marginBottom: 20,
   },
 });
 
