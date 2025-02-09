@@ -26,13 +26,14 @@ const QuizScreen = () => {
   const router = useRouter();
   const [hearts, setHearts] = useState(5);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [showNextButton, setShowNextButton] = useState(false);
+  const [showNextButton, setShowNextButton] = useState(false); // Control visibility of Next button
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0); // Track correct answers
   const [showResultCard, setShowResultCard] = useState(false); // Control visibility of ResultCard
   const [backgroundColor, setBackgroundColor] = useState('rgb(15, 0, 25)'); // State for background color
-
+  const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null); // Track if the answer is correct
+  const [isCheckDisabled, setIsCheckDisabled] = useState(false); // Disable Check button after use
   const questions: QuizQuestion[] = [
     {
       id: '1',
@@ -100,12 +101,15 @@ const QuizScreen = () => {
       return;
     }
 
+    setIsCheckDisabled(true); // Disable the Check button
+
     try {
       const userRef = ref(database, `users/${user.uid}`);
       
       if (selectedAnswer && selectedAnswer.isCorrect) {
+        setIsAnswerCorrect(true); // Set answer as correct
         setCorrectAnswers(prev => prev + 1);
-        setBackgroundColor('rgb(0, 255, 0)'); // Change background color to green
+        setBackgroundColor('green'); // Change background color to green
 
         await update(userRef, {
           [`learnedWords/${new Date().getTime()}`]: {
@@ -121,10 +125,11 @@ const QuizScreen = () => {
 
         Vibration.vibrate(200);
         setShowSuccessModal(true);
-        
+        setShowNextButton(true); // Show the Next button
       } else {
+        setIsAnswerCorrect(false); // Set answer as incorrect
         setHearts(prev => Math.max(0, prev - 1));
-        setBackgroundColor('rgb(208, 56, 56)');
+        setBackgroundColor('red'); // Change background color to red
 
         const userSnapshot = await get(userRef);
         const userData = userSnapshot.val();
@@ -160,9 +165,11 @@ const QuizScreen = () => {
         }
       }
 
+      // Revert background color after 1 second
       setTimeout(() => {
         setBackgroundColor('rgb(15, 0, 25)');
-      }, 5000);
+        setIsCheckDisabled(false); // Re-enable the Check button
+      }, 1000);
 
     } catch (error) {
       console.error('Error updating database:', error);
@@ -174,7 +181,8 @@ const QuizScreen = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedOption(null);
-      setShowNextButton(false);
+      setShowNextButton(false); // Hide the Next button for the next question
+      setIsAnswerCorrect(null); // Reset correctness state
     } else {
       setShowResultCard(true);
     }
@@ -186,6 +194,8 @@ const QuizScreen = () => {
     setHearts(5);
     setSelectedOption(null);
     setShowResultCard(false);
+    setIsAnswerCorrect(null); // Reset correctness state
+    setShowNextButton(false); // Hide the Next button on restart
   };
 
   const handleSkip = () => {
@@ -261,35 +271,29 @@ const QuizScreen = () => {
 
           {currentQuestion.type !== 'match' && (
             <View style={styles.footer}>
-              <TouchableOpacity 
-                style={styles.skipButton} 
-                onPress={handleSkip}
-                disabled={showNextButton}
-              >
-                <Text style={styles.skipButtonText}>SKIP</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[
-                  styles.nextButton,
-                  !selectedOption && styles.nextButtonDisabled
-                ]}
-                onPress={handleNextQuestion}
-                disabled={!selectedOption}
-              >
-                <Text style={styles.nextButtonText}>NEXT</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[
-                  styles.checkButton, 
-                  (!selectedOption || showNextButton) && styles.checkButtonDisabled
-                ]}
-                onPress={handleCheck}
-                disabled={!selectedOption || showNextButton}
-              >
-                <Text style={styles.checkButtonText}>CHECK</Text>
-              </TouchableOpacity>
+              {/* Show Check button only if Next button is not visible */}
+              {!showNextButton && (
+                <TouchableOpacity
+                  style={[
+                    styles.checkButton, 
+                    (!selectedOption || isCheckDisabled) && styles.checkButtonDisabled
+                  ]}
+                  onPress={handleCheck}
+                  disabled={!selectedOption || isCheckDisabled}
+                >
+                  <Text style={styles.checkButtonText}>CHECK</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Show Next button only if the correct answer is selected */}
+              {showNextButton && (
+                <TouchableOpacity 
+                  style={styles.nextButton}
+                  onPress={handleNextQuestion}
+                >
+                  <Text style={styles.nextButtonText}>NEXT</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
@@ -321,6 +325,7 @@ const QuizScreen = () => {
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
