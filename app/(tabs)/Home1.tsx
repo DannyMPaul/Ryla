@@ -125,7 +125,7 @@ const ChapterProgressScreen = () => {
 
   const handleLessonPress = (lesson: Lesson) => {
     if (lesson.isLocked || !lesson.route) return;
-    router.push(lesson.route);
+    router.push(lesson.route as any);
   };
 
   const renderLesson = (lesson: Lesson, index: number) => {

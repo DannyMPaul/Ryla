@@ -179,17 +179,20 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   const handleSubmit = async () => {
     if (validateForm()) {
       try {
+        // Check for admin credentials
+        if (email === 'admin@gmail.com' && password === 'admin123') {
+          router.replace('../admin/dashboard');
+          return;
+        }
+
         if (isLogin) {
-          // Login
           const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
           const user = userCredential.user;
           router.replace('/(tabs)/Home1');
         } else {
-          // Sign up
           const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
           const user = userCredential.user;
           
-          // Create user profile
           const userRef = dbRef(database, `users/${user.uid}`);
           await set(userRef, {
             name,
