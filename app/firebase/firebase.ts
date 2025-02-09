@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
-import { getAnalytics } from 'firebase/analytics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -18,14 +18,15 @@ const firebaseConfig = {
 // Initialize Firebase only if it hasn't been initialized
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize services
-const auth = getAuth(app);
+// Initialize Auth with AsyncStorage persistence
+const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage)
+});
+
+// Initialize Database
 const database = getDatabase(app);
 
-// Initialize analytics only in browser environment
-let analytics = null;
-if (typeof window !== 'undefined') {
-  analytics = getAnalytics(app);
-}
+export { app, auth, database };
 
-export { app, auth, database, analytics };
+// Add default export to fix warning
+export default { app, auth, database };
