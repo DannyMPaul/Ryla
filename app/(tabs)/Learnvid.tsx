@@ -1,8 +1,42 @@
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, FlatList, Image } from 'react-native';
 import { router } from 'expo-router';
 import { Feather as Icon } from '@expo/vector-icons';
+import { database } from '../firebase/firebase';
+import { ref, onValue } from 'firebase/database';
 
-export default function Learnvid() {
+interface Video {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  thumbnail?: string;
+}
+
+const Learnvid = () => {
+  const [videos, setVideos] = useState<Video[]>([]);
+
+  useEffect(() => {
+    const videosRef = ref(database, 'videos');
+    onValue(videosRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const videoList = Object.entries(data).map(([id, video]: [string, any]) => ({
+          id,
+          ...video,
+        }));
+        setVideos(videoList);
+      }
+    });
+  }, []);
+
+  const handleVideoPress = (video: Video) => {
+    router.push({
+      pathname: '/(tabs)/Frenchvid1',
+      params: { videoUrl: video.url, title: video.title }
+    });
+  };
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Learn Videos</Text>
@@ -57,9 +91,33 @@ export default function Learnvid() {
           </TouchableOpacity>
         </View>
       </View>
+
+      <FlatList
+        data={videos}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.videoCard}
+            onPress={() => handleVideoPress(item)}
+          >
+            {item.thumbnail && (
+              <Image
+                source={{ uri: item.thumbnail }}
+                style={styles.thumbnail}
+              />
+            )}
+            <View style={styles.videoInfo}>
+              <Text style={styles.videoTitle}>{item.title}</Text>
+              <Text style={styles.videoDescription} numberOfLines={2}>
+                {item.description}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      />
     </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -130,4 +188,30 @@ const styles = StyleSheet.create({
   lockedText: {
     color: '#999999',
   },
+  videoCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  thumbnail: {
+    width: '100%',
+    height: 200,
+    resizeMode: 'cover',
+  },
+  videoInfo: {
+    padding: 16,
+  },
+  videoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  videoDescription: {
+    fontSize: 14,
+    color: '#BBBBBB',
+  },
 });
+
+export default Learnvid;

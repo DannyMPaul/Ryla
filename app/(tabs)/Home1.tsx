@@ -90,7 +90,7 @@ const ChapterProgressScreen = () => {
         id: '2',
         title: 'First Quiz',
         type: 'speaking',
-        image: require('../../assets/images/FLE web.jpg'),
+        image: require('../../assets/images/qn.jpg'),
         isCompleted: false,
         isLocked: !unlockedLessons.includes('2'),
         route: '/(tabs)/q1' as const
@@ -99,7 +99,7 @@ const ChapterProgressScreen = () => {
         id: '3',
         title: 'Next Lesson',
         type: 'ai',
-        image: require('../../assets/images/food.jpeg'),
+        image: require('../../assets/images/speaklrn.png'),
         isCompleted: false,
         isLocked: !unlockedLessons.includes('3'),
       },

@@ -144,7 +144,7 @@ const HomeScreen: React.FC = () => {
   };
   const [isFirstLogin, setIsFirstLogin] = useState(true);
   const [quizResults, setQuizResults] = useState<{
-    finalLevel?: string;
+    userLevel?: string;
     accuracy?: string;
   }>({});
 
@@ -280,13 +280,15 @@ const HomeScreen: React.FC = () => {
       const user = auth.currentUser;
       
       if (user) {
-        const db = getAuth();
         const userRef = ref(database, `users/${user.uid}`);
         const snapshot = await get(userRef);
         const userData = snapshot.val();
 
-        if (userData?.quizResults) {
-          setQuizResults(userData.quizResults);
+        if (userData?.quiz_results?.details) {
+          setQuizResults({
+            userLevel: userData.quiz_results.details.userLevel ?? 'beginner',
+            accuracy: userData.quiz_results.details.accuracy ?? '0%'
+          });
         }
       }
     };
@@ -448,11 +450,25 @@ const HomeScreen: React.FC = () => {
         </View>
       </View>
 
-      {quizResults && (
-        <View style={styles.quizResultsContainer}>
-          <Text style={styles.welcomeText}>Quiz Results</Text>
-          <Text style={styles.levelText}>Level: {quizResults.finalLevel}</Text>
-          <Text style={styles.accuracyText}>Accuracy: {quizResults.accuracy}</Text>
+      {quizResults?.userLevel && (
+        <View style={styles.quizResultsCard}>
+          <Text style={styles.resultTitle}>Quiz Results</Text>
+          <View style={styles.resultRow}>
+            <Text style={styles.resultLabel}>Level:</Text>
+            <Text style={[
+              styles.resultValue, 
+              {
+                color: quizResults.userLevel === 'beginner' ? '#FF6B6B' :
+                       quizResults.userLevel === 'intermediate' ? '#4ECDC4' : '#95E1D3'
+              }
+            ]}>
+              {quizResults.userLevel.charAt(0).toUpperCase() + quizResults.userLevel.slice(1)}
+            </Text>
+          </View>
+          <View style={styles.resultRow}>
+            <Text style={styles.resultLabel}>Accuracy:</Text>
+            <Text style={styles.resultValue}>{quizResults.accuracy}</Text>
+          </View>
         </View>
       )}
 
@@ -757,6 +773,36 @@ const styles = StyleSheet.create({
     zIndex: -1,
     width: width, // Use window width
     // height: height, // Use window height  
+  },
+  quizResultsCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  resultTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 12,
+  },
+  resultRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  resultLabel: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    opacity: 0.8,
+  },
+  resultValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#58cc02',
   },
 });
 
