@@ -101,6 +101,9 @@ const LearnScreen = () => {
                 else if (lesson.name === 'Facts') {
                   router.push('/(tabs)/Fact_Index');
                 }
+                else if (lesson.name === 'Videos') {
+                  router.push('/(tabs)/Learnvid');
+                }
                 // Add more conditions here for other lessons if needed
               }}
             >

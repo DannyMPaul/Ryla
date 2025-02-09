@@ -24,6 +24,14 @@ interface User {
   createdAt: string;
 }
 
+interface Video {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  thumbnail?: string;
+}
+
 const UserManagementSection = ({ users }: { users: Record<string, User> }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -75,9 +83,43 @@ const UserManagementSection = ({ users }: { users: Record<string, User> }) => {
   );
 };
 
+const VideoManagementSection = ({ videos }: { videos: Record<string, Video> }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const router = useRouter();
+
+  const handleAddVideo = () => {
+    router.push('/(tabs)/admin/add-video');
+  };
+
+  return (
+    <View style={styles.section}>
+      <TouchableOpacity 
+        style={styles.sectionHeader}
+        onPress={() => setIsExpanded(!isExpanded)}
+      >
+        <Text style={styles.sectionTitle}>Video Management</Text>
+        <Text style={styles.videoCount}>{Object.keys(videos).length} Videos</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.addButton} onPress={handleAddVideo}>
+        <Text style={styles.buttonText}>Add New Video</Text>
+      </TouchableOpacity>
+
+      {isExpanded && Object.entries(videos).map(([videoId, video]) => (
+        <View key={videoId} style={styles.videoCard}>
+          <Text style={styles.videoTitle}>{video.title}</Text>
+          <Text style={styles.videoDescription}>{video.description}</Text>
+          <Text style={styles.videoUrl}>URL: {video.url}</Text>
+        </View>
+      ))}
+    </View>
+  );
+};
+
 const AdminDashboard = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [users, setUsers] = useState<Record<string, User>>({});
+  const [videos, setVideos] = useState<Record<string, Video>>({});
   const router = useRouter();
 
   useEffect(() => {
@@ -101,6 +143,15 @@ const AdminDashboard = () => {
       const data = snapshot.val();
       if (data) {
         setUsers(data);
+      }
+    });
+
+    // Fetch videos
+    const videosRef = ref(database, 'videos');
+    onValue(videosRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setVideos(data);
       }
     });
   }, []);
@@ -142,6 +193,9 @@ const AdminDashboard = () => {
 
       {/* User Management Section */}
       <UserManagementSection users={users} />
+
+      {/* Video Management Section */}
+      <VideoManagementSection videos={videos} />
     </ScrollView>
   );
 };
@@ -243,6 +297,34 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   userCount: {
+    color: '#666',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  videoCard: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  videoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  videoDescription: {
+    color: '#666',
+    marginBottom: 10,
+  },
+  videoUrl: {
+    color: '#666',
+  },
+  videoCount: {
     color: '#666',
     fontSize: 14,
     fontWeight: '500',
