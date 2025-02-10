@@ -15,8 +15,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Speech from "expo-speech";
-import { MaterialIcons } from '@expo/vector-icons';
+import { Audio } from "expo-av";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { MaterialIcons } from "@expo/vector-icons";
 
 // Types
 type Message = {
@@ -26,42 +27,72 @@ type Message = {
   type?: "original" | "correction" | "response";
 };
 
-interface WebSocketResponse {
-  original_text: string;
-  corrected_text: string;
-  response: string;
-  metadata: {
-    has_correction: boolean;
-  };
-}
-
-const WS_URL = 'ws://your-server-url/ws';
-const HTTP_FALLBACK_URL = 'http://localhost:8000/process_text';
+const API_URL = "http://192.168.137.1:8000/process_text";
 
 export default function LanguageLearningScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(true);
+  const [isSpeechEnabled, setIsSpeechEnabled] = useState(true); // New state for speech toggle
   const [inputText, setInputText] = useState("");
   const [userId, setUserId] = useState<string>("");
-  const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    setupVoiceAndWebSocket();
+    setupVoiceRecording();
+    setupSpeech();
+    loadOrCreateUserId();
     return () => cleanup();
   }, []);
 
-  const setupVoiceAndWebSocket = async () => {
-    await loadOrCreateUserId();
-    initializeWebSocket();
+  const setupSpeech = async () => {
+    try {
+      await Speech.setDefaultLanguage("en-US");
+      await Speech.setDefaultPitch(1.0);
+      await Speech.setDefaultRate(0.9);
+    } catch (error) {
+      console.error("Error setting up speech:", error);
+      setIsSpeechEnabled(false);
+    }
+  };
+
+  const setupVoiceRecording = async () => {
+    try {
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+    } catch (error) {
+      console.error("Error setting up voice recording:", error);
+    }
+  };
+
+  const speakResponse = async (text: string) => {
+    try {
+      await Speech.stop();
+      setTimeout(() => {
+        Speech.speak(text, {
+          language: "en-US",
+          pitch: 1.0,
+          rate: 0.9,
+          onError: (error) => console.error("Speech error:", error),
+          onDone: () => console.log("Speech finished"),
+        });
+      }, 500);
+    } catch (error) {
+      console.error("Error speaking response:", error);
+    }
   };
 
   const cleanup = () => {
-    if (wsConnection) {
-      wsConnection.close();
+    Speech.stop();
+    if (recording) {
+      recording.stopAndUnloadAsync();
     }
   };
 
@@ -79,36 +110,68 @@ export default function LanguageLearningScreen() {
     }
   };
 
-  const initializeWebSocket = () => {
-    if (userId) {
-      const ws = new WebSocket(`${WS_URL}/${userId}`);
-      
-      ws.onopen = () => {
-        console.log('WebSocket Connected');
-      };
-      
-      ws.onmessage = (event) => {
-        const response = JSON.parse(event.data);
-        handleBotResponse(response);
-      };
-      
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        // Don't alert - will fallback to HTTP
-      };
-      
-      ws.onclose = () => {
-        console.log('WebSocket Disconnected');
-        setTimeout(initializeWebSocket, 3000);
-      };
-      
-      setWsConnection(ws);
+  const startPulseAnimation = () => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.ease,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0,
+          duration: 1000,
+          easing: Easing.ease,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  };
+
+  const startListening = async () => {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Denied",
+          "Microphone permission is required for voice input."
+        );
+        return;
+      }
+
+      const newRecording = new Audio.Recording();
+      await newRecording.prepareToRecordAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      await newRecording.startAsync();
+      setRecording(newRecording);
+      setIsListening(true);
+      startPulseAnimation();
+    } catch (error) {
+      console.error("Start listening error:", error);
+      Alert.alert("Error", "Could not start voice recording");
     }
   };
 
-  const startListening = () => {
-    Alert.alert('Voice Input', 'Voice input is not available in Expo Go. Please use text input instead.');
-    setIsVoiceMode(false);
+  const stopListening = async () => {
+    try {
+      if (recording) {
+        await recording.stopAndUnloadAsync();
+        const uri = recording.getURI();
+        if (uri) {
+          // Here you would typically send the audio file to your speech-to-text service
+          // For demo purposes, we'll simulate a transcription
+          const simulatedTranscription = "This is a simulated transcription.";
+          await processUserInput(simulatedTranscription);
+        }
+      }
+      setRecording(null);
+      setIsListening(false);
+      animatedValue.setValue(0);
+    } catch (error) {
+      console.error("Stop listening error:", error);
+    }
   };
 
   const handleSendText = async () => {
@@ -119,100 +182,81 @@ export default function LanguageLearningScreen() {
 
   const processUserInput = async (text: string) => {
     if (!userId) {
-      Alert.alert('Error', 'User ID not available');
+      Alert.alert("Error", "User ID not available");
       return;
     }
-  
+
     const userMessage: Message = {
       id: Date.now().toString(),
       text,
-      sender: 'user',
-      type: 'original'
+      sender: "user",
+      type: "original",
     };
-  
-    setMessages(prev => [...prev, userMessage]);
-    setIsProcessing(true);
-  
-    if (wsConnection?.readyState === WebSocket.OPEN) {
-      wsConnection.send(JSON.stringify({
-        text,
-        user_id: userId,
-        timestamp: new Date().toISOString()
-      }));
-    } else {
-      try {
-        const response = await fetch(HTTP_FALLBACK_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text,
-            user_id: userId
-          }),
-        });
-  
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-  
-        const data = await response.json();
-        handleBotResponse({
-          ...data,
-          metadata: {
-            has_correction: data.corrected_text !== data.original_text
-          }
-        });
-      } catch (error) {
-        console.error('HTTP request error:', error);
-        const errorMessage: Message = {
-          id: Date.now().toString() + '_error',
-          text: "Sorry, couldn't process your message. Please try again.",
-          sender: 'bot',
-          type: 'response'
-        };
-        setMessages(prev => [...prev, errorMessage]);
-        setIsProcessing(false);
-      }
-    }
-  };  
 
-  const handleBotResponse = (response: WebSocketResponse | any) => {
-    // Handle both WebSocket and HTTP responses
-    const original_text = response.original_text;
-    const corrected_text = response.corrected_text;
-    const botResponse = response.response;
-    const has_correction = response.metadata?.has_correction ?? (original_text !== corrected_text);
-  
+    setMessages((prev) => [...prev, userMessage]);
+    setIsProcessing(true);
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text,
+          user_id: userId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+
+      const data = await response.json();
+      handleBotResponse(data);
+    } catch (error) {
+      console.error("HTTP request error:", error);
+      const errorMessage: Message = {
+        id: Date.now().toString() + "_error",
+        text: "Sorry, couldn't process your message. Please try again.",
+        sender: "bot",
+        type: "response",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBotResponse = (response: any) => {
+    const { original_text, corrected_text, response: botResponse } = response;
+    const has_correction = original_text !== corrected_text;
+
     if (has_correction && corrected_text && corrected_text !== original_text) {
       const correctionMessage: Message = {
-        id: Date.now().toString() + '_correction',
+        id: Date.now().toString() + "_correction",
         text: corrected_text,
-        sender: 'bot',
-        type: 'correction'
+        sender: "bot",
+        type: "correction",
       };
-      setMessages(prev => [...prev, correctionMessage]);
-  
-      if (isVoiceMode) {
-        Speech.speak(corrected_text);
-      }
+      setMessages((prev) => [...prev, correctionMessage]);
     }
-  
+
     if (botResponse) {
       const responseMessage: Message = {
-        id: Date.now().toString() + '_response',
+        id: Date.now().toString() + "_response",
         text: botResponse,
-        sender: 'bot',
-        type: 'response'
+        sender: "bot",
+        type: "response",
       };
-  
-      setMessages(prev => [...prev, responseMessage]);
-  
-      if (isVoiceMode) {
-        Speech.speak(botResponse);
+
+      setMessages((prev) => [...prev, responseMessage]);
+
+      // Always speak the response if speech is enabled
+      if (isSpeechEnabled) {
+        speakResponse(botResponse);
       }
     }
-  
+
     setIsProcessing(false);
   };
 
@@ -256,16 +300,28 @@ export default function LanguageLearningScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Text style={styles.headerText}>Language Learning Assistant</Text>
-          <TouchableOpacity
-            onPress={() => setIsVoiceMode(!isVoiceMode)}
-            style={styles.modeToggle}
-          >
-            <MaterialIcons
-              name={isVoiceMode ? "keyboard" : "mic"}
-              size={24}
-              color="white"
-            />
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              onPress={() => setIsSpeechEnabled(!isSpeechEnabled)}
+              style={styles.headerButton}
+            >
+              <MaterialIcons
+                name={isSpeechEnabled ? "volume-up" : "volume-off"}
+                size={24}
+                color="white"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setIsVoiceMode(!isVoiceMode)}
+              style={styles.headerButton}
+            >
+              <MaterialIcons
+                name={isVoiceMode ? "keyboard" : "mic"}
+                size={24}
+                color="white"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <FlatList
@@ -278,7 +334,7 @@ export default function LanguageLearningScreen() {
             flatListRef.current?.scrollToEnd({ animated: true })
           }
         />
-
+  
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.inputContainer}
@@ -289,15 +345,15 @@ export default function LanguageLearningScreen() {
                 style={[
                   styles.micButton,
                   {
-                    backgroundColor: "#8B0000",
+                    backgroundColor: isListening ? "#FF1493" : "#8B0000",
                     opacity: isProcessing ? 0.5 : 1,
                   },
                 ]}
-                onPress={startListening}
+                onPress={isListening ? stopListening : startListening}
                 disabled={isProcessing}
               >
                 <MaterialIcons
-                  name="mic"
+                  name={isListening ? "stop" : "mic"}
                   size={30}
                   color="white"
                 />
@@ -364,6 +420,14 @@ const styles = StyleSheet.create({
   },
   botMessage: {
     backgroundColor: "rgba(139,0,0,0.2)",
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerButton: {
+    padding: 5,
+    marginLeft: 10,
   },
   correctionMessage: {
     backgroundColor: "rgba(70,130,180,0.2)",
