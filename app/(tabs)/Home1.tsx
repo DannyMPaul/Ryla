@@ -8,11 +8,13 @@ import {
   Image,
   Animated,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref, get } from 'firebase/database';
+import SpeechPractice from '../../components/SpeechPractice';
 
 const { width } = Dimensions.get('window');
 
@@ -30,6 +32,7 @@ interface Lesson {
   isCompleted: boolean;
   isLocked: boolean;
   route?: ValidRoute;
+  speechPractice?: boolean;
 }
 
 interface Chapter {
@@ -46,6 +49,7 @@ const ChapterProgressScreen = () => {
   const [progress] = useState(new Animated.Value(0));
   const [overallProgress, setOverallProgress] = useState(1);
   const [unlockedLessons, setUnlockedLessons] = useState(['1', '2']); // Initially first two lessons unlocked
+  const [showSpeechPractice, setShowSpeechPractice] = useState(false);
   
   // Add useEffect to check quiz completion status
   useEffect(() => {
@@ -93,7 +97,8 @@ const ChapterProgressScreen = () => {
         image: require('../../assets/images/qn.jpg'),
         isCompleted: false,
         isLocked: !unlockedLessons.includes('2'),
-        route: '/(tabs)/q1' as const
+        route: '/(tabs)/q1' as const,
+        speechPractice: true
       },
       {
         id: '3',
@@ -125,7 +130,12 @@ const ChapterProgressScreen = () => {
 
   const handleLessonPress = (lesson: Lesson) => {
     if (lesson.isLocked || !lesson.route) return;
-    router.push(lesson.route as any);
+    
+    if (lesson.speechPractice) {
+      setShowSpeechPractice(true);
+    } else {
+      router.push(lesson.route as any);
+    }
   };
 
   const renderLesson = (lesson: Lesson, index: number) => {
@@ -219,6 +229,11 @@ const ChapterProgressScreen = () => {
           </View>
         </View>
       </View>
+
+      <SpeechPractice 
+        visible={showSpeechPractice}
+        onClose={() => setShowSpeechPractice(false)}
+      />
     </ScrollView>
   );
 };
