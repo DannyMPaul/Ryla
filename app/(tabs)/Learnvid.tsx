@@ -13,7 +13,7 @@ interface Video {
   thumbnail?: string;
 }
 
-const Learnvid = () => {
+const LearnVideoScreen = () => {
   const [videos, setVideos] = useState<Video[]>([]);
 
   useEffect(() => {
@@ -214,4 +214,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Learnvid;
+export default LearnVideoScreen;

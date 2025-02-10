@@ -1,7 +1,7 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { initializeApp } from 'firebase/app';
+import { getStorage } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
-import storage from '@react-native-firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Your web app's Firebase configuration
@@ -16,14 +16,13 @@ const firebaseConfig = {
   measurementId: "G-28Y7281B9H"
 };
 
-// Initialize Firebase only if it hasn't been initialized
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
-// Initialize Auth (simplified)
+// Get Firebase services
 const auth = getAuth(app);
-
-// Initialize Database
 const database = getDatabase(app);
+const storage = getStorage(app);
 
 export { app, auth, database, storage };
 

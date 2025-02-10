@@ -57,7 +57,7 @@ const conversationItems: ConversationItem[] = [
   },
 ];
 
-const AIConversationsScreen = () => {
+const LearnWithAIScreen = () => {
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {
@@ -224,5 +224,4 @@ const styles = StyleSheet.create({
   },
 });
 
-
-export default AIConversationsScreen;
+export default LearnWithAIScreen;
