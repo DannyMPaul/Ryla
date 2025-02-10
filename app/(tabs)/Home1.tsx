@@ -230,24 +230,10 @@ const ChapterProgressScreen = () => {
         </View>
       </View>
 
-      <Modal
+      <SpeechPractice 
         visible={showSpeechPractice}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowSpeechPractice(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => setShowSpeechPractice(false)}
-            >
-              <Feather name="x" size={24} color="#666" />
-            </TouchableOpacity>
-            <SpeechPractice />
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowSpeechPractice(false)}
+      />
     </ScrollView>
   );
 };
@@ -423,23 +409,6 @@ const styles = StyleSheet.create({
   checkpointSubtitle: {
     fontSize: 14,
     color: '#666',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    width: '90%',
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
-    alignItems: 'center',
-  },
-  closeButton: {
-    alignSelf: 'flex-end',
-    padding: 10,
   },
 });
 

@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, SafeAreaView, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
 import { getDatabase, ref, get, update } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
+import { router } from 'expo-router';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GEMINI_API_KEY } from '../app/config/env';
+
+interface SpeechPracticeProps {
+  visible: boolean;
+  onClose: () => void;
+}
 
 interface LearnedWord {
   french: string;
@@ -13,25 +21,32 @@ interface LearnedWord {
   pronunciationScore?: number;
 }
 
-const SpeechPractice = () => {
-  const [learnedWords, setLearnedWords] = useState<LearnedWord[]>([]);
-  const [currentWord, setCurrentWord] = useState<LearnedWord | null>(null);
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => {
+  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'fr'>('en');
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'fr'>('en');
+  const [learnedWords, setLearnedWords] = useState<LearnedWord[]>([]);
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const currentWord = learnedWords[currentWordIndex];
   const [showFeedback, setShowFeedback] = useState(false);
-  const [feedback, setFeedback] = useState({ score: 0, message: '' });
+  const [feedback, setFeedback] = useState<{
+    score: number;
+    message: string;
+    improvements: string[];
+  } | null>(null);
 
   useEffect(() => {
     setupAudio();
-    loadLearnedWords();
-    return () => {
-      if (recording) {
-        recording.stopAndUnloadAsync();
-      }
-    };
   }, []);
+
+  useEffect(() => {
+    if (visible) {
+      loadLearnedWords();
+    }
+  }, [visible]);
 
   const setupAudio = async () => {
     try {
@@ -41,21 +56,25 @@ const SpeechPractice = () => {
         playsInSilentModeIOS: true,
       });
     } catch (error) {
-      Alert.alert('Error', 'Failed to get microphone permission');
+      console.error('Error setting up audio:', error);
     }
   };
 
   const loadLearnedWords = async () => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (!user) return;
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) return;
 
-    const dbRef = ref(getDatabase(), `users/${user.uid}/learnedWords`);
-    const snapshot = await get(dbRef);
-    if (snapshot.exists()) {
-      const words = Object.values(snapshot.val()) as LearnedWord[];
-      setLearnedWords(words);
-      setCurrentWord(words[0]);
+      const dbRef = ref(getDatabase(), `users/${user.uid}/learnedWords`);
+      const snapshot = await get(dbRef);
+      
+      if (snapshot.exists()) {
+        const words = Object.values(snapshot.val()) as LearnedWord[];
+        setLearnedWords(words);
+      }
+    } catch (error) {
+      console.error('Error loading words:', error);
     }
   };
 
@@ -65,7 +84,7 @@ const SpeechPractice = () => {
     try {
       const textToSpeak = currentLanguage === 'en' ? currentWord.english : currentWord.french;
       await Speech.speak(textToSpeak, {
-        language: currentLanguage,
+        language: currentLanguage === 'en' ? 'en-US' : 'fr-FR',
         rate: 0.8,
         onDone: () => setIsPlaying(false)
       });
@@ -77,19 +96,18 @@ const SpeechPractice = () => {
 
   const startRecording = async () => {
     try {
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+      const recording = new Audio.Recording();
+      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      await recording.startAsync();
       setRecording(recording);
       setIsRecording(true);
     } catch (error) {
-      console.error('Failed to start recording:', error);
+      console.error('Error starting recording:', error);
     }
   };
 
   const stopRecording = async () => {
     if (!recording) return;
-
     try {
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
@@ -97,47 +115,39 @@ const SpeechPractice = () => {
       setRecording(null);
 
       if (uri) {
-        // Here you would normally send the audio file to a speech-to-text service
-        // For demo purposes, we'll simulate a score
-        analyzePronunciation(uri);
+        await analyzePronunciation(uri);
       }
     } catch (error) {
-      console.error('Failed to stop recording:', error);
+      console.error('Error stopping recording:', error);
     }
   };
 
   const analyzePronunciation = async (audioUri: string) => {
-    // Simulate pronunciation analysis
-    // In a real app, you would:
-    // 1. Send the audio file to a speech-to-text service
-    // 2. Compare the transcription with the expected word
-    // 3. Get detailed pronunciation feedback
-    
-    const randomScore = Math.floor(Math.random() * 40) + 60; // Score between 60-100
-    const feedback = getPronunciationFeedback(randomScore);
-    
-    setFeedback({
-      score: randomScore,
-      message: feedback
-    });
-    setShowFeedback(true);
+    if (!currentWord) return;
 
-    // Save the score if it's better than the previous one
-    if (currentWord && (!currentWord.pronunciationScore || randomScore > currentWord.pronunciationScore)) {
-      savePronunciationScore(randomScore);
+    try {
+      // Simulate pronunciation analysis
+      const score = Math.floor(Math.random() * 30) + 70; // Score between 70-100
+      const analysis = {
+        score,
+        message: "Good attempt! Keep practicing to improve your pronunciation.",
+        improvements: ["Pay attention to word stress", "Practice slower pronunciation"]
+      };
+
+      setFeedback(analysis);
+      setShowFeedback(true);
+
+      if (!currentWord.pronunciationScore || analysis.score > currentWord.pronunciationScore) {
+        savePronunciationScore(analysis.score);
+      }
+    } catch (error) {
+      console.error('Analysis error:', error);
+      Alert.alert('Error', 'Failed to analyze pronunciation');
     }
-  };
-
-  const getPronunciationFeedback = (score: number): string => {
-    if (score >= 90) return "Excellent pronunciation! Keep it up! 🌟";
-    if (score >= 80) return "Very good! Just a few minor adjustments needed. 👍";
-    if (score >= 70) return "Good effort! Try to speak more clearly. 💪";
-    return "Keep practicing! Focus on speaking slowly and clearly. 🎯";
   };
 
   const savePronunciationScore = async (score: number) => {
     if (!currentWord) return;
-    
     const auth = getAuth();
     const user = auth.currentUser;
     if (!user) return;
@@ -147,8 +157,6 @@ const SpeechPractice = () => {
       await update(dbRef, {
         [`${currentWord.french}/pronunciationScore`]: score,
       });
-      
-      // Update local state
       setLearnedWords(words => 
         words.map(w => 
           w.french === currentWord.french 
@@ -162,191 +170,212 @@ const SpeechPractice = () => {
   };
 
   const nextWord = () => {
-    const currentIndex = learnedWords.findIndex(w => w === currentWord);
-    const nextIndex = (currentIndex + 1) % learnedWords.length;
-    setCurrentWord(learnedWords[nextIndex]);
+    setCurrentWordIndex((prev) => (prev + 1) % learnedWords.length);
   };
 
   return (
-    <View style={styles.container}>
-      {currentWord && (
-        <>
-          <Text style={styles.languageLabel}>
-            {currentLanguage === 'en' ? 'English' : 'French'}
-          </Text>
-          <Text style={styles.wordText}>
-            {currentLanguage === 'en' ? currentWord.english : currentWord.french}
-          </Text>
-          <Text style={styles.contextText}>{currentWord.context}</Text>
-          
-          <View style={styles.controls}>
-            <TouchableOpacity 
-              style={styles.playButton} 
-              onPress={playWord}
-              disabled={isPlaying}
-            >
-              <Feather 
-                name={isPlaying ? "pause" : "play"} 
-                size={24} 
-                color="white" 
-              />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.recordButton, isRecording && styles.recordingActive]}
-              onPress={isRecording ? stopRecording : startRecording}
-            >
-              <Feather 
-                name={isRecording ? "stop-circle" : "mic"} 
-                size={24} 
-                color="white" 
-              />
-            </TouchableOpacity>
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={styles.container}>
+        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <Feather name="x" size={24} color="#000" />
+        </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.languageButton}
-              onPress={() => setCurrentLanguage(prev => prev === 'en' ? 'fr' : 'en')}
-            >
-              <Feather name="globe" size={24} color="white" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.nextButton}
-              onPress={nextWord}
-            >
-              <Feather name="skip-forward" size={24} color="white" />
-            </TouchableOpacity>
-          </View>
-
-          {currentWord.pronunciationScore && (
-            <Text style={styles.bestScore}>
-              Best Score: {currentWord.pronunciationScore}%
+        {learnedWords.length === 0 ? (
+          <View style={styles.card}>
+            <Text style={styles.noWordsText}>
+              No words learned yet. Complete some lessons first!
             </Text>
-          )}
-        </>
-      )}
-
-      <Modal
-        visible={showFeedback}
-        transparent
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.scoreTitle}>Pronunciation Score</Text>
-            <Text style={[
-              styles.scoreText,
-              feedback.score >= 90 ? styles.excellentScore :
-              feedback.score >= 80 ? styles.goodScore :
-              styles.averageScore
-            ]}>
-              {feedback.score}%
-            </Text>
-            <Text style={styles.feedbackMessage}>{feedback.message}</Text>
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => setShowFeedback(false)}
-            >
-              <Text style={styles.closeButtonText}>Continue</Text>
-            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
-    </View>
+        ) : (
+          <View style={styles.card}>
+            <Text style={styles.languageLabel}>
+              {currentLanguage === 'en' ? 'English' : 'French'}
+            </Text>
+            <Text style={styles.wordText}>
+              {currentLanguage === 'en' ? currentWord.english : currentWord.french}
+            </Text>
+            <Text style={styles.contextText}>{currentWord.context}</Text>
+
+            {currentWord.pronunciationScore && (
+              <Text style={styles.scoreText}>
+                Best Score: {currentWord.pronunciationScore}%
+              </Text>
+            )}
+
+            <View style={styles.controls}>
+              <TouchableOpacity 
+                style={[styles.circleButton, styles.playButton]}
+                onPress={playWord}
+              >
+                <Feather name="play" size={28} color="white" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.circleButton, styles.recordButton]}
+                onPress={isRecording ? stopRecording : startRecording}
+              >
+                <Feather name={isRecording ? "stop-circle" : "mic"} size={28} color="white" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.circleButton, styles.languageButton]}
+                onPress={() => setCurrentLanguage(prev => prev === 'en' ? 'fr' : 'en')}
+              >
+                <Feather name="globe" size={28} color="white" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.circleButton, styles.nextButton]}
+                onPress={nextWord}
+              >
+                <Feather name="skip-forward" size={28} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {showFeedback && feedback && (
+          <View style={styles.feedbackModal}>
+            <View style={styles.feedbackContent}>
+              <Text style={styles.scoreTitle}>Your Pronunciation</Text>
+              <Text style={[
+                styles.scoreValue,
+                feedback.score >= 90 ? styles.excellentScore :
+                feedback.score >= 70 ? styles.goodScore :
+                styles.averageScore
+              ]}>
+                {feedback.score}%
+              </Text>
+              <Text style={styles.feedbackMessage}>{feedback.message}</Text>
+              
+              {feedback.improvements.length > 0 && (
+                <View style={styles.improvementSection}>
+                  <Text style={styles.improvementTitle}>Areas to Improve:</Text>
+                  {feedback.improvements.map((item, index) => (
+                    <Text key={index} style={styles.improvementItem}>
+                      • {item}
+                    </Text>
+                  ))}
+                </View>
+              )}
+
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setShowFeedback(false)}
+              >
+                <Text style={styles.closeButtonText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </SafeAreaView>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 1,
+    padding: 8,
+  },
+  card: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 15,
+    paddingHorizontal: 20,
   },
   languageLabel: {
-    fontSize: 16,
     color: '#888',
-    marginBottom: 5,
+    fontSize: 14,
+    marginBottom: 8,
   },
   wordText: {
+    color: '#000',
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   contextText: {
+    color: '#888',
     fontSize: 16,
-    color: '#ccc',
-    marginBottom: 20,
-    textAlign: 'center',
+    marginBottom: 40,
   },
   controls: {
     flexDirection: 'row',
-    gap: 15,
+    justifyContent: 'center',
+    gap: 16,
+  },
+  circleButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   playButton: {
     backgroundColor: '#58cc02',
-    padding: 15,
-    borderRadius: 25,
   },
   recordButton: {
     backgroundColor: '#ff4b4b',
-    padding: 15,
-    borderRadius: 25,
   },
   languageButton: {
     backgroundColor: '#a560e8',
-    padding: 15,
-    borderRadius: 25,
   },
   nextButton: {
     backgroundColor: '#1cb0f6',
-    padding: 15,
-    borderRadius: 25,
   },
-  bestScore: {
-    marginTop: 15,
-    color: '#ffd700',
+  noWordsText: {
+    color: '#666',
     fontSize: 16,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
+    textAlign: 'center',
     padding: 20,
-    borderRadius: 15,
-    alignItems: 'center',
-    width: '80%',
-  },
-  scoreTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
   },
   scoreText: {
-    fontSize: 48,
-    fontWeight: 'bold',
     color: '#58cc02',
-    marginBottom: 20,
-  },
-  closeButton: {
-    backgroundColor: '#58cc02',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-  },
-  closeButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+    marginBottom: 20,
   },
-  recordingActive: {
-    backgroundColor: '#ff0000',
-    transform: [{ scale: 1.1 }],
+  feedbackModal: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  feedbackContent: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 340,
+    alignItems: 'center',
+  },
+  scoreTitle: {
+    color: '#fff',
+    fontSize: 18,
+    marginBottom: 16,
+  },
+  scoreValue: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    marginBottom: 16,
   },
   excellentScore: {
     color: '#4CAF50',
@@ -358,11 +387,30 @@ const styles = StyleSheet.create({
     color: '#FFC107',
   },
   feedbackMessage: {
-    fontSize: 18,
+    color: '#fff',
+    fontSize: 16,
     textAlign: 'center',
-    marginVertical: 10,
-    color: '#666',
+    marginBottom: 20,
+  },
+  improvementSection: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  improvementTitle: {
+    color: '#fff',
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  improvementItem: {
+    color: '#ccc',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
-export default SpeechPractice; 
+export default SpeechPractice;
