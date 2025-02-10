@@ -5,8 +5,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     host: str = "localhost"
     port: int = 8000
-    firebase_credentials_path: str = "./firebase_credentials.json"
-    firebase_database_url: str = "your_firebase_database_url"
+    firebase_credentials_path: str = "..\Ryla\Firebase_connection.json"
+    firebase_database_url: str = "https://rylang-c9742-default-rtdb.asia-southeast1.firebasedatabase.app/"
     model_cache_dir: str = "./model_cache"
 
     class Config:

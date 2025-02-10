@@ -15,7 +15,6 @@ pip install pyttsx3
 #Execute backend
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-
 #Plan : 
 -host the model in google consel
 -connect the consel and the firebase

@@ -371,6 +371,7 @@
 #################################################################################################
 
 import torch
+from firebase_admin import db
 from transformers import (
     AutoTokenizer,
     BlenderbotTokenizer,
@@ -458,9 +459,70 @@ class MultilingualAssistant:
         self.models = {'fr': {}, 'en': {}}
         self.is_loading = {'fr': False, 'en': False}
         self.load_lock = asyncio.Lock()
+        self.user_sessions = {}
         
         # Pre-load English models at initialization
-        asyncio.create_task(self.load_language_models('en'))
+        # asyncio.create_task(self.load_language_models('en'))
+
+    async def initialize_user_session(self, user_id: str, language: str = 'en', proficiency: str = 'intermediate', target: str = 'grammar_correction') -> Dict[str, Any]:
+        try:
+            # Fetch user preferences from Firebase
+            user_ref = db.reference(f'users/{user_id}/model_data')
+            user_data = user_ref.get()
+
+            # Override with provided or default values if not found in Firebase
+            language = user_data.get('lang_to_learn', language)
+            proficiency = user_data.get('proficiency_level', proficiency)
+            target = user_data.get('target_use', target)
+
+            # Ensure language models are loaded
+            await self.load_language_models(language)
+            
+            # Store user-specific session configuration
+            self.user_sessions[user_id] = {
+                'language': language,
+                'proficiency': proficiency,
+                'target': target,
+                'last_interaction': datetime.now()
+            }
+            
+            # Generate a welcoming, contextual greeting
+            greeting_prompts = {
+                'en': [
+                    "Hello! How are you doing today?",
+                    "Hey there, a wonderful day, is it not?",
+                    "Greetings! Ready to practice some language skills?",
+                    "Welcome! I'm here to help you learn and improve."
+                ],
+                'fr': [
+                    "Bonjour! Comment allez-vous aujourd'hui?",
+                    "Salut! Prêt à pratiquer votre français?"
+                ]
+            }
+            
+            # Generate greeting using response generation method
+            greeting = await self.generate_response(
+                random.choice(greeting_prompts.get(language, greeting_prompts['en'])), 
+                language, 
+                proficiency,
+                target
+            )
+            
+            return {
+                "user_id": user_id,
+                "language": language,
+                "proficiency": proficiency,
+                "target": target,
+                "greeting": greeting,
+                "initialized": True
+            }
+        
+        except Exception as e:
+            logger.error(f"User session initialization error: {e}")
+            return {
+                "error": "Could not initialize user session",
+                "details": str(e)
+            }
 
     async def load_language_models(self, language: str):
         async with self.load_lock:
