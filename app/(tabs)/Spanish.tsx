@@ -109,7 +109,7 @@ const LanguageProficiencyScreen = () => {
             initialLevel: proficiencyLevels.find(l => l.id === selectedLevel)?.level
           }
         });
-        router.replace('/quiz');
+        router.replace('/(tabs)/qn3');
       } catch (error) {
         console.error('Error updating progress:', error);
       }
