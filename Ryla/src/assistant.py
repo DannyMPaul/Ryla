@@ -571,6 +571,12 @@ class MultilingualAssistant:
                 "response": "Please provide some text to process.",
                 "metadata": {"language": language, "processed_timestamp": str(datetime.now())}
             }
+        
+        if not text.strip():
+            raise ValueError("Empty input text provided")
+
+        if language not in self.language_configs:
+            raise ValueError(f"Unsupported language: {language}")
 
         # Start loading models if not already loaded
         load_task = asyncio.create_task(self.load_language_models(language))
