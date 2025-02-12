@@ -24,32 +24,8 @@ interface LanguageSettings {
 }
 
 const defaultTargetUses: LanguageSettings = {
-  fr: {
-    grammar_correction: { 
-      selected: false,
-      description: "Je veux améliorer ma grammaire française" 
-    },
-    text_coherent: { 
-      selected: false,
-      description: "Je veux apprendre à m'exprimer clairement" 
-    },
-    easier_understanding: { 
-      selected: false,
-      description: "Je veux comprendre le français plus facilement" 
-    },
-    paraphrasing: { 
-      selected: false,
-      description: "Je veux apprendre différentes façons de m'exprimer" 
-    },
-    formal_tone: { 
-      selected: false,
-      description: "Je veux apprendre le français formel" 
-    },
-    neutral_tone: { 
-      selected: false,
-      description: "Je veux un style de communication neutre" 
-    }
-  },
+ 
+  
   en: {
     grammar_correction: { 
       selected: false,
