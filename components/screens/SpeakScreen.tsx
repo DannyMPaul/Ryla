@@ -25,6 +25,19 @@ type Message = {
   type?: 'original' | 'correction' | 'response' | 'greeting';
 };
 
+interface ProcessedResponse {
+  original_text: string;
+  corrected_text: string;
+  response: string;
+  metadata: {
+    language: string;
+    proficiency: string;
+    target: string;
+    processed_timestamp: string;
+    error?: string;
+  };
+}
+
 const API_URL = 'http://192.168.137.1:8000';
 
 export default function LanguageLearningScreen() {
@@ -60,15 +73,28 @@ export default function LanguageLearningScreen() {
 
   const initializeSession = async () => {
     try {
-      const tempUserId = `temp_${Date.now()}`; // Replace with actual user authentication
+      // Replace with your actual user ID logic
+      // const tempUserId = `temp_${Date.now()}`;
+      const tempUserId = 'vYef3AT5YhXDi9IYUN3Z06unQzx2'
       setUserId(tempUserId);
-
+      
       const response = await fetch(`${API_URL}/initialize_session`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: tempUserId })
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: tempUserId,
+          language: 'en',
+          proficiency: 'intermediate',
+          target: 'grammar_correction'
+        }),
       });
-
+  
+      if (!response.ok) {
+        throw new Error('Failed to initialize session');
+      }
+  
       const data = await response.json();
       
       if (data.greeting) {
@@ -80,7 +106,54 @@ export default function LanguageLearningScreen() {
         if (isSpeechEnabled) await speakText(data.greeting);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to initialize session');
+      console.error('Session initialization error:', error);
+      Alert.alert('Error', 'Could not initialize session');
+    }
+  };
+
+  const processMessage = async (text: string) => {
+    if (!text.trim() || isProcessing) return;
+    setIsProcessing(true);
+
+    addMessage({
+      text: text.trim(),
+      sender: 'user',
+      type: 'original'
+    });
+
+    try {
+      const response = await fetch(`${API_URL}/process_text`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: text.trim(),
+          user_id: userId
+        })
+      });
+
+      const data: ProcessedResponse = await response.json();
+      
+      if (data.corrected_text && data.corrected_text !== text) {
+        addMessage({
+          text: data.corrected_text,
+          sender: 'bot',
+          type: 'correction'
+        });
+      }
+
+      if (data.response) {
+        addMessage({
+          text: data.response,
+          sender: 'bot',
+          type: 'response'
+        });
+        if (isSpeechEnabled) await speakText(data.response);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to process message');
+    } finally {
+      setIsProcessing(false);
+      setInputText('');
     }
   };
 
@@ -109,8 +182,8 @@ export default function LanguageLearningScreen() {
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
       if (uri) {
-        // Implement speech-to-text logic here
-        const transcribedText = "Sample transcription"; // Replace with actual transcription
+        // Replace with actual speech-to-text implementation
+        const transcribedText = "Sample transcription";
         await processMessage(transcribedText);
       }
     } catch (error) {
@@ -139,52 +212,6 @@ export default function LanguageLearningScreen() {
         }),
       ])
     ).start();
-  };
-
-  const processMessage = async (text: string) => {
-    if (!text.trim() || isProcessing) return;
-    setIsProcessing(true);
-
-    addMessage({
-      text: text.trim(),
-      sender: 'user',
-      type: 'original'
-    });
-
-    try {
-      const response = await fetch(`${API_URL}/process_text`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: text.trim(),
-          user_id: userId
-        })
-      });
-
-      const data = await response.json();
-      
-      if (data.corrected_text && data.corrected_text !== text) {
-        addMessage({
-          text: data.corrected_text,
-          sender: 'bot',
-          type: 'correction'
-        });
-      }
-
-      if (data.response) {
-        addMessage({
-          text: data.response,
-          sender: 'bot',
-          type: 'response'
-        });
-        if (isSpeechEnabled) await speakText(data.response);
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to process message');
-    } finally {
-      setIsProcessing(false);
-      setInputText('');
-    }
   };
 
   const addMessage = (message: Omit<Message, 'id'>) => {
