@@ -1,8 +1,5 @@
 {
   "expo": {
-    "extra": {
-      "apiUrl": "http://192.168.137.1:8000/process_text"
-    },
     "name": "RylaV0",
     "slug": "RylaV0",
     "version": "1.0.0",
