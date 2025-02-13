@@ -1,2 +1,1 @@
 export const GEMINI_API_KEY = 'AIzaSyDg9rQChqfDjHTeJvqRSEnwAmlmC_yBtd8'; 
-export const EXPO_PUBLIC_OPENAI_API_KEY = 'sk-svcacct-omPiOmdVZizI6MvCtUC-7K2UUzPrDbEY7o43XHm6HQduDN9dkI55mC-5ms96vwT3BlbkFJeSBVAU7e02HUt_0qhi_NOc3CojlozO7LKMyUsI9LuVBOvp2LxlpJ0kVCgrKu0A';
