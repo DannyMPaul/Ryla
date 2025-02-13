@@ -23,6 +23,8 @@ interface LearnedWord {
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
+const OPENAI_API_KEY = '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';
+
 const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'fr'>('en');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -125,22 +127,73 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
   const analyzePronunciation = async (audioUri: string) => {
     if (!currentWord) return;
     try {
-      // Simulate analysis since we removed Voice
-      const analysis = {
-        score: Math.floor(Math.random() * 30) + 70,
-        message: "Good attempt! Keep practicing.",
-        improvements: ["Focus on pronunciation", "Practice regularly"]
-      };
-      
-      setFeedback(analysis);
+      // Create form data for the audio file
+      const formData = new FormData();
+      formData.append('file', {
+        uri: audioUri,
+        type: 'audio/m4a',
+        name: 'speech.m4a'
+      });
+      formData.append('model', 'whisper-1');
+      formData.append('language', 'fr');
+
+      // First, transcribe the audio using Whisper
+      const whisperResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: formData
+      });
+
+      const { text: transcribedText } = await whisperResponse.json();
+      console.log('Transcribed text:', transcribedText);
+
+      // Then analyze pronunciation using GPT-4
+      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [{
+            role: 'system',
+            content: `You are a French pronunciation evaluator. The expected word is "${currentWord.french}".
+                     Analyze the pronunciation accuracy and provide detailed feedback.`
+          }, {
+            role: 'user',
+            content: `User said: "${transcribedText}". 
+                     Evaluate the pronunciation and respond with a JSON object containing:
+                     {
+                       "score": (number between 0-100),
+                       "message": "brief feedback on pronunciation",
+                       "improvements": ["specific improvement tip 1", "specific improvement tip 2"]
+                     }`
+          }]
+        })
+      });
+
+      const completion = await openaiResponse.json();
+      const analysis = JSON.parse(completion.choices[0].message.content);
+
+      // Display feedback to user
+      setFeedback({
+        score: analysis.score,
+        message: analysis.message,
+        improvements: analysis.improvements
+      });
       setShowFeedback(true);
 
+      // Save score if it's better than previous
       if (!currentWord.pronunciationScore || analysis.score > currentWord.pronunciationScore) {
         savePronunciationScore(analysis.score);
       }
+
     } catch (error) {
       console.error('Analysis error:', error);
-      Alert.alert('Error', 'Failed to analyze pronunciation');
+      Alert.alert('Error', 'Failed to analyze pronunciation. Please try again.');
     }
   };
 
