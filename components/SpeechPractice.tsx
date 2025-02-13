@@ -124,16 +124,14 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
 
   const analyzePronunciation = async (audioUri: string) => {
     if (!currentWord) return;
-
     try {
-      // Simulate pronunciation analysis
-      const score = Math.floor(Math.random() * 30) + 70; // Score between 70-100
+      // Simulate analysis since we removed Voice
       const analysis = {
-        score,
-        message: "Good attempt! Keep practicing to improve your pronunciation.",
-        improvements: ["Pay attention to word stress", "Practice slower pronunciation"]
+        score: Math.floor(Math.random() * 30) + 70,
+        message: "Good attempt! Keep practicing.",
+        improvements: ["Focus on pronunciation", "Practice regularly"]
       };
-
+      
       setFeedback(analysis);
       setShowFeedback(true);
 

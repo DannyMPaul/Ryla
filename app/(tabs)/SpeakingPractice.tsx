@@ -5,7 +5,7 @@ import SpeechPractice from '../../components/SpeechPractice';
 const SpeakingPracticeScreen = () => {
   return (
     <View style={{ flex: 1 }}>
-      <SpeechPractice />
+      <SpeechPractice visible={true} onClose={() => {}} />
     </View>
   );
 };

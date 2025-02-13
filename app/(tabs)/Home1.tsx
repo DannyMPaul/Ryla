@@ -44,7 +44,7 @@ interface Chapter {
   lessons: Lesson[];
 }
 
-const ChapterProgressScreen = () => {
+const Home1Screen = () => {
   const router = useRouter();
   const [progress] = useState(new Animated.Value(0));
   const [overallProgress, setOverallProgress] = useState(1);
@@ -412,4 +412,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChapterProgressScreen;
+export default Home1Screen;

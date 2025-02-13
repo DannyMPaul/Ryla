@@ -453,6 +453,13 @@ const HomeScreen: React.FC = () => {
         </View>
       </View>
 
+      <TouchableOpacity 
+        style={styles.switchButton}
+        onPress={() => router.replace('/(tabs)/Home1')}
+      >
+        <Text style={styles.switchButtonText}>Back To Home</Text>
+      </TouchableOpacity>
+
       {quizResults?.userLevel && (
         <View style={styles.quizResultsCard}>
           <Text style={styles.resultTitle}>Quiz Results</Text>
@@ -806,6 +813,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#58cc02',
+  },
+  switchButton: {
+    backgroundColor: 'rgb(240, 74, 99)',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignSelf: 'flex-end',
+    marginRight: 20,
+    marginTop: -20, // Negative margin to pull it up closer to welcome container
+  },
+  switchButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
 
