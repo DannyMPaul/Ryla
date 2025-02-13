@@ -13,6 +13,7 @@ package-lock.json
 Ryla/modules/test_env/
 ryla_env/
 package.json
+Ryla/Firebase_connection.json
 
 # macOS
 .DS_Store

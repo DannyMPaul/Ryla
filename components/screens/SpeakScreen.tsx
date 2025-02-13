@@ -1,28 +1,29 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
   FlatList,
-  KeyboardAvoidingView, 
-  Platform, 
-  Alert, 
-  StyleSheet, 
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  StyleSheet,
   Animated,
-  Easing
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as Speech from 'expo-speech';
-import { Audio } from 'expo-av';
-import { MaterialIcons } from '@expo/vector-icons';
+  Easing,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import * as Speech from "expo-speech";
+import { Audio } from "expo-av";
+import { MaterialIcons } from "@expo/vector-icons";
+import { getAuth } from "firebase/auth";
 
 type Message = {
   id: string;
   text: string;
-  sender: 'user' | 'bot';
-  type?: 'original' | 'correction' | 'response' | 'greeting';
+  sender: "user1" | "bot";
+  type?: "original" | "correction" | "response" | "greeting";
 };
 
 interface ProcessedResponse {
@@ -38,15 +39,15 @@ interface ProcessedResponse {
   };
 }
 
-const API_URL = 'http://192.168.137.1:8000';
+const API_URL = "http://192.168.93.44:8000";
 
 export default function LanguageLearningScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [userId, setUserId] = useState<string>('');
+  const [userId, setUserId] = useState<string>("");
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(true);
 
   const flatListRef = useRef<FlatList>(null);
@@ -67,47 +68,46 @@ export default function LanguageLearningScreen() {
       });
       await Speech.getAvailableVoicesAsync();
     } catch (error) {
-      console.error('Audio setup error:', error);
+      console.error("Audio setup error:", error);
     }
   };
 
   const initializeSession = async () => {
     try {
-      // Replace with your actual user ID logic
-      // const tempUserId = `temp_${Date.now()}`;
-      const tempUserId = 'vYef3AT5YhXDi9IYUN3Z06unQzx2'
+      const tempUserId = `${user.uid}`;
+      // const tempUserId = 'vYef3AT5YhXDi9IYUN3Z06unQzx2'
       setUserId(tempUserId);
-      
+
       const response = await fetch(`${API_URL}/initialize_session`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           user_id: tempUserId,
-          language: 'en',
-          proficiency: 'intermediate',
-          target: 'grammar_correction'
+          language: "en",
+          proficiency: "intermediate",
+          target: "grammar_correction",
         }),
       });
-  
+
       if (!response.ok) {
-        throw new Error('Failed to initialize session');
+        throw new Error("Failed to initialize session");
       }
-  
+
       const data = await response.json();
-      
+
       if (data.greeting) {
         addMessage({
           text: data.greeting,
-          sender: 'bot',
-          type: 'greeting'
+          sender: "bot",
+          type: "greeting",
         });
         if (isSpeechEnabled) await speakText(data.greeting);
       }
     } catch (error) {
-      console.error('Session initialization error:', error);
-      Alert.alert('Error', 'Could not initialize session');
+      console.error("Session initialization error:", error);
+      Alert.alert("Error", "Could not initialize session");
     }
   };
 
@@ -117,62 +117,64 @@ export default function LanguageLearningScreen() {
 
     addMessage({
       text: text.trim(),
-      sender: 'user',
-      type: 'original'
+      sender: "user1",
+      type: "original",
     });
 
     try {
       const response = await fetch(`${API_URL}/process_text`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: text.trim(),
-          user_id: userId
-        })
+          user_id: userId,
+        }),
       });
 
       const data: ProcessedResponse = await response.json();
-      
+
       if (data.corrected_text && data.corrected_text !== text) {
         addMessage({
           text: data.corrected_text,
-          sender: 'bot',
-          type: 'correction'
+          sender: "bot",
+          type: "correction",
         });
       }
 
       if (data.response) {
         addMessage({
           text: data.response,
-          sender: 'bot',
-          type: 'response'
+          sender: "bot",
+          type: "response",
         });
         if (isSpeechEnabled) await speakText(data.response);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to process message');
+      Alert.alert("Error", "Failed to process message");
     } finally {
       setIsProcessing(false);
-      setInputText('');
+      setInputText("");
     }
   };
 
   const startRecording = async () => {
     try {
       const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission denied');
+      if (status !== "granted") {
+        Alert.alert("Permission denied");
         return;
       }
 
       const newRecording = new Audio.Recording();
-      await newRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      await newRecording.prepareToRecordAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
       await newRecording.startAsync();
       setRecording(newRecording);
       setIsListening(true);
       startPulseAnimation();
     } catch (error) {
-      Alert.alert('Error', 'Failed to start recording');
+      Alert.alert("Error", "Failed to start recording");
     }
   };
 
@@ -187,7 +189,7 @@ export default function LanguageLearningScreen() {
         await processMessage(transcribedText);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to stop recording');
+      Alert.alert("Error", "Failed to stop recording");
     } finally {
       setRecording(null);
       setIsListening(false);
@@ -214,9 +216,9 @@ export default function LanguageLearningScreen() {
     ).start();
   };
 
-  const addMessage = (message: Omit<Message, 'id'>) => {
+  const addMessage = (message: Omit<Message, "id">) => {
     const newMessage = { ...message, id: Date.now().toString() };
-    setMessages(prev => [...prev, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
     flatListRef.current?.scrollToEnd({ animated: true });
   };
 
@@ -224,12 +226,12 @@ export default function LanguageLearningScreen() {
     try {
       await Speech.stop();
       await Speech.speak(text, {
-        language: 'en-US',
+        language: "en-US",
         pitch: 1.0,
-        rate: 0.9
+        rate: 0.9,
       });
     } catch (error) {
-      console.error('Speech error:', error);
+      console.error("Speech error:", error);
     }
   };
 
@@ -239,11 +241,13 @@ export default function LanguageLearningScreen() {
   };
 
   const renderMessage = ({ item }: { item: Message }) => (
-    <View style={[
-      styles.messageContainer,
-      item.sender === 'user' ? styles.userMessage : styles.botMessage,
-      item.type === 'correction' && styles.correctionMessage
-    ]}>
+    <View
+      style={[
+        styles.messageContainer,
+        item.sender === "user1" ? styles.userMessage : styles.botMessage,
+        item.type === "correction" && styles.correctionMessage,
+      ]}
+    >
       <Text style={styles.messageText}>{item.text}</Text>
       {item.type && (
         <Text style={styles.messageType}>
@@ -254,7 +258,10 @@ export default function LanguageLearningScreen() {
   );
 
   return (
-    <LinearGradient colors={['#1A1A1A', '#330033', '#660033']} style={styles.container}>
+    <LinearGradient
+      colors={["#1A1A1A", "#330033", "#660033"]}
+      style={styles.container}
+    >
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Text style={styles.headerText}>Language Assistant</Text>
@@ -263,7 +270,7 @@ export default function LanguageLearningScreen() {
             style={styles.speechToggle}
           >
             <MaterialIcons
-              name={isSpeechEnabled ? 'volume-up' : 'volume-off'}
+              name={isSpeechEnabled ? "volume-up" : "volume-off"}
               size={24}
               color="white"
             />
@@ -274,12 +281,12 @@ export default function LanguageLearningScreen() {
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.messageList}
         />
 
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.inputContainer}
         >
           <View style={styles.inputWrapper}>
@@ -299,14 +306,14 @@ export default function LanguageLearningScreen() {
               <MaterialIcons name="send" size={24} color="white" />
             </TouchableOpacity>
           </View>
-          
+
           <TouchableOpacity
             style={[styles.micButton, isListening && styles.micButtonActive]}
             onPress={isListening ? stopRecording : startRecording}
             disabled={isProcessing}
           >
             <MaterialIcons
-              name={isListening ? 'stop' : 'mic'}
+              name={isListening ? "stop" : "mic"}
               size={24}
               color="white"
             />
@@ -325,17 +332,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: "rgba(255,255,255,0.1)",
   },
   headerText: {
-    color: 'white',
+    color: "white",
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   speechToggle: {
     padding: 8,
@@ -344,595 +351,593 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   messageContainer: {
-    maxWidth: '80%',
+    maxWidth: "80%",
     padding: 12,
     borderRadius: 16,
     marginVertical: 4,
   },
   userMessage: {
-    backgroundColor: 'rgba(255,20,147,0.2)',
-    alignSelf: 'flex-end',
+    backgroundColor: "rgba(255,20,147,0.2)",
+    alignSelf: "flex-end",
   },
   botMessage: {
-    backgroundColor: 'rgba(139,0,0,0.2)',
-    alignSelf: 'flex-start',
+    backgroundColor: "rgba(139,0,0,0.2)",
+    alignSelf: "flex-start",
   },
   correctionMessage: {
-    backgroundColor: 'rgba(70,130,180,0.2)',
+    backgroundColor: "rgba(70,130,180,0.2)",
   },
   messageText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
   },
   messageType: {
-    color: '#999',
+    color: "#999",
     fontSize: 12,
     marginTop: 4,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   inputContainer: {
     padding: 16,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: "rgba(0,0,0,0.3)",
   },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   input: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: "rgba(255,255,255,0.1)",
     borderRadius: 20,
     padding: 12,
-    color: 'white',
+    color: "white",
     marginRight: 8,
     maxHeight: 100,
   },
   sendButton: {
-    backgroundColor: '#FF1493',
+    backgroundColor: "#FF1493",
     width: 44,
     height: 44,
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   micButton: {
-    backgroundColor: '#8B0000',
+    backgroundColor: "#8B0000",
     width: 44,
     height: 44,
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 8,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   micButtonActive: {
-    backgroundColor: '#FF1493',
+    backgroundColor: "#FF1493",
   },
 });
 
 ////////////////////////////////////////////////
 
-  // import React, { useState, useEffect, useRef } from "react";
-  // import {
-  //   View,
-  //   Text,
-  //   TextInput,
-  //   StyleSheet,
-  //   TouchableOpacity,
-  //   FlatList,
-  //   Animated,
-  //   Easing,
-  //   KeyboardAvoidingView,
-  //   Platform,
-  //   Alert,
-  // } from "react-native";
-  // import { SafeAreaView } from "react-native-safe-area-context";
-  // import { LinearGradient } from "expo-linear-gradient";
-  // import * as Speech from "expo-speech";
-  // import { Audio } from "expo-av";
-  // import AsyncStorage from "@react-native-async-storage/async-storage";
-  // import { MaterialIcons } from "@expo/vector-icons";
-  // // import { getDatabase, ref as dbRef, onValue } from 'firebase/database';
+// import React, { useState, useEffect, useRef } from "react";
+// import {
+//   View,
+//   Text,
+//   TextInput,
+//   StyleSheet,
+//   TouchableOpacity,
+//   FlatList,
+//   Animated,
+//   Easing,
+//   KeyboardAvoidingView,
+//   Platform,
+//   Alert,
+// } from "react-native";
+// import { SafeAreaView } from "react-native-safe-area-context";
+// import { LinearGradient } from "expo-linear-gradient";
+// import * as Speech from "expo-speech";
+// import { Audio } from "expo-av";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+// import { MaterialIcons } from "@expo/vector-icons";
+// // import { getDatabase, ref as dbRef, onValue } from 'firebase/database';
 
+// // Types
+// type Message = {
+//   id: string;
+//   text: string;
+//   sender: "user" | "bot";
+//   type?: "original" | "correction" | "response" | "greeting";
+// };
 
-  // // Types
-  // type Message = {
-  //   id: string;
-  //   text: string;
-  //   sender: "user" | "bot";
-  //   type?: "original" | "correction" | "response" | "greeting";
-  // };
+// const API_URL = "http://192.168.137.1:8000/process_text";
 
-  // const API_URL = "http://192.168.137.1:8000/process_text";
+// export default function LanguageLearningScreen() {
+//   const [messages, setMessages] = useState<Message[]>([]);
+//   const [isListening, setIsListening] = useState(false);
+//   const [isProcessing, setIsProcessing] = useState(false);
+//   const [isVoiceMode, setIsVoiceMode] = useState(true);
+//   const [isSpeechEnabled, setIsSpeechEnabled] = useState(true); // New state for speech toggle
+//   const [inputText, setInputText] = useState("");
+//   const [userId, setUserId] = useState<string>("");
+//   const [recording, setRecording] = useState<Audio.Recording | null>(null);
 
-  // export default function LanguageLearningScreen() {
-  //   const [messages, setMessages] = useState<Message[]>([]);
-  //   const [isListening, setIsListening] = useState(false);
-  //   const [isProcessing, setIsProcessing] = useState(false);
-  //   const [isVoiceMode, setIsVoiceMode] = useState(true);
-  //   const [isSpeechEnabled, setIsSpeechEnabled] = useState(true); // New state for speech toggle
-  //   const [inputText, setInputText] = useState("");
-  //   const [userId, setUserId] = useState<string>("");
-  //   const [recording, setRecording] = useState<Audio.Recording | null>(null);
+//   const flatListRef = useRef<FlatList>(null);
+//   const animatedValue = useRef(new Animated.Value(0)).current;
 
-  //   const flatListRef = useRef<FlatList>(null);
-  //   const animatedValue = useRef(new Animated.Value(0)).current;
+//   useEffect(() => {
+//     setupVoiceRecording();
+//     setupSpeech();
+//     initializeUserSession();
+//     return () => cleanup();
+//   }, []);
 
-  //   useEffect(() => {
-  //     setupVoiceRecording();
-  //     setupSpeech();
-  //     initializeUserSession();
-  //     return () => cleanup();
-  //   }, []);
+//   const setupSpeech = async () => {
+//     try {
+//       await Speech.setDefaultLanguage("en-US");
+//       await Speech.setDefaultPitch(1.0);
+//       await Speech.setDefaultRate(0.9);
+//     } catch (error) {
+//       console.error("Error setting up speech:", error);
+//       setIsSpeechEnabled(false);
+//     }
+//   };
 
-  //   const setupSpeech = async () => {
-  //     try {
-  //       await Speech.setDefaultLanguage("en-US");
-  //       await Speech.setDefaultPitch(1.0);
-  //       await Speech.setDefaultRate(0.9);
-  //     } catch (error) {
-  //       console.error("Error setting up speech:", error);
-  //       setIsSpeechEnabled(false);
-  //     }
-  //   };
+//   const initializeUserSession = async () => {
+//     try {
+//       const uid = user.uid || `temp_${Date.now()}`; //what is the local way to get user id
+//       setUserId(uid);
 
-  //   const initializeUserSession = async () => {
-  //     try {
-  //       const uid = user.uid || `temp_${Date.now()}`; //what is the local way to get user id
-  //       setUserId(uid);
-  
-  //       const response = await fetch(API_URL, {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify({
-  //           user_id: uid,
-  //           language: "en", // Default language
-  //           proficiency: "intermediate", // Default proficiency
-  //           target: "grammar_correction" // Default target
-  //         }),
-  //       });
-  
-  //       if (!response.ok) {
-  //         throw new Error("Failed to initialize user session");
-  //       }
-  
-  //       const data = await response.json();
-        
-  //       if (data.greeting) {
-  //         const greetingMessage: Message = {
-  //           id: "greeting_" + Date.now().toString(),
-  //           text: data.greeting,
-  //           sender: "bot",
-  //           type: "greeting"
-  //         };
-  //         setMessages([greetingMessage]);
-          
-  //         if (isSpeechEnabled) {
-  //           speakResponse(data.greeting);
-  //         }
-  //       }
-  //     } catch (error) {
-  //       console.error("User initialization error:", error);
-  //       Alert.alert("Error", "Could not initialize user session");
-  //     }
-  //   };
-  
+//       const response = await fetch(API_URL, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify({
+//           user_id: uid,
+//           language: "en", // Default language
+//           proficiency: "intermediate", // Default proficiency
+//           target: "grammar_correction" // Default target
+//         }),
+//       });
 
-  //   const setupVoiceRecording = async () => {
-  //     try {
-  //       await Audio.requestPermissionsAsync();
-  //       await Audio.setAudioModeAsync({
-  //         allowsRecordingIOS: true,
-  //         playsInSilentModeIOS: true,
-  //       });
-  //     } catch (error) {
-  //       console.error("Error setting up voice recording:", error);
-  //     }
-  //   };
+//       if (!response.ok) {
+//         throw new Error("Failed to initialize user session");
+//       }
 
-  //   const speakResponse = async (text: string) => {
-  //     try {
-  //       await Speech.stop();
-  //       setTimeout(() => {
-  //         Speech.speak(text, {
-  //           language: "en-US",
-  //           pitch: 1.0,
-  //           rate: 0.9,
-  //           onError: (error) => console.error("Speech error:", error),
-  //           onDone: () => console.log("Speech finished"),
-  //         });
-  //       }, 500);
-  //     } catch (error) {
-  //       console.error("Error speaking response:", error);
-  //     }
-  //   };
+//       const data = await response.json();
 
-  //   const cleanup = () => {
-  //     Speech.stop();
-  //     if (recording) {
-  //       recording.stopAndUnloadAsync();
-  //     }
-  //   };
+//       if (data.greeting) {
+//         const greetingMessage: Message = {
+//           id: "greeting_" + Date.now().toString(),
+//           text: data.greeting,
+//           sender: "bot",
+//           type: "greeting"
+//         };
+//         setMessages([greetingMessage]);
 
-  //   const startPulseAnimation = () => {
-  //     Animated.loop(
-  //       Animated.sequence([
-  //         Animated.timing(animatedValue, {
-  //           toValue: 1,
-  //           duration: 1000,
-  //           easing: Easing.ease,
-  //           useNativeDriver: true,
-  //         }),
-  //         Animated.timing(animatedValue, {
-  //           toValue: 0,
-  //           duration: 1000,
-  //           easing: Easing.ease,
-  //           useNativeDriver: true,
-  //         }),
-  //       ])
-  //     ).start();
-  //   };
+//         if (isSpeechEnabled) {
+//           speakResponse(data.greeting);
+//         }
+//       }
+//     } catch (error) {
+//       console.error("User initialization error:", error);
+//       Alert.alert("Error", "Could not initialize user session");
+//     }
+//   };
 
-  //   const startListening = async () => {
-  //     try {
-  //       const { status } = await Audio.requestPermissionsAsync();
-  //       if (status !== "granted") {
-  //         Alert.alert(
-  //           "Permission Denied",
-  //           "Microphone permission is required for voice input."
-  //         );
-  //         return;
-  //       }
+//   const setupVoiceRecording = async () => {
+//     try {
+//       await Audio.requestPermissionsAsync();
+//       await Audio.setAudioModeAsync({
+//         allowsRecordingIOS: true,
+//         playsInSilentModeIOS: true,
+//       });
+//     } catch (error) {
+//       console.error("Error setting up voice recording:", error);
+//     }
+//   };
 
-  //       const newRecording = new Audio.Recording();
-  //       await newRecording.prepareToRecordAsync(
-  //         Audio.RecordingOptionsPresets.HIGH_QUALITY
-  //       );
-  //       await newRecording.startAsync();
-  //       setRecording(newRecording);
-  //       setIsListening(true);
-  //       startPulseAnimation();
-  //     } catch (error) {
-  //       console.error("Start listening error:", error);
-  //       Alert.alert("Error", "Could not start voice recording");
-  //     }
-  //   };
+//   const speakResponse = async (text: string) => {
+//     try {
+//       await Speech.stop();
+//       setTimeout(() => {
+//         Speech.speak(text, {
+//           language: "en-US",
+//           pitch: 1.0,
+//           rate: 0.9,
+//           onError: (error) => console.error("Speech error:", error),
+//           onDone: () => console.log("Speech finished"),
+//         });
+//       }, 500);
+//     } catch (error) {
+//       console.error("Error speaking response:", error);
+//     }
+//   };
 
-  //   const stopListening = async () => {
-  //     try {
-  //       if (recording) {
-  //         await recording.stopAndUnloadAsync();
-  //         const uri = recording.getURI();
-  //         if (uri) {
-  //           // Here you would typically send the audio file to your speech-to-text service
-  //           // For demo purposes, we'll simulate a transcription
-  //           const simulatedTranscription = "This is a simulated transcription.";
-  //           await processUserInput(simulatedTranscription);
-  //         }
-  //       }
-  //       setRecording(null);
-  //       setIsListening(false);
-  //       animatedValue.setValue(0);
-  //     } catch (error) {
-  //       console.error("Stop listening error:", error);
-  //     }
-  //   };
+//   const cleanup = () => {
+//     Speech.stop();
+//     if (recording) {
+//       recording.stopAndUnloadAsync();
+//     }
+//   };
 
-  //   const handleSendText = async () => {
-  //     if (!inputText.trim() || isProcessing) return;
-  //     await processUserInput(inputText.trim());
-  //     setInputText("");
-  //   };
+//   const startPulseAnimation = () => {
+//     Animated.loop(
+//       Animated.sequence([
+//         Animated.timing(animatedValue, {
+//           toValue: 1,
+//           duration: 1000,
+//           easing: Easing.ease,
+//           useNativeDriver: true,
+//         }),
+//         Animated.timing(animatedValue, {
+//           toValue: 0,
+//           duration: 1000,
+//           easing: Easing.ease,
+//           useNativeDriver: true,
+//         }),
+//       ])
+//     ).start();
+//   };
 
-  //   const processUserInput = async (text: string) => {
-  //     if (!userId) {
-  //       Alert.alert("Error", "User ID not available");
-  //       return;
-  //     }
+//   const startListening = async () => {
+//     try {
+//       const { status } = await Audio.requestPermissionsAsync();
+//       if (status !== "granted") {
+//         Alert.alert(
+//           "Permission Denied",
+//           "Microphone permission is required for voice input."
+//         );
+//         return;
+//       }
 
-  //     const userMessage: Message = {
-  //       id: Date.now().toString(),
-  //       text,
-  //       sender: "user",
-  //       type: "original",
-  //     };
+//       const newRecording = new Audio.Recording();
+//       await newRecording.prepareToRecordAsync(
+//         Audio.RecordingOptionsPresets.HIGH_QUALITY
+//       );
+//       await newRecording.startAsync();
+//       setRecording(newRecording);
+//       setIsListening(true);
+//       startPulseAnimation();
+//     } catch (error) {
+//       console.error("Start listening error:", error);
+//       Alert.alert("Error", "Could not start voice recording");
+//     }
+//   };
 
-  //     setMessages((prev) => [...prev, userMessage]);
-  //     setIsProcessing(true);
+//   const stopListening = async () => {
+//     try {
+//       if (recording) {
+//         await recording.stopAndUnloadAsync();
+//         const uri = recording.getURI();
+//         if (uri) {
+//           // Here you would typically send the audio file to your speech-to-text service
+//           // For demo purposes, we'll simulate a transcription
+//           const simulatedTranscription = "This is a simulated transcription.";
+//           await processUserInput(simulatedTranscription);
+//         }
+//       }
+//       setRecording(null);
+//       setIsListening(false);
+//       animatedValue.setValue(0);
+//     } catch (error) {
+//       console.error("Stop listening error:", error);
+//     }
+//   };
 
-  //     try {
-  //       const response = await fetch(API_URL, {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify({
-  //           text,
-  //           user_id: userId,
-  //         }),
-  //       });
+//   const handleSendText = async () => {
+//     if (!inputText.trim() || isProcessing) return;
+//     await processUserInput(inputText.trim());
+//     setInputText("");
+//   };
 
-  //       if (!response.ok) {
-  //         throw new Error("Network response was not ok");
-  //       }
+//   const processUserInput = async (text: string) => {
+//     if (!userId) {
+//       Alert.alert("Error", "User ID not available");
+//       return;
+//     }
 
-  //       const data = await response.json();
-  //       handleBotResponse(data);
-  //     } catch (error) {
-  //       console.error("HTTP request error:", error);
-  //       const errorMessage: Message = {
-  //         id: Date.now().toString() + "_error",
-  //         text: "Sorry, couldn't process your message. Please try again.",
-  //         sender: "bot",
-  //         type: "response",
-  //       };
-  //       setMessages((prev) => [...prev, errorMessage]);
-  //       setIsProcessing(false);
-  //     }
-  //   };
+//     const userMessage: Message = {
+//       id: Date.now().toString(),
+//       text,
+//       sender: "user",
+//       type: "original",
+//     };
 
-  //   const handleBotResponse = (response: any) => {
-  //     const { original_text, corrected_text, response: botResponse } = response;
-  //     const has_correction = original_text !== corrected_text;
+//     setMessages((prev) => [...prev, userMessage]);
+//     setIsProcessing(true);
 
-  //     if (has_correction && corrected_text && corrected_text !== original_text) {
-  //       const correctionMessage: Message = {
-  //         id: Date.now().toString() + "_correction",
-  //         text: corrected_text,
-  //         sender: "bot",
-  //         type: "correction",
-  //       };
-  //       setMessages((prev) => [...prev, correctionMessage]);
-  //     }
+//     try {
+//       const response = await fetch(API_URL, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify({
+//           text,
+//           user_id: userId,
+//         }),
+//       });
 
-  //     if (botResponse) {
-  //       const responseMessage: Message = {
-  //         id: Date.now().toString() + "_response",
-  //         text: botResponse,
-  //         sender: "bot",
-  //         type: "response",
-  //       };
+//       if (!response.ok) {
+//         throw new Error("Network response was not ok");
+//       }
 
-  //       setMessages((prev) => [...prev, responseMessage]);
+//       const data = await response.json();
+//       handleBotResponse(data);
+//     } catch (error) {
+//       console.error("HTTP request error:", error);
+//       const errorMessage: Message = {
+//         id: Date.now().toString() + "_error",
+//         text: "Sorry, couldn't process your message. Please try again.",
+//         sender: "bot",
+//         type: "response",
+//       };
+//       setMessages((prev) => [...prev, errorMessage]);
+//       setIsProcessing(false);
+//     }
+//   };
 
-  //       // Always speak the response if speech is enabled
-  //       if (isSpeechEnabled) {
-  //         speakResponse(botResponse);
-  //       }
-  //     }
+//   const handleBotResponse = (response: any) => {
+//     const { original_text, corrected_text, response: botResponse } = response;
+//     const has_correction = original_text !== corrected_text;
 
-  //     setIsProcessing(false);
-  //   };
+//     if (has_correction && corrected_text && corrected_text !== original_text) {
+//       const correctionMessage: Message = {
+//         id: Date.now().toString() + "_correction",
+//         text: corrected_text,
+//         sender: "bot",
+//         type: "correction",
+//       };
+//       setMessages((prev) => [...prev, correctionMessage]);
+//     }
 
-  //   const renderMessage = ({ item }: { item: Message }) => (
-  //     <View
-  //       style={[
-  //         styles.messageContainer,
-  //         item.sender === "user" ? styles.userMessage : styles.botMessage,
-  //         item.type === "correction" && styles.correctionMessage,
-  //       ]}
-  //     >
-  //       <Text style={styles.messageText}>{item.text}</Text>
-  //       {item.type && (
-  //         <Text style={styles.messageTypeText}>
-  //           {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-  //         </Text>
-  //       )}
-  //     </View>
-  //   );
+//     if (botResponse) {
+//       const responseMessage: Message = {
+//         id: Date.now().toString() + "_response",
+//         text: botResponse,
+//         sender: "bot",
+//         type: "response",
+//       };
 
-  //   const micButtonStyle = {
-  //     transform: [
-  //       {
-  //         scale: animatedValue.interpolate({
-  //           inputRange: [0, 1],
-  //           outputRange: [1, 1.2],
-  //         }),
-  //       },
-  //     ],
-  //     opacity: animatedValue.interpolate({
-  //       inputRange: [0, 1],
-  //       outputRange: [0.6, 1],
-  //     }),
-  //   };
+//       setMessages((prev) => [...prev, responseMessage]);
 
-  //   return (
-  //     <LinearGradient
-  //       colors={["#1A1A1A", "#330033", "#660033"]}
-  //       style={styles.container}
-  //     >
-  //       <SafeAreaView style={styles.safeArea}>
-  //         <View style={styles.header}>
-  //           <Text style={styles.headerText}>Language Learning Assistant</Text>
-  //           <View style={styles.headerButtons}>
-  //             <TouchableOpacity
-  //               onPress={() => setIsSpeechEnabled(!isSpeechEnabled)}
-  //               style={styles.headerButton}
-  //             >
-  //               <MaterialIcons
-  //                 name={isSpeechEnabled ? "volume-up" : "volume-off"}
-  //                 size={24}
-  //                 color="white"
-  //               />
-  //             </TouchableOpacity>
-  //             <TouchableOpacity
-  //               onPress={() => setIsVoiceMode(!isVoiceMode)}
-  //               style={styles.headerButton}
-  //             >
-  //               <MaterialIcons
-  //                 name={isVoiceMode ? "keyboard" : "mic"}
-  //                 size={24}
-  //                 color="white"
-  //               />
-  //             </TouchableOpacity>
-  //           </View>
-  //         </View>
+//       // Always speak the response if speech is enabled
+//       if (isSpeechEnabled) {
+//         speakResponse(botResponse);
+//       }
+//     }
 
-  //         <FlatList
-  //           ref={flatListRef}
-  //           data={messages}
-  //           renderItem={renderMessage}
-  //           keyExtractor={(item) => item.id}
-  //           contentContainerStyle={styles.messageList}
-  //           onContentSizeChange={() =>
-  //             flatListRef.current?.scrollToEnd({ animated: true })
-  //           }
-  //         />
-    
-  //         <KeyboardAvoidingView
-  //           behavior={Platform.OS === "ios" ? "padding" : "height"}
-  //           style={styles.inputContainer}
-  //         >
-  //           {isVoiceMode ? (
-  //             <Animated.View style={[styles.micButtonWrapper, micButtonStyle]}>
-  //               <TouchableOpacity
-  //                 style={[
-  //                   styles.micButton,
-  //                   {
-  //                     backgroundColor: isListening ? "#FF1493" : "#8B0000",
-  //                     opacity: isProcessing ? 0.5 : 1,
-  //                   },
-  //                 ]}
-  //                 onPress={isListening ? stopListening : startListening}
-  //                 disabled={isProcessing}
-  //               >
-  //                 <MaterialIcons
-  //                   name={isListening ? "stop" : "mic"}
-  //                   size={30}
-  //                   color="white"
-  //                 />
-  //               </TouchableOpacity>
-  //             </Animated.View>
-  //           ) : (
-  //             <View style={styles.textInputContainer}>
-  //               <TextInput
-  //                 style={styles.textInput}
-  //                 value={inputText}
-  //                 onChangeText={setInputText}
-  //                 placeholder="Type your message..."
-  //                 placeholderTextColor="#999"
-  //                 multiline
-  //                 maxLength={500}
-  //               />
-  //               <TouchableOpacity
-  //                 style={[styles.sendButton, { opacity: isProcessing ? 0.5 : 1 }]}
-  //                 onPress={handleSendText}
-  //                 disabled={isProcessing || !inputText.trim()}
-  //               >
-  //                 <MaterialIcons name="send" size={24} color="white" />
-  //               </TouchableOpacity>
-  //             </View>
-  //           )}
-  //         </KeyboardAvoidingView>
-  //       </SafeAreaView>
-  //     </LinearGradient>
-  //   );
-  // }
+//     setIsProcessing(false);
+//   };
 
-  // const styles = StyleSheet.create({
-  //   container: { flex: 1 },
-  //   safeArea: { flex: 1 },
-  //   header: {
-  //     flexDirection: "row",
-  //     justifyContent: "space-between",
-  //     alignItems: "center",
-  //     padding: 15,
-  //     borderBottomWidth: 1,
-  //     borderBottomColor: "rgba(255,255,255,0.1)",
-  //   },
-  //   headerText: {
-  //     color: "white",
-  //     fontSize: 18,
-  //     fontWeight: "bold",
-  //   },
-  //   modeToggle: {
-  //     padding: 5,
-  //   },
-  //   messageList: {
-  //     padding: 10,
-  //   },
-  //   messageContainer: {
-  //     maxWidth: "80%",
-  //     borderRadius: 15,
-  //     padding: 12,
-  //     marginVertical: 5,
-  //     alignSelf: "flex-start",
-  //   },
-  //   userMessage: {
-  //     backgroundColor: "rgba(255,20,147,0.2)",
-  //     alignSelf: "flex-end",
-  //   },
-  //   botMessage: {
-  //     backgroundColor: "rgba(139,0,0,0.2)",
-  //   },
-  //   headerButtons: {
-  //     flexDirection: 'row',
-  //     alignItems: 'center',
-  //   },
-  //   headerButton: {
-  //     padding: 5,
-  //     marginLeft: 10,
-  //   },
-  //   correctionMessage: {
-  //     backgroundColor: "rgba(70,130,180,0.2)",
-  //   },
-  //   messageText: {
-  //     color: "white",
-  //     fontSize: 16,
-  //   },
-  //   messageTypeText: {
-  //     color: "#888",
-  //     fontSize: 12,
-  //     marginTop: 5,
-  //     fontStyle: "italic",
-  //   },
-  //   inputContainer: {
-  //     padding: 10,
-  //     backgroundColor: "rgba(0,0,0,0.3)",
-  //   },
-  //   micButtonWrapper: {
-  //     alignItems: "center",
-  //   },
-  //   micButton: {
-  //     width: 60,
-  //     height: 60,
-  //     borderRadius: 30,
-  //     justifyContent: "center",
-  //     alignItems: "center",
-  //     elevation: 5,
-  //     shadowColor: "#000",
-  //     shadowOffset: { width: 0, height: 2 },
-  //     shadowOpacity: 0.25,
-  //     shadowRadius: 3.84,
-  //   },
-  //   textInputContainer: {
-  //     flexDirection: "row",
-  //     alignItems: "center",
-  //   },
-  //   textInput: {
-  //     flex: 1,
-  //     backgroundColor: "rgba(255,255,255,0.1)",
-  //     borderRadius: 20,
-  //     paddingHorizontal: 15,
-  //     paddingVertical: 10,
-  //     color: "white",
-  //     marginRight: 10,
-  //     maxHeight: 100,
-  //     fontSize: 16,
-  //   },
-  //   sendButton: {
-  //     backgroundColor: "#FF1493",
-  //     width: 44,
-  //     height: 44,
-  //     borderRadius: 22,
-  //     justifyContent: "center",
-  //     alignItems: "center",
-  //     elevation: 5,
-  //     shadowColor: "#000",
-  //     shadowOffset: { width: 0, height: 2 },
-  //     shadowOpacity: 0.25,
-  //     shadowRadius: 3.84,
-  //   },
-  // });
+//   const renderMessage = ({ item }: { item: Message }) => (
+//     <View
+//       style={[
+//         styles.messageContainer,
+//         item.sender === "user" ? styles.userMessage : styles.botMessage,
+//         item.type === "correction" && styles.correctionMessage,
+//       ]}
+//     >
+//       <Text style={styles.messageText}>{item.text}</Text>
+//       {item.type && (
+//         <Text style={styles.messageTypeText}>
+//           {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+//         </Text>
+//       )}
+//     </View>
+//   );
+
+//   const micButtonStyle = {
+//     transform: [
+//       {
+//         scale: animatedValue.interpolate({
+//           inputRange: [0, 1],
+//           outputRange: [1, 1.2],
+//         }),
+//       },
+//     ],
+//     opacity: animatedValue.interpolate({
+//       inputRange: [0, 1],
+//       outputRange: [0.6, 1],
+//     }),
+//   };
+
+//   return (
+//     <LinearGradient
+//       colors={["#1A1A1A", "#330033", "#660033"]}
+//       style={styles.container}
+//     >
+//       <SafeAreaView style={styles.safeArea}>
+//         <View style={styles.header}>
+//           <Text style={styles.headerText}>Language Learning Assistant</Text>
+//           <View style={styles.headerButtons}>
+//             <TouchableOpacity
+//               onPress={() => setIsSpeechEnabled(!isSpeechEnabled)}
+//               style={styles.headerButton}
+//             >
+//               <MaterialIcons
+//                 name={isSpeechEnabled ? "volume-up" : "volume-off"}
+//                 size={24}
+//                 color="white"
+//               />
+//             </TouchableOpacity>
+//             <TouchableOpacity
+//               onPress={() => setIsVoiceMode(!isVoiceMode)}
+//               style={styles.headerButton}
+//             >
+//               <MaterialIcons
+//                 name={isVoiceMode ? "keyboard" : "mic"}
+//                 size={24}
+//                 color="white"
+//               />
+//             </TouchableOpacity>
+//           </View>
+//         </View>
+
+//         <FlatList
+//           ref={flatListRef}
+//           data={messages}
+//           renderItem={renderMessage}
+//           keyExtractor={(item) => item.id}
+//           contentContainerStyle={styles.messageList}
+//           onContentSizeChange={() =>
+//             flatListRef.current?.scrollToEnd({ animated: true })
+//           }
+//         />
+
+//         <KeyboardAvoidingView
+//           behavior={Platform.OS === "ios" ? "padding" : "height"}
+//           style={styles.inputContainer}
+//         >
+//           {isVoiceMode ? (
+//             <Animated.View style={[styles.micButtonWrapper, micButtonStyle]}>
+//               <TouchableOpacity
+//                 style={[
+//                   styles.micButton,
+//                   {
+//                     backgroundColor: isListening ? "#FF1493" : "#8B0000",
+//                     opacity: isProcessing ? 0.5 : 1,
+//                   },
+//                 ]}
+//                 onPress={isListening ? stopListening : startListening}
+//                 disabled={isProcessing}
+//               >
+//                 <MaterialIcons
+//                   name={isListening ? "stop" : "mic"}
+//                   size={30}
+//                   color="white"
+//                 />
+//               </TouchableOpacity>
+//             </Animated.View>
+//           ) : (
+//             <View style={styles.textInputContainer}>
+//               <TextInput
+//                 style={styles.textInput}
+//                 value={inputText}
+//                 onChangeText={setInputText}
+//                 placeholder="Type your message..."
+//                 placeholderTextColor="#999"
+//                 multiline
+//                 maxLength={500}
+//               />
+//               <TouchableOpacity
+//                 style={[styles.sendButton, { opacity: isProcessing ? 0.5 : 1 }]}
+//                 onPress={handleSendText}
+//                 disabled={isProcessing || !inputText.trim()}
+//               >
+//                 <MaterialIcons name="send" size={24} color="white" />
+//               </TouchableOpacity>
+//             </View>
+//           )}
+//         </KeyboardAvoidingView>
+//       </SafeAreaView>
+//     </LinearGradient>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   container: { flex: 1 },
+//   safeArea: { flex: 1 },
+//   header: {
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     alignItems: "center",
+//     padding: 15,
+//     borderBottomWidth: 1,
+//     borderBottomColor: "rgba(255,255,255,0.1)",
+//   },
+//   headerText: {
+//     color: "white",
+//     fontSize: 18,
+//     fontWeight: "bold",
+//   },
+//   modeToggle: {
+//     padding: 5,
+//   },
+//   messageList: {
+//     padding: 10,
+//   },
+//   messageContainer: {
+//     maxWidth: "80%",
+//     borderRadius: 15,
+//     padding: 12,
+//     marginVertical: 5,
+//     alignSelf: "flex-start",
+//   },
+//   userMessage: {
+//     backgroundColor: "rgba(255,20,147,0.2)",
+//     alignSelf: "flex-end",
+//   },
+//   botMessage: {
+//     backgroundColor: "rgba(139,0,0,0.2)",
+//   },
+//   headerButtons: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//   },
+//   headerButton: {
+//     padding: 5,
+//     marginLeft: 10,
+//   },
+//   correctionMessage: {
+//     backgroundColor: "rgba(70,130,180,0.2)",
+//   },
+//   messageText: {
+//     color: "white",
+//     fontSize: 16,
+//   },
+//   messageTypeText: {
+//     color: "#888",
+//     fontSize: 12,
+//     marginTop: 5,
+//     fontStyle: "italic",
+//   },
+//   inputContainer: {
+//     padding: 10,
+//     backgroundColor: "rgba(0,0,0,0.3)",
+//   },
+//   micButtonWrapper: {
+//     alignItems: "center",
+//   },
+//   micButton: {
+//     width: 60,
+//     height: 60,
+//     borderRadius: 30,
+//     justifyContent: "center",
+//     alignItems: "center",
+//     elevation: 5,
+//     shadowColor: "#000",
+//     shadowOffset: { width: 0, height: 2 },
+//     shadowOpacity: 0.25,
+//     shadowRadius: 3.84,
+//   },
+//   textInputContainer: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//   },
+//   textInput: {
+//     flex: 1,
+//     backgroundColor: "rgba(255,255,255,0.1)",
+//     borderRadius: 20,
+//     paddingHorizontal: 15,
+//     paddingVertical: 10,
+//     color: "white",
+//     marginRight: 10,
+//     maxHeight: 100,
+//     fontSize: 16,
+//   },
+//   sendButton: {
+//     backgroundColor: "#FF1493",
+//     width: 44,
+//     height: 44,
+//     borderRadius: 22,
+//     justifyContent: "center",
+//     alignItems: "center",
+//     elevation: 5,
+//     shadowColor: "#000",
+//     shadowOffset: { width: 0, height: 2 },
+//     shadowOpacity: 0.25,
+//     shadowRadius: 3.84,
+//   },
+// });
