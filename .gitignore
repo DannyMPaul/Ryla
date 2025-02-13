@@ -27,3 +27,4 @@ expo-env.d.ts
 # Ignore Learn_With_AI folder and all its contents
 package-lock.json
 package.json
+Ryla/Firebase_connection.json
