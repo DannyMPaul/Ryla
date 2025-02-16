@@ -296,7 +296,7 @@ const QuizScreen = () => {
 
           <TouchableOpacity 
             style={styles.continueButton}
-            onPress={() => router.replace('./Welcome')}
+            onPress={() => router.replace('./qwriting')}
           >
             <Text style={styles.continueButtonText}>Return to Welcome</Text>
           </TouchableOpacity>

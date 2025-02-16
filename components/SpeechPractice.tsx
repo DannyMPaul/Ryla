@@ -127,13 +127,13 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
   const analyzePronunciation = async (audioUri: string) => {
     if (!currentWord) return;
     try {
-      // Create form data for the audio file
       const formData = new FormData();
       formData.append('file', {
         uri: audioUri,
         type: 'audio/m4a',
         name: 'speech.m4a'
-      });
+      } as any);
+
       formData.append('model', 'whisper-1');
       formData.append('language', 'fr');
 
