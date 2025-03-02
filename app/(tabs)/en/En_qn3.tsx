@@ -176,7 +176,7 @@ const EnglishLearningGoalsScreen = () => {
         style={styles.nextButton}
         onPress={async () => {
           await saveModelData(modelData);
-          router.replace("/(tabs)/English/quiz");
+          router.replace("../(tabs)/en/En_quiz");
         }}
       >
         <Text style={styles.nextButtonText}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,14 +8,14 @@ import {
   TextInput,
   ScrollView,
   ImageBackground,
-} from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { getAuth } from 'firebase/auth';
-import { getDatabase, ref, set, get } from 'firebase/database';
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { getAuth } from "firebase/auth";
+import { getDatabase, ref, set, get } from "firebase/database";
 
 interface ClueType {
   number: number;
-  direction: 'across' | 'down';
+  direction: "across" | "down";
   question: string;
   answer: string;
   length: number;
@@ -26,76 +26,76 @@ interface ClueType {
 const clues: ClueType[] = [
   {
     number: 1,
-    direction: 'across',
-    question: 'What is your favorite color?',
-    answer: 'BLUE',
+    direction: "across",
+    question: "What is your favorite color?",
+    answer: "BLUE",
     length: 4,
     startX: 0,
     startY: 0,
   },
   {
     number: 2,
-    direction: 'down',
-    question: 'Where do you live?',
-    answer: 'LONDON',
+    direction: "down",
+    question: "Where do you live?",
+    answer: "LONDON",
     length: 6,
     startX: 0,
     startY: 0,
   },
   {
     number: 3,
-    direction: 'across',
-    question: 'What time is it?',
-    answer: 'THREE',
+    direction: "across",
+    question: "What time is it?",
+    answer: "THREE",
     length: 5,
     startX: 2,
     startY: 2,
   },
   {
     number: 4,
-    direction: 'down',
-    question: 'What is your favorite food?',
-    answer: 'SANDWICH',
+    direction: "down",
+    question: "What is your favorite food?",
+    answer: "SANDWICH",
     length: 8,
     startX: 4,
     startY: 1,
   },
   {
     number: 5,
-    direction: 'across',
+    direction: "across",
     question: "What is your best friend's name?",
-    answer: 'PETER',
+    answer: "PETER",
     length: 5,
     startX: 0,
     startY: 4,
   },
   {
     number: 6,
-    direction: 'down',
-    question: 'Do you speak other languages?',
-    answer: 'SPANISH',
+    direction: "down",
+    question: "Do you speak other languages?",
+    answer: "SPANISH",
     length: 7,
     startX: 6,
     startY: 2,
   },
   {
     number: 7,
-    direction: 'across',
-    question: 'Do you like animals?',
-    answer: 'DOGS',
+    direction: "across",
+    question: "Do you like animals?",
+    answer: "DOGS",
     length: 4,
     startX: 3,
     startY: 6,
   },
   {
     number: 8,
-    direction: 'down',
-    question: 'What are your hobbies?',
-    answer: 'MUSIC',
+    direction: "down",
+    question: "What are your hobbies?",
+    answer: "MUSIC",
     length: 5,
     startX: 8,
     startY: 3,
-  }
+  },
 ];
 
 const EnglishCrosswordScreen = () => {
@@ -112,11 +112,11 @@ const EnglishCrosswordScreen = () => {
   const loadUserProgress = async () => {
     const auth = getAuth();
     const user = auth.currentUser;
-    
+
     if (user) {
       const db = getDatabase();
       const progressRef = ref(db, `users/${user.uid}/englishCrosswordProgress`);
-      
+
       try {
         const snapshot = await get(progressRef);
         if (snapshot.exists()) {
@@ -125,7 +125,7 @@ const EnglishCrosswordScreen = () => {
           setCompletedPuzzles(data.completedPuzzles || []);
         }
       } catch (error) {
-        console.error('Error loading progress:', error);
+        console.error("Error loading progress:", error);
       }
     }
   };
@@ -133,25 +133,25 @@ const EnglishCrosswordScreen = () => {
   const saveProgress = async () => {
     const auth = getAuth();
     const user = auth.currentUser;
-    
+
     if (user) {
       const db = getDatabase();
       const progressRef = ref(db, `users/${user.uid}/englishCrosswordProgress`);
-      
+
       try {
         await set(progressRef, {
           answers,
           completedPuzzles,
-          lastUpdated: new Date().toISOString()
+          lastUpdated: new Date().toISOString(),
         });
       } catch (error) {
-        console.error('Error saving progress:', error);
+        console.error("Error saving progress:", error);
       }
     }
   };
 
   const handleSquarePress = (x: number, y: number) => {
-    const clue = clues.find(c => c.startX === x && c.startY === y);
+    const clue = clues.find((c) => c.startX === x && c.startY === y);
     if (clue) {
       setSelectedClue(clue);
       setShowModal(true);
@@ -162,25 +162,28 @@ const EnglishCrosswordScreen = () => {
     if (selectedClue) {
       const newAnswers = {
         ...answers,
-        [`${selectedClue.number}-${selectedClue.direction}`]: answer.toUpperCase(),
+        [`${selectedClue.number}-${selectedClue.direction}`]:
+          answer.toUpperCase(),
       };
       setAnswers(newAnswers);
       setShowModal(false);
-      
+
       // Check if puzzle is complete
       const isComplete = checkPuzzleComplete(newAnswers);
       if (isComplete) {
         const puzzleId = new Date().toISOString();
         setCompletedPuzzles([...completedPuzzles, puzzleId]);
       }
-      
+
       await saveProgress();
     }
   };
 
   const checkPuzzleComplete = (currentAnswers: { [key: string]: string }) => {
-    return clues.every(clue => 
-      currentAnswers[`${clue.number}-${clue.direction}`]?.toUpperCase() === clue.answer
+    return clues.every(
+      (clue) =>
+        currentAnswers[`${clue.number}-${clue.direction}`]?.toUpperCase() ===
+        clue.answer
     );
   };
 
@@ -193,7 +196,7 @@ const EnglishCrosswordScreen = () => {
 
   const handleShowSolution = () => {
     const solutionAnswers: { [key: string]: string } = {};
-    clues.forEach(clue => {
+    clues.forEach((clue) => {
       solutionAnswers[`${clue.number}-${clue.direction}`] = clue.answer;
     });
     setAnswers(solutionAnswers);
@@ -205,16 +208,18 @@ const EnglishCrosswordScreen = () => {
     for (let i = 0; i < 12; i++) {
       const row = [];
       for (let j = 0; j < 12; j++) {
-        const isStartingSquare = clues.some(c => c.startX === j && c.startY === i);
-        const clue = clues.find(c => c.startX === j && c.startY === i);
-        const isPartOfWord = clues.some(c => {
-          if (c.direction === 'across') {
+        const isStartingSquare = clues.some(
+          (c) => c.startX === j && c.startY === i
+        );
+        const clue = clues.find((c) => c.startX === j && c.startY === i);
+        const isPartOfWord = clues.some((c) => {
+          if (c.direction === "across") {
             return i === c.startY && j >= c.startX && j < c.startX + c.length;
           } else {
             return j === c.startX && i >= c.startY && i < c.startY + c.length;
           }
         });
-        
+
         row.push(
           <TouchableOpacity
             key={`${i}-${j}`}
@@ -223,17 +228,18 @@ const EnglishCrosswordScreen = () => {
               isStartingSquare ? styles.startingSquare : null,
               !isPartOfWord ? styles.blackSquare : null,
             ]}
-            onPress={() => isPartOfWord ? handleSquarePress(j, i) : null}
+            onPress={() => (isPartOfWord ? handleSquarePress(j, i) : null)}
             disabled={!isPartOfWord}
           >
             {isStartingSquare && (
               <Text style={styles.squareNumber}>{clue?.number}</Text>
             )}
-            {answers[`${clue?.number}-${clue?.direction}`] && isStartingSquare && (
-              <Text style={styles.answerText}>
-                {answers[`${clue?.number}-${clue?.direction}`][0]}
-              </Text>
-            )}
+            {answers[`${clue?.number}-${clue?.direction}`] &&
+              isStartingSquare && (
+                <Text style={styles.answerText}>
+                  {answers[`${clue?.number}-${clue?.direction}`][0]}
+                </Text>
+              )}
           </TouchableOpacity>
         );
       }
@@ -251,8 +257,8 @@ const EnglishCrosswordScreen = () => {
       <View style={styles.clueColumn}>
         <Text style={styles.clueColumnTitle}>Across</Text>
         {clues
-          .filter(clue => clue.direction === 'across')
-          .map(clue => (
+          .filter((clue) => clue.direction === "across")
+          .map((clue) => (
             <View key={`across-${clue.number}`} style={styles.clueItem}>
               <Text style={styles.clueNumber}>{clue.number}.</Text>
               <Text style={styles.clueText}>{clue.question}</Text>
@@ -266,8 +272,8 @@ const EnglishCrosswordScreen = () => {
       <View style={styles.clueColumn}>
         <Text style={styles.clueColumnTitle}>Down</Text>
         {clues
-          .filter(clue => clue.direction === 'down')
-          .map(clue => (
+          .filter((clue) => clue.direction === "down")
+          .map((clue) => (
             <View key={`down-${clue.number}`} style={styles.clueItem}>
               <Text style={styles.clueNumber}>{clue.number}.</Text>
               <Text style={styles.clueText}>{clue.question}</Text>
@@ -294,21 +300,22 @@ const EnglishCrosswordScreen = () => {
   return (
     <ScrollView style={styles.container}>
       <ImageBackground
-        source={require('../../../assets/images/english_back.jpg')}
+        source={require("../../../assets/images/back.jpg")}
         style={styles.background}
       >
         <View style={styles.content}>
           <Text style={styles.title}>English Crossword Puzzle</Text>
-          
+
           <View style={styles.instructions}>
             <Text style={styles.instructionText}>
-              Click on a number in the grid to begin.{'\n'}
-              Type your answer, and then move on to the next numbered square.{'\n'}
+              Click on a number in the grid to begin.{"\n"}
+              Type your answer, and then move on to the next numbered square.
+              {"\n"}
               Double click a number to toggle between clues for across and down.
             </Text>
           </View>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.newGameButton}
             onPress={handleNewGame}
           >
@@ -321,7 +328,7 @@ const EnglishCrosswordScreen = () => {
           {renderCluesAndAnswers()}
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionButton}
               onPress={handleShowSolution}
             >
@@ -346,8 +353,10 @@ const EnglishCrosswordScreen = () => {
               {selectedClue?.number} {selectedClue?.direction.toUpperCase()}
             </Text>
             <Text style={styles.modalQuestion}>{selectedClue?.question}</Text>
-            <Text style={styles.modalLength}>({selectedClue?.length} letters)</Text>
-            
+            <Text style={styles.modalLength}>
+              ({selectedClue?.length} letters)
+            </Text>
+
             <TextInput
               style={styles.input}
               placeholder="Enter answer"
@@ -373,7 +382,7 @@ const EnglishCrosswordScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
   },
   background: {
     flex: 1,
@@ -383,97 +392,97 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
     marginBottom: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   instructions: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
     padding: 16,
     borderRadius: 8,
     marginBottom: 16,
   },
   instructionText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
     lineHeight: 20,
   },
   newGameButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#58cc02',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#58cc02",
     padding: 12,
     borderRadius: 8,
-    justifyContent: 'center',
+    justifyContent: "center",
     marginBottom: 16,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     marginLeft: 8,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   gridContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginVertical: 16,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   square: {
     width: 28,
     height: 28,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: '#000000',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderColor: "#000000",
+    justifyContent: "center",
+    alignItems: "center",
   },
   startingSquare: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: "#F0F0F0",
   },
   squareNumber: {
-    position: 'absolute',
+    position: "absolute",
     top: 2,
     left: 2,
     fontSize: 10,
-    color: '#000000',
+    color: "#000000",
   },
   answerText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: "bold",
+    color: "#000000",
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     marginTop: 16,
   },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1cb0f6',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1cb0f6",
     padding: 12,
     borderRadius: 8,
     minWidth: 150,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     padding: 24,
     borderRadius: 16,
-    width: '80%',
+    width: "80%",
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
   },
   modalQuestion: {
@@ -482,36 +491,36 @@ const styles = StyleSheet.create({
   },
   modalLength: {
     fontSize: 14,
-    color: '#666666',
+    color: "#666666",
     marginBottom: 16,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#CCCCCC',
+    borderColor: "#CCCCCC",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     marginBottom: 16,
   },
   closeButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: "#FF3B30",
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   closeButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   blackSquare: {
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
   },
   cluesContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     padding: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderRadius: 8,
     marginTop: 20,
   },
@@ -521,45 +530,45 @@ const styles = StyleSheet.create({
   },
   clueColumnTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: "bold",
+    color: "#000000",
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   clueItem: {
     marginBottom: 12,
   },
   clueNumber: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: "bold",
+    color: "#000000",
     marginBottom: 4,
   },
   clueText: {
     fontSize: 14,
-    color: '#000000',
+    color: "#000000",
     marginBottom: 4,
   },
   solutionText: {
     fontSize: 14,
-    color: '#58cc02',
-    fontWeight: 'bold',
+    color: "#58cc02",
+    fontWeight: "bold",
   },
   completedContainer: {
     marginTop: 20,
     padding: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderRadius: 8,
   },
   completedTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: "bold",
+    color: "#000000",
     marginBottom: 12,
   },
   completedText: {
     fontSize: 14,
-    color: '#000000',
+    color: "#000000",
     marginBottom: 8,
   },
 });

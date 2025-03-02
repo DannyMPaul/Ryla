@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   Image,
   SafeAreaView,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
-import { router } from 'expo-router';
-import { getAuth } from 'firebase/auth';
-import { getDatabase, ref as dbRef, update } from 'firebase/database';
+} from "react-native";
+import Icon from "react-native-vector-icons/Feather";
+import { router } from "expo-router";
+import { getAuth } from "firebase/auth";
+import { getDatabase, ref as dbRef, update } from "firebase/database";
 
 interface ProficiencyLevel {
   id: string;
@@ -21,28 +21,28 @@ interface ProficiencyLevel {
 
 const proficiencyLevels: ProficiencyLevel[] = [
   {
-    id: '1',
+    id: "1",
     title: "I'm new to English",
     level: 1,
   },
   {
-    id: '2',
-    title: 'I know some common words',
+    id: "2",
+    title: "I know some common words",
     level: 2,
   },
   {
-    id: '3',
-    title: 'I can have basic conversations',
+    id: "3",
+    title: "I can have basic conversations",
     level: 3,
   },
   {
-    id: '4',
-    title: 'I can talk about various topics',
+    id: "4",
+    title: "I can talk about various topics",
     level: 4,
   },
   {
-    id: '5',
-    title: 'I can discuss most topics in detail',
+    id: "5",
+    title: "I can discuss most topics in detail",
     level: 5,
   },
 ];
@@ -55,7 +55,10 @@ const ProgressBars = ({ level }: { level: number }) => {
           key={bar}
           style={[
             styles.progressBar,
-            { backgroundColor: bar <= level ? 'rgb(240, 74, 99)' : 'rgba(240, 74, 99, 0.18)' },
+            {
+              backgroundColor:
+                bar <= level ? "rgb(240, 74, 99)" : "rgba(240, 74, 99, 0.18)",
+            },
           ]}
         />
       ))}
@@ -69,24 +72,26 @@ const LanguageProficiencyScreen = () => {
 
   const handleLevelSelect = async (levelId: string) => {
     setSelectedLevel(levelId);
-    
+
     const user = auth.currentUser;
     if (user) {
       const db = getDatabase();
       const userRef = dbRef(db, `users/${user.uid}`);
-      
+
       try {
-        const selectedProficiency = proficiencyLevels.find(l => l.id === levelId);
+        const selectedProficiency = proficiencyLevels.find(
+          (l) => l.id === levelId
+        );
         await update(userRef, {
-          'responses/proficiencyLevel': {
+          "responses/proficiencyLevel": {
             selectedLevel: levelId,
             levelTitle: selectedProficiency?.title,
             levelNumber: selectedProficiency?.level,
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         });
       } catch (error) {
-        console.error('Error saving proficiency level:', error);
+        console.error("Error saving proficiency level:", error);
       }
     }
   };
@@ -98,20 +103,21 @@ const LanguageProficiencyScreen = () => {
     if (user) {
       const db = getDatabase();
       const userRef = dbRef(db, `users/${user.uid}`);
-      
+
       try {
         await update(userRef, {
-          currentStep: 'quiz',
+          currentStep: "quiz",
           lastUpdated: new Date().toISOString(),
-          'learningPath': {
-            language: 'English',
+          learningPath: {
+            language: "English",
             startedAt: new Date().toISOString(),
-            initialLevel: proficiencyLevels.find(l => l.id === selectedLevel)?.level
-          }
+            initialLevel: proficiencyLevels.find((l) => l.id === selectedLevel)
+              ?.level,
+          },
         });
-        router.replace('../En/En_qn3');
+        router.replace("/en/En_qn3");
       } catch (error) {
-        console.error('Error updating progress:', error);
+        console.error("Error updating progress:", error);
       }
     }
   };
@@ -120,13 +126,11 @@ const LanguageProficiencyScreen = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Image
-          source={require('../../../assets/Gif/lightgif.gif')}
+          source={require("../../../assets/Gif/lightgif.gif")}
           style={styles.mascot}
         />
         <View style={styles.questionBubble}>
-          <Text style={styles.questionText}>
-            How much English do you know?
-          </Text>
+          <Text style={styles.questionText}>How much English do you know?</Text>
         </View>
       </View>
 
@@ -154,7 +158,9 @@ const LanguageProficiencyScreen = () => {
         disabled={!selectedLevel}
         onPress={handleContinue}
       >
-        <Text style={styles.continueButtonText}>Let's quickly check your level!</Text>
+        <Text style={styles.continueButtonText}>
+          Let's quickly check your level!
+        </Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -163,52 +169,52 @@ const LanguageProficiencyScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgb(21, 1, 20)',
+    backgroundColor: "rgb(21, 1, 20)",
   },
   header: {
     marginTop: 50,
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 20,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 12,
   },
   mascot: {
     width: 80,
     height: 100,
-    resizeMode: 'cover',
+    resizeMode: "cover",
     borderRadius: 30,
   },
   questionBubble: {
     flex: 1,
-    backgroundColor: '#1f2937',
+    backgroundColor: "#1f2937",
     borderRadius: 16,
     padding: 19,
   },
   questionText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 25,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   scrollView: {
     flex: 1,
     padding: 20,
   },
   optionButton: {
-    backgroundColor: '#1f2937',
+    backgroundColor: "#1f2937",
     borderRadius: 12,
     padding: 28,
     marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   selectedOption: {
-    backgroundColor: '#2a3a4a',
-    borderColor: 'rgba(240, 74, 99, 0.78)',
+    backgroundColor: "#2a3a4a",
+    borderColor: "rgba(240, 74, 99, 0.78)",
     borderWidth: 2,
   },
   progressContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 3,
   },
   progressBar: {
@@ -217,24 +223,24 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   optionText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
     flex: 1,
   },
   continueButton: {
-    backgroundColor: 'rgb(240, 74, 99)',
+    backgroundColor: "rgb(240, 74, 99)",
     margin: 20,
     padding: 16,
     borderRadius: 15,
-    alignItems: 'center',
+    alignItems: "center",
   },
   continueButtonDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.59)',
+    backgroundColor: "rgba(255, 255, 255, 0.59)",
   },
   continueButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
 

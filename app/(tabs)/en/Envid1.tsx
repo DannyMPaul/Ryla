@@ -75,7 +75,7 @@ const EnglishVideoLessonScreen = () => {
         <View style={styles.videoContainer}>
           <Video
             ref={videoRef}
-            source={require("../../../assets/videos/English_L01.mp4")}
+            source={require("../../../assets/videos/French_L01.mp4")}
             style={styles.video}
             useNativeControls
             resizeMode={ResizeMode.CONTAIN}

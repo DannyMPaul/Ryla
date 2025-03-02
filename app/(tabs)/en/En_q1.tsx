@@ -52,19 +52,19 @@ const QuizScreen = () => {
         {
           id: "1",
           label: "café",
-          image: require("../../../assets/images/roadMapImgs/coffee.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: true,
         },
         {
           id: "2",
           label: "agua",
-          image: require("../../../assets/images/roadMapImgs/water.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: false,
         },
         {
           id: "3",
           label: "pan",
-          image: require("../../../assets/images/roadMapImgs/bread.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: false,
         },
       ],
@@ -76,13 +76,13 @@ const QuizScreen = () => {
         {
           id: "1",
           label: "gato",
-          image: require("../../../assets/images/roadMapImgs/Cat.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: false,
         },
         {
           id: "2",
           label: "perro",
-          image: require("../../../assets/images/roadMapImgs/dog.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: true,
         },
         {
@@ -100,19 +100,19 @@ const QuizScreen = () => {
         {
           id: "1",
           label: "plátano",
-          image: require("../../../assets/images/roadMapImgs/banana.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: false,
         },
         {
           id: "2",
           label: "manzana",
-          image: require("../../../assets/images/roadMapImgs/apple.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: true,
         },
         {
           id: "3",
           label: "uva",
-          image: require("../../../assets/images/roadMapImgs/grape.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: false,
         },
       ],
@@ -124,19 +124,19 @@ const QuizScreen = () => {
         {
           id: "1",
           label: "casa",
-          image: require("../../../assets/images/roadMapImgs/house.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: true,
         },
         {
           id: "2",
           label: "carro",
-          image: require("../../../assets/images/roadMapImgs/car.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: false,
         },
         {
           id: "3",
           label: "libro",
-          image: require("../../../assets/images/roadMapImgs/book.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: false,
         },
       ],
@@ -148,19 +148,19 @@ const QuizScreen = () => {
         {
           id: "1",
           label: "agua",
-          image: require("../../../assets/images/roadMapImgs/water.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: true,
         },
         {
           id: "2",
           label: "leche",
-          image: require("../../../assets/images/roadMapImgs/milk.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: false,
         },
         {
           id: "3",
           label: "jugo",
-          image: require("../../../assets/images/roadMapImgs/juice.jpg"),
+          image: require("../../../assets/images/roadMapImgs/boy.jpg"),
           isCorrect: false,
         },
       ],
@@ -282,7 +282,7 @@ const QuizScreen = () => {
   };
 
   const handleSkip = () => {
-    router.push("/Home" as const);
+    router.push("../En_Home" as const);
   };
 
   const handleClose = () => {
