@@ -9,7 +9,7 @@ import {
   SafeAreaView,
   BackHandler,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -56,6 +56,16 @@ const conversationItems: ConversationItem[] = [
     level: 'C1 Advanced',
   },
 ];
+
+const BackButton = () => (
+  <TouchableOpacity 
+    style={styles.backButton}
+    onPress={() => router.replace('./TabNavigator')}
+    activeOpacity={0.7}
+  >
+    <Ionicons name="arrow-back-circle" size={42} color="#F0657A" />
+  </TouchableOpacity>
+);
 
 const LearnWithAIScreen = () => {
   useFocusEffect(
@@ -117,6 +127,7 @@ const LearnWithAIScreen = () => {
           </TouchableOpacity>
         ))}
       </ScrollView>
+      <BackButton />
     </SafeAreaView>
   );
 };
@@ -221,6 +232,18 @@ const styles = StyleSheet.create({
   itemLevel: {
     fontSize: 14,
     color: '#888888', // Subtle text for level info
+  },
+  backButton: {
+    position: 'absolute',
+    top: 40,
+    left: 16,
+    zIndex: 10,
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 21,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
 });
 

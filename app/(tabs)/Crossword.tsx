@@ -9,9 +9,10 @@ import {
   ScrollView,
   ImageBackground,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref, set, get } from 'firebase/database';
+import { router } from 'expo-router';
 
 interface ClueType {
   number: number;
@@ -291,6 +292,16 @@ const CrosswordScreen = () => {
     </View>
   );
 
+  const BackButton = () => (
+    <TouchableOpacity 
+      style={styles.backButton}
+      onPress={() => router.replace('./TabNavigator')}
+      activeOpacity={0.7}
+    >
+      <Ionicons name="arrow-back-circle" size={42} color="#F0657A" />
+    </TouchableOpacity>
+  );
+
   return (
     <ScrollView style={styles.container}>
       <ImageBackground
@@ -366,6 +377,8 @@ const CrosswordScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <BackButton />
     </ScrollView>
   );
 };
@@ -576,6 +589,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000000',
     marginBottom: 4,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 40,
+    left: 16,
+    zIndex: 10,
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 21,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
 });
 

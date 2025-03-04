@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { StyleSheet, FlatList, View, Animated } from 'react-native';
-import { Link, useFocusEffect } from 'expo-router';
+import { StyleSheet, FlatList, View, Animated, TouchableOpacity } from 'react-native';
+import { Link, useFocusEffect, router } from 'expo-router';
 import { Video,ResizeMode } from 'expo-av'; // Import Video component
 import { FACTS } from '../../constants/Facts';
 import FactItem from '@/components/FactItem';
 // import FactItem from '../../components/FactItem';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Fact } from '../../types/index';
 
@@ -51,6 +52,16 @@ export default function TabOneScreen() {
     </Animated.View>
   );
 
+  const BackButton = () => (
+    <TouchableOpacity 
+      style={styles.backButton}
+      onPress={() => router.replace('./TabNavigator')}
+      activeOpacity={0.7}
+    >
+      <Ionicons name="arrow-back-circle" size={42} color="#F0657A" />
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       {/* Video Background */}
@@ -62,6 +73,7 @@ export default function TabOneScreen() {
         isLooping
         isMuted
       />
+      <BackButton />
       <FlatList
         data={facts}
         renderItem={renderItem}
@@ -81,5 +93,17 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: 15,
     zIndex: 2, // Ensure content is above the video background
+  },
+  backButton: {
+    position: 'absolute',
+    top: 40,
+    left: 16,
+    zIndex: 10,
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 21,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
 });

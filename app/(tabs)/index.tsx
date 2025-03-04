@@ -188,7 +188,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
         if (isLogin) {
           const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
           const user = userCredential.user;
-          router.replace('/(tabs)/Home1');
+          router.replace('./TabNavigator');
         } else {
           const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
           const user = userCredential.user;
@@ -286,7 +286,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
 
         if (userData?.quizResults?.completedAt) {
           // User has completed the quiz before
-          router.replace('/(tabs)/Home');
+          router.replace('./TabNavigator');
         } else {
           // User hasn't taken the quiz yet
           router.replace('/(tabs)/qn1');

@@ -5,7 +5,7 @@ import { getAuth, onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getDatabase, ref as dbRef, onValue } from 'firebase/database';
+import { getDatabase, ref as dbRef, onValue, update } from 'firebase/database';
 
 interface UserData {
   name: string;
@@ -50,7 +50,126 @@ interface UserData {
       };
     };
   };
+  learningGoals?: {
+    selectedMode?: string;
+    requirements?: string[];
+    lastUpdated?: string;
+  };
 }
+
+const LearningGoalsSection = ({ userData, onUpdate }: { userData: UserData | null, onUpdate: () => void }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedMode, setSelectedMode] = useState(userData?.learningGoals?.selectedMode || '');
+  const [requirements, setRequirements] = useState<string[]>(userData?.learningGoals?.requirements || []);
+
+  const learningModes = [
+    { id: 'casual', label: 'Casual Learning' },
+    { id: 'intensive', label: 'Intensive Study' },
+    { id: 'professional', label: 'Professional Development' }
+  ];
+
+  const requirementOptions = [
+    'Grammar Focus',
+    'Vocabulary Building',
+    'Conversation Practice',
+    'Business French',
+    'Cultural Understanding',
+    'Reading Comprehension',
+    'Writing Skills'
+  ];
+
+  const handleSave = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const db = getDatabase();
+    const userRef = dbRef(db, `users/${user.uid}`);
+    
+    try {
+      await update(userRef, {
+        learningGoals: {
+          selectedMode,
+          requirements,
+          lastUpdated: new Date().toISOString()
+        }
+      });
+      setIsEditing(false);
+      onUpdate();
+    } catch (error) {
+      console.error('Error saving goals:', error);
+    }
+  };
+
+  return (
+    <View style={styles.statsSection}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Learning Goals</Text>
+        <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
+          <Feather name={isEditing ? "check" : "edit"} size={24} color="#58cc02" />
+        </TouchableOpacity>
+      </View>
+
+      {isEditing ? (
+        <View style={styles.editContainer}>
+          <Text style={styles.label}>Learning Mode:</Text>
+          {learningModes.map(mode => (
+            <TouchableOpacity
+              key={mode.id}
+              style={[styles.modeOption, selectedMode === mode.id && styles.selectedMode]}
+              onPress={() => setSelectedMode(mode.id)}
+            >
+              <Text style={[styles.modeText, selectedMode === mode.id && styles.selectedModeText]}>
+                {mode.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+          <Text style={[styles.label, { marginTop: 16 }]}>Requirements:</Text>
+          <View style={styles.requirementsContainer}>
+            {requirementOptions.map(req => (
+              <TouchableOpacity
+                key={req}
+                style={[styles.requirementOption, requirements.includes(req) && styles.selectedRequirement]}
+                onPress={() => {
+                  setRequirements(requirements.includes(req) 
+                    ? requirements.filter(r => r !== req)
+                    : [...requirements, req]
+                  );
+                }}
+              >
+                <Text style={[styles.requirementText, requirements.includes(req) && styles.selectedRequirementText]}>
+                  {req}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.saveButtonText}>Save Goals</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View>
+          {userData?.learningGoals?.selectedMode && (
+            <View style={styles.goalDisplay}>
+              <Text style={styles.goalMode}>
+                Mode: {learningModes.find(m => m.id === userData.learningGoals?.selectedMode)?.label}
+              </Text>
+              <View style={styles.requirementsList}>
+                {userData.learningGoals.requirements?.map(req => (
+                  <View key={req} style={styles.requirementTag}>
+                    <Text style={styles.requirementTagText}>{req}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+      )}
+    </View>
+  );
+};
 
 const ProfileScreen = () => {
   const [userEmail, setUserEmail] = useState<string>('');
@@ -139,6 +258,19 @@ const ProfileScreen = () => {
     }
   };
 
+  const loadUserData = () => {
+    if (auth.currentUser) {
+      const db = getDatabase();
+      const userRef = dbRef(db, `users/${auth.currentUser.uid}`);
+      
+      onValue(userRef, (snapshot) => {
+        const data = snapshot.val();
+        setUserData(data);
+        console.log('User Data:', data);
+      });
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -171,31 +303,13 @@ const ProfileScreen = () => {
         </View>
       </View>
 
-      {userData?.modelData?.target_uses?.en && (
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Learning Goals</Text>
-          <View style={styles.goalsContainer}>
-            {Object.entries(userData.modelData.target_uses.en)
-              .filter(([_, goal]) => goal.selected)
-              .map(([key, goal]) => (
-                <View key={key} style={styles.goalItem}>
-                  <Feather 
-                    name={
-                      key === 'grammar_correction' ? 'edit-2' :
-                      key === 'text_coherent' ? 'align-left' :
-                      key === 'easier_understanding' ? 'book-open' :
-                      key === 'paraphrasing' ? 'repeat' :
-                      key === 'formal_tone' ? 'briefcase' : 'message-square'
-                    } 
-                    size={20} 
-                    color="#58cc02" 
-                  />
-                  <Text style={styles.goalText}>{goal.description}</Text>
-                </View>
-              ))}
-          </View>
-        </View>
-      )}
+      <LearningGoalsSection 
+        userData={userData} 
+        onUpdate={() => {
+          // Refresh user data if needed
+          loadUserData();
+        }} 
+      />
 
       <View style={styles.statsSection}>
         <TouchableOpacity 
@@ -474,6 +588,90 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     flex: 1,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  editContainer: {
+    gap: 8,
+  },
+  label: {
+    color: '#BBBBBB',
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  modeOption: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#2d3748',
+    marginBottom: 8,
+  },
+  selectedMode: {
+    backgroundColor: '#58cc02',
+  },
+  modeText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  selectedModeText: {
+    fontWeight: 'bold',
+  },
+  requirementsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  requirementOption: {
+    padding: 8,
+    borderRadius: 16,
+    backgroundColor: '#2d3748',
+  },
+  selectedRequirement: {
+    backgroundColor: '#58cc02',
+  },
+  requirementText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+  },
+  selectedRequirementText: {
+    fontWeight: 'bold',
+  },
+  saveButton: {
+    backgroundColor: '#58cc02',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  goalDisplay: {
+    gap: 12,
+  },
+  goalMode: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  requirementsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  requirementTag: {
+    backgroundColor: '#2d3748',
+    padding: 8,
+    borderRadius: 16,
+  },
+  requirementTagText: {
+    color: '#58cc02',
+    fontSize: 14,
   },
 });
 
