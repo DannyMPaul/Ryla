@@ -21,9 +21,9 @@ interface LanguageOption {
 }
 
 const languages: LanguageOption[] = [
-  { id: '1', flag: 'GB', title: 'English' },
-  { id: '2', flag: 'DE', title: 'German' },
-  { id: '3', flag: 'FR', title: 'French' },
+  { id: '1', flag: 'gb', title: 'English' },
+  { id: '2', flag: 'de', title: 'German' },
+  { id: '3', flag: 'fr', title: 'French' },
 ];
 
 const qn2 = () => {
@@ -99,7 +99,7 @@ const qn2 = () => {
             >
               <View style={styles.optionContent}>
                 <View style={styles.flagContainer}>
-                  <CountryFlag code={language.flag} size={32} />
+                  <CountryFlag isoCode={language.flag.toLowerCase()} size={32} />
                 </View>
                 <Text style={styles.optionText}>{language.title}</Text>
               </View>

@@ -40,6 +40,16 @@ interface UserData {
       context?: string;
     };
   };
+  modelData?: {
+    target_uses: {
+      en: {
+        [key: string]: {
+          selected: boolean;
+          description: string;
+        };
+      };
+    };
+  };
 }
 
 const ProfileScreen = () => {
@@ -160,6 +170,32 @@ const ProfileScreen = () => {
           <Text style={styles.statLabel}>Day Streak</Text>
         </View>
       </View>
+
+      {userData?.modelData?.target_uses?.en && (
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Learning Goals</Text>
+          <View style={styles.goalsContainer}>
+            {Object.entries(userData.modelData.target_uses.en)
+              .filter(([_, goal]) => goal.selected)
+              .map(([key, goal]) => (
+                <View key={key} style={styles.goalItem}>
+                  <Feather 
+                    name={
+                      key === 'grammar_correction' ? 'edit-2' :
+                      key === 'text_coherent' ? 'align-left' :
+                      key === 'easier_understanding' ? 'book-open' :
+                      key === 'paraphrasing' ? 'repeat' :
+                      key === 'formal_tone' ? 'briefcase' : 'message-square'
+                    } 
+                    size={20} 
+                    color="#58cc02" 
+                  />
+                  <Text style={styles.goalText}>{goal.description}</Text>
+                </View>
+              ))}
+          </View>
+        </View>
+      )}
 
       <View style={styles.statsSection}>
         <TouchableOpacity 
@@ -422,6 +458,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     padding: 16,
+  },
+  goalsContainer: {
+    gap: 8,
+  },
+  goalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2d3748',
+    padding: 12,
+    borderRadius: 8,
+    gap: 12,
+  },
+  goalText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    flex: 1,
   },
 });
 
