@@ -8,7 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { router } from 'expo-router';
-import Flag from 'react-native-flags';
+import CountryFlag from "react-native-country-flag";
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref as dbRef, update } from 'firebase/database';
 
@@ -99,7 +99,7 @@ const qn2 = () => {
             >
               <View style={styles.optionContent}>
                 <View style={styles.flagContainer}>
-                  <Flag code={language.flag} size={32} />
+                  <CountryFlag code={language.flag} size={32} />
                 </View>
                 <Text style={styles.optionText}>{language.title}</Text>
               </View>
