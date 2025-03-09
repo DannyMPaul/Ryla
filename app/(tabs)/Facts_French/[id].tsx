@@ -3,7 +3,7 @@ import { StyleSheet, Image, TouchableOpacity, Text, View, Animated } from 'react
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Audio, Video, ResizeMode } from 'expo-av'; // Import ResizeMode
 import { FontAwesome } from '@expo/vector-icons';
-import { FACTS } from '../../../constants/Facts';
+import { FACTS } from '../../../constants/Fr_Facts';
 import { AudioFiles } from '../../../constants/AudioFiles';
 import { ImageFiles } from '../../../constants/ImageFiles';
 import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient

@@ -44,7 +44,7 @@
 //         ],
 //       }}
 //     >
-//       <Link href={`../Eng/Facts_English/${item.id}`} asChild>
+//       <Link href={`../Eng/En_Facts/${item.id}`} asChild>
 //         <FactItem fact={item} onPress={() => {}} />
 //       </Link>
 //     </Animated.View>
