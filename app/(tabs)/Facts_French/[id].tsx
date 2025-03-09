@@ -11,7 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
 export default function FactDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const fact = FACTS.find(f => f.id === id);
+  const fact = FACTS.find((f: { id: string }) => f.id === id);
   const [isInFrench, setIsInFrench] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
