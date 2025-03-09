@@ -13,8 +13,9 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getAuth } from 'firebase/auth';
-import { getDatabase, ref, get } from 'firebase/database';
+import { getDatabase, ref, get, update } from 'firebase/database';
 import SpeechPractice from '../../components/SpeechPractice';
+import AIConversation from '../../components/AIConversation';
 
 const { width } = Dimensions.get('window');
 
@@ -50,31 +51,9 @@ const Home1Screen = () => {
   const [overallProgress, setOverallProgress] = useState(1);
   const [unlockedLessons, setUnlockedLessons] = useState(['1', '2']); // Initially first two lessons unlocked
   const [showSpeechPractice, setShowSpeechPractice] = useState(false);
-  
-  // Add useEffect to check quiz completion status
-  useEffect(() => {
-    const checkQuizStatus = async () => {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (user) {
-        const db = getDatabase();
-        const userRef = ref(db, `users/${user.uid}`);
-        const snapshot = await get(userRef);
-        const userData = snapshot.val();
-
-        if (userData?.quizResponses?.q1?.completed) {
-          // If q1 is completed, unlock the next lesson
-          setUnlockedLessons(prev => [...prev, '3']);
-          setOverallProgress(prev => prev + 1);
-        }
-      }
-    };
-
-    checkQuizStatus();
-  }, []);
-
-  // Update the chapter data to use unlockedLessons
-  const chapter: Chapter = {
+  const [showAIConversation, setShowAIConversation] = useState(false);
+  const [username, setUsername] = useState('');
+  const [chapterData, setChapterData] = useState<Chapter>({
     id: '1',
     title: 'Chapter 1',
     progress: 1/6,
@@ -96,21 +75,75 @@ const Home1Screen = () => {
         type: 'speaking',
         image: require('../../assets/images/qn.jpg'),
         isCompleted: false,
-        isLocked: !unlockedLessons.includes('2'),
+        isLocked: false, // Initially unlocked
         route: '/(tabs)/q1' as const,
         speechPractice: true
       },
       {
         id: '3',
-        title: 'Next Lesson',
+        title: 'French Conversation',
         type: 'ai',
         image: require('../../assets/images/speaklrn.png'),
         isCompleted: false,
-        isLocked: !unlockedLessons.includes('3'),
+        isLocked: false, // Changed to false for testing
+        // No route needed as it opens the AIConversation modal
       },
       // Add more lessons
     ],
-  };
+  });
+  
+  // Add useEffect to check quiz completion status and fetch user data
+  useEffect(() => {
+    const checkQuizStatus = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const db = getDatabase();
+        const userRef = ref(db, `users/${user.uid}`);
+        const snapshot = await get(userRef);
+        const userData = snapshot.val();
+
+        // Get username if available
+        if (userData?.profile?.name) {
+          setUsername(userData.profile.name);
+        } else {
+          // Use email or display name as fallback
+          setUsername(user.displayName || user.email?.split('@')[0] || 'Student');
+        }
+
+        // Check if lessons are completed
+        const updatedLessons = [...chapterData.lessons];
+        let completedCount = 1; // First lesson is already completed
+        let unlocked = ['1', '2']; // First two lessons are initially unlocked
+        
+        if (userData?.quizResponses?.q1?.completed) {
+          // If q1 is completed, mark it as completed and unlock the next lesson
+          updatedLessons[1].isCompleted = true;
+          updatedLessons[2].isLocked = false;
+          unlocked.push('3');
+          completedCount++;
+        }
+        
+        if (userData?.lessons?.['3']?.completed) {
+          // If lesson 3 is completed, mark it as completed
+          updatedLessons[2].isCompleted = true;
+          completedCount++;
+        }
+        
+        // Update state
+        setUnlockedLessons(unlocked);
+        setOverallProgress(completedCount);
+        setChapterData(prev => ({
+          ...prev,
+          completedLessons: completedCount,
+          progress: completedCount / prev.totalLessons,
+          lessons: updatedLessons
+        }));
+      }
+    };
+
+    checkQuizStatus();
+  }, []);
 
   useEffect(() => {
     animateProgress();
@@ -125,10 +158,44 @@ const Home1Screen = () => {
   };
 
   const handleLessonComplete = () => {
-    setOverallProgress(prev => Math.min(prev + 1, 100));
+    // Update the chapter data
+    const updatedLessons = chapterData.lessons.map(lesson => {
+      if (lesson.type === 'ai' && lesson.id === '3') {
+        return { ...lesson, isCompleted: true };
+      }
+      return lesson;
+    });
+    
+    const completedCount = updatedLessons.filter(lesson => lesson.isCompleted).length;
+    
+    setChapterData(prev => ({
+      ...prev,
+      completedLessons: completedCount,
+      progress: completedCount / prev.totalLessons,
+      lessons: updatedLessons
+    }));
+    
+    setOverallProgress(completedCount);
+    
+    // Update Firebase to record completion
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (user) {
+      const db = getDatabase();
+      const userRef = ref(db, `users/${user.uid}/lessons/3`);
+      update(userRef, { completed: true });
+    }
   };
 
   const handleLessonPress = (lesson: Lesson) => {
+    // For AI lessons, allow clicking even if locked (for testing)
+    if (lesson.type === 'ai') {
+      console.log('Opening AI conversation...');
+      setShowAIConversation(true);
+      return;
+    }
+    
+    // For other lessons, check if locked
     if (lesson.isLocked || !lesson.route) return;
     
     if (lesson.speechPractice) {
@@ -139,6 +206,7 @@ const Home1Screen = () => {
   };
 
   const renderLesson = (lesson: Lesson, index: number) => {
+    console.log(`Rendering lesson ${lesson.id}: ${lesson.title}, type: ${lesson.type}, isLocked: ${lesson.isLocked}`);
     return (
       <View key={lesson.id} style={styles.lessonContainer}>
         <View style={styles.lessonLine} />
@@ -148,8 +216,11 @@ const Home1Screen = () => {
             lesson.isCompleted && styles.lessonCompleted,
             lesson.isLocked && styles.lessonLocked,
           ]}
-          onPress={() => handleLessonPress(lesson)}
-          disabled={lesson.isLocked}
+          onPress={() => {
+            console.log(`Lesson ${lesson.id} pressed: ${lesson.title}, type: ${lesson.type}`);
+            handleLessonPress(lesson);
+          }}
+          disabled={lesson.type !== 'ai' && lesson.isLocked} // Only disable non-AI lessons if locked
         >
           <Image source={lesson.image} style={styles.lessonImage} />
           {lesson.isCompleted && (
@@ -186,11 +257,22 @@ const Home1Screen = () => {
     <ScrollView style={styles.container}>
       <Text style={styles.header}>Beginner A1</Text>
       
+      {/* Test button for AI Conversation */}
+      <TouchableOpacity 
+        style={styles.testButton}
+        onPress={() => {
+          console.log('Test button pressed, opening AI conversation...');
+          setShowAIConversation(true);
+        }}
+      >
+        <Text style={styles.testButtonText}>Test AI Conversation with {username || 'Student'}</Text>
+      </TouchableOpacity>
+      
       <Animated.View style={[
         styles.progressBar,
         {
           width: progress.interpolate({
-            inputRange: [0, 100],
+            inputRange: [0, chapterData.totalLessons],
             outputRange: ['0%', '100%'],
           }),
         },
@@ -208,14 +290,14 @@ const Home1Screen = () => {
       </TouchableOpacity>
 
       <View style={styles.chapterHeader}>
-        <Text style={styles.chapterTitle}>{chapter.title}</Text>
+        <Text style={styles.chapterTitle}>{chapterData.title}</Text>
         <Text style={styles.chapterProgress}>
-          {chapter.completedLessons}/{chapter.totalLessons} lessons completed
+          {chapterData.completedLessons}/{chapterData.totalLessons} lessons completed
         </Text>
       </View>
 
       <View style={styles.lessonsContainer}>
-        {chapter.lessons.map((lesson, index) => renderLesson(lesson, index))}
+        {chapterData.lessons.map((lesson, index) => renderLesson(lesson, index))}
         
         <View style={styles.checkpointContainer}>
           <View style={styles.checkpointIcon}>
@@ -233,6 +315,13 @@ const Home1Screen = () => {
       <SpeechPractice 
         visible={showSpeechPractice}
         onClose={() => setShowSpeechPractice(false)}
+      />
+      
+      <AIConversation
+        visible={showAIConversation}
+        onClose={() => setShowAIConversation(false)}
+        onComplete={handleLessonComplete}
+        username={username}
       />
     </ScrollView>
   );
@@ -409,6 +498,18 @@ const styles = StyleSheet.create({
   checkpointSubtitle: {
     fontSize: 14,
     color: '#666',
+  },
+  testButton: {
+    backgroundColor: '#3b82f6',
+    padding: 16,
+    borderRadius: 8,
+    margin: 16,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
   },
 });
 

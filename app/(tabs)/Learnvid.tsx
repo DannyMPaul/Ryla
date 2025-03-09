@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, FlatList, Image } from 'react-native';
 import { router } from 'expo-router';
-import { Feather as Icon } from '@expo/vector-icons';
+import { Feather as Icon, Ionicons } from '@expo/vector-icons';
 import { database } from '../firebase/firebase';
 import { ref, onValue } from 'firebase/database';
 
@@ -115,9 +115,21 @@ const LearnVideoScreen = () => {
           </TouchableOpacity>
         )}
       />
+
+      <BackButton />
     </ScrollView>
   );
 };
+
+const BackButton = () => (
+  <TouchableOpacity 
+    style={styles.backButton}
+    onPress={() => router.replace('./TabNavigator')}
+    activeOpacity={0.7}
+  >
+    <Ionicons name="arrow-back-circle" size={42} color="#F0657A" />
+  </TouchableOpacity>
+);
 
 const styles = StyleSheet.create({
   container: {
@@ -211,6 +223,18 @@ const styles = StyleSheet.create({
   videoDescription: {
     fontSize: 14,
     color: '#BBBBBB',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 40,
+    left: 16,
+    zIndex: 10,
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 21,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
 });
 
