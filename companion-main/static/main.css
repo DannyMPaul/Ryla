@@ -1,0 +1,198 @@
+:root {
+  --background: #ffffff;
+  --primary: #007bff;
+  --secondary: #2c2c2c;
+  --font-color: #000000;
+  --menu-font-color: #000000;
+  --card-color: #f8f9fa;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --fa-filter: none;
+  --logo-color: #90b2e3;
+}
+
+.dark-mode {
+    --background: #121212;
+    --secondary: #7e7e7e;
+    --font-color: #9c9c9c;
+    --menu-font-color: #ffffff;
+    --card-color: #ededed;
+    --shadow: rgba(255, 255, 255, 0.1);
+    --fa-filter: invert(1);
+}
+
+body {
+  background-color: var(--background);
+  font-family: 'Roboto', sans-serif;
+}
+
+h1 {
+  font-weight: 300;
+  letter-spacing: 1.5px;
+  font-size: 2.5rem;
+  margin-top: 2rem;
+  color: var(--font-color);
+}
+
+.btn {
+  border-radius: 50px;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+}
+
+.card {
+  height: 100%;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /*background-color: var(--card-color)!important;*/
+}
+
+
+html, body {
+  height: 100%;
+}
+
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  max-width: 850px;
+}
+
+#message-box {
+  flex-grow: 1;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  background-color: var(--background)!important;
+}
+
+.sound-icon {
+  font-size: 1.2rem;
+  cursor: pointer;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.card-body {
+  position: relative;
+  padding-right: 35px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+#loading-icon {
+  animation: spin 2s linear infinite;
+}
+
+#message-form {
+  margin-bottom: 2rem; /* Add margin below the text box */
+}
+
+.row > .col {
+  display: flex;
+  align-items: start;
+}
+
+img.profile-pic {
+  margin-right: 10px;
+  align-self: center;
+}
+
+.button-container {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.button-container .user-button {
+  color: #ffffff;
+  padding: 0;
+}
+
+.button-container .bot-button {
+  color: var(--primary);
+  padding: 0;
+}
+
+.fa-spinner {
+    filter: var(--fa-filter);
+}
+
+#message-input {
+  overflow-y: auto;
+  height: 1.5em; /* 1 line */
+  max-height: 4.5em; /* 3 lines */
+  resize: none;
+}
+
+
+/* Add a black background color to the top navigation */
+.topnav {
+  z-index: 9;
+  overflow: hidden;
+  display: none;
+  position: absolute;
+  background: var(--background);
+  color: var(--menu-font-color);
+}
+.topnav.desktop-menu { display: block; }
+
+/* Style the links inside the navigation bar */
+.topnav a {
+  float: left;
+  display: block;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+  color: inherit;
+}
+.topnav a.icon {
+  position: relative;
+  color: var(--logo-color);
+}
+
+/* When the screen is less than 600 pixels wide, hide all links, except for the first one ("Home"). Show the link that contains should open and close the topnav (.icon) */
+/* The "responsive" class is added to the topnav with JavaScript when the user clicks on the icon. This class makes the topnav look good on small screens (display the links vertically instead of horizontally) */
+@media screen and (max-width: 600px) {
+  .topnav { display: block; }
+  .topnav.desktop-menu { display: none; }
+  .topnav.responsive { border: solid 1px var(--logo-color) }
+  .topnav a {display: none;}
+  .topnav a.icon {
+    float: right;
+    display: block;
+  }
+  .topnav.responsive a.icon {
+    right: 0;
+    top: 0;
+    color: var(--menu-font-color);;
+  }
+  .topnav.responsive a {
+    float: none;
+    display: block;
+    text-align: left;
+  }
+  .non-mobile {
+    display: none;
+  }
+  .btn {
+    border-radius: 0;
+  }
+  img.profile-pic {
+    align-self: flex-start;
+    width: 35px;
+    height: 35px;
+  }
+}

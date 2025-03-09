@@ -37,7 +37,6 @@
     "plugins": [
       "@react-native-voice/voice",
       "expo-font",
-      "expo-video",
       [
         "expo-av",
         {

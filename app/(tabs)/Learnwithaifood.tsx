@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
 import { Audio } from 'expo-av';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 interface Message {
   id: string;
@@ -21,62 +22,60 @@ interface Scenario {
 
 const scenarios: Scenario[] = [
   {
-    id: '1',
-    heading: 'SCENARIO :  You and your Friends are in a restaurant waiting to order, and the waiter comes by.',
-    image: require('../../assets/images/waiter.png'),
-    question: 'Good evening, everyone! How may I assist you today?',
+    id: "1",
+    heading: "SCENARIO: You and your Friends are in a restaurant waiting to order, and the waiter comes by.",
+    image: require("../../assets/images/waiter.png"),
+    question: "Good evening, everyone! How may I assist you today?",
     options: [
-      { id: 'r1', text: 'Good morning. What’s the time now?', correct: false, audio: 'r1' },
-      { id: 'r2', text: 'Good evening. Could we see the menu, please?', correct: true, audio: 'r2' },
-      { id: 'r3', text: 'I don’t need help.', correct: false, audio: 'r3' },
-    ],
+      { id: "r1", text: "Good morning. What's the time now?", correct: false, audio: "r1" },
+      { id: "r2", text: "Good evening. Could we see the menu, please?", correct: true, audio: "r2" },
+      { id: "r3", text: "I don't need help.", correct: false, audio: "r3" }
+    ]
   },
   {
-    id: '2',
-    heading: 'SCENARIO :  The waiter hands you the menu and is ready to take your order.',
-    image: require('../../assets/images/waiter.png'),
-    question: 'Here’s the menu. May I take your order?',
+    id: "2",
+    heading: "SCENARIO: The waiter hands you the menu and is ready to take your order.",
+    image: require("../../assets/images/waiter.png"),
+    question: "Here's the menu. May I take your order?",
     options: [
-      { id: 'rr1', text: 'No, thank you. The weather is nice.', correct: false, audio: 'r5' },
-      { id: 'rr2', text: 'Yes, please. I’ll have a garden salad and a lemonade.', correct: true, audio: 'r4' },
-      { id: 'rr3', text: 'I want food. Eating', correct: false, audio: 'r6' },
-    ],
+      { id: "rr1", text: "No, thank you. The weather is nice.", correct: false, audio: "r5" },
+      { id: "rr2", text: "Yes, please. I'll have a garden salad and a lemonade.", correct: true, audio: "r4" },
+      { id: "rr3", text: "I want food. Eating", correct: false, audio: "r6" }
+    ]
   },
   {
-    id: '3',
-    heading: 'SCENARIO :  The waiter informs you about the salad ingredients.',
-    image: require('../../assets/images/waiter.png'),
-    question: 'The salad includes onions. Would you like them removed?',
+    id: "3",
+    heading: "SCENARIO: The waiter informs you about the salad ingredients.",
+    image: require("../../assets/images/waiter.png"),
+    question: "The salad includes onions. Would you like them removed?",
     options: [
-      { id: 'rrr1', text: 'Yes, that’s fine. Thank you for asking.', correct: true, audio: 'r7' },
-      { id: 'rrr2', text: 'No, the chair is comfortable.', correct: false, audio: 'r8' },
-      { id: 'rrr3', text: 'Why are you asking me?', correct: false, audio: 'r9' },
-    ],
+      { id: "rrr1", text: "Yes, that's fine. Thank you for asking.", correct: true, audio: "r7" },
+      { id: "rrr2", text: "No, the chair is comfortable.", correct: false, audio: "r8" },
+      { id: "rrr3", text: "Why are you asking me?", correct: false, audio: "r9" }
+    ]
   },
   {
-    id: '4',
-    heading: 'SCENARIO :  The waiter asks if you need anything else.',
-    image: require('../../assets/images/waiter.png'),
-    question: 'Is there anything else I can bring you?',
+    id: "4",
+    heading: "SCENARIO: The waiter asks if you need anything else.",
+    image: require("../../assets/images/waiter.png"),
+    question: "Is there anything else I can bring you?",
     options: [
-      { id: 'rrrr1', text: 'I like tables.', correct: false, audio: 'r12' },
-      { id: 'rrrr2', text: 'Bring me what you want.', correct: false, audio: 'r11' },
-      { id: 'rrrr3', text: 'Could I get some extra water, please?', correct: true, audio: 'r10' },
-
-
-    ],
+      { id: "rrrr1", text: "I like tables.", correct: false, audio: "r12" },
+      { id: "rrrr2", text: "Bring me what you want.", correct: false, audio: "r11" },
+      { id: "rrrr3", text: "Could I get some extra water, please?", correct: true, audio: "r10" }
+    ]
   },
   {
-    id: '5',
-    heading: 'SCENARIO :  The waiter asks if you’d like to pay the bill.',
-    image: require('../../assets/images/waiter.png'),
-    question: 'Would you like the bill now?',
+    id: "5",
+    heading: "SCENARIO: The waiter asks if you'd like to pay the bill.",
+    image: require("../../assets/images/waiter.png"),
+    question: "Would you like the bill now?",
     options: [
-      { id: 'rrrrr1', text: 'Yes, please. Thank you for your service', correct: true, audio: 'r13' },
-      { id: 'rrrrr2', text: 'No, I don’t like paying money.', correct: false, audio: 'r14' },
-      { id: 'rrrrr3', text: 'Why are you looking at me?', correct: false, audio: 'r15' },
-    ],
-  },
+      { id: "rrrrr1", text: "Yes, please. Thank you for your service", correct: true, audio: "r13" },
+      { id: "rrrrr2", text: "No, I don't like paying money.", correct: false, audio: "r14" },
+      { id: "rrrrr3", text: "Why are you looking at me?", correct: false, audio: "r15" }
+    ]
+  }
 ];
 
 const audioFiles: Record<string, any> = {
@@ -230,6 +229,16 @@ const ChatGame = () => {
     return () => subscription?.remove();
   }, []);
 
+  const BackButton = () => (
+    <TouchableOpacity 
+      style={styles.backButton}
+      onPress={() => router.replace('./Learnwithai')}
+      activeOpacity={0.7}
+    >
+      <Ionicons name="arrow-back-circle" size={42} color="#F0657A" />
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       {showResult ? (
@@ -283,6 +292,7 @@ const ChatGame = () => {
           </View>
         </>
       )}
+      <BackButton />
     </View>
   );
 };
@@ -440,22 +450,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   backButton: {
-    backgroundColor: '#1976d2',
-    padding: 15,
-    borderRadius: 25,
     position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
+    top: 40,
+    left: 16,
+    zIndex: 10,
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderRadius: 21,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   backButtonText: {
     color: '#fff',

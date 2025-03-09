@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Companion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <!-- Add Bootstrap CSS and custom styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.0.2/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='common.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}" />
+    <!-- Add jQuery and custom script -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+    <script src="https://unpkg.com/mousetrap"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mousetrap/1.6.5/plugins/global-bind/mousetrap-global-bind.min.js"></script>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <script>
+      let languages = {{ languages | tojson }};
+      let auto_send_recording = {{ auto_send_recording }};
+      let user_profile_img = "{{ user_profile_img }}";
+      let bot_profile_img = "{{ bot_profile_img }}";
+      let upload_endpoint = "{{ url_for('upload_recording') }}";
+    </script>
+  </head>
+  <body>
+    <div id="notification-area"></div>
+    <div class="topnav desktop-menu" id="desktop-menu">
+      <a href="/setup" class="icon">
+        <i class="fas fa-cog"></i>
+      </a>
+      <a href="https://shakedzy.xyz/companion" target="_blank" class="icon">
+        <i class="fa-solid fa-book"></i>
+      </a>
+    </div>
+    <div class="topnav" id="topnav">
+      <a href="javascript:void(0);" class="icon" onclick="menuToggle()">
+        <i class="fa fa-bars"></i>
+      </a>
+      <a id="menu-language"><b>[&nbsp;<span id="menu-lang-text">fr</span>&nbsp;]</b>&nbsp;&nbsp;Toggle Recording Language</a>
+      <a id="menu-dark-mode"><i id="menu-mode-icon" class="fas fa-moon"></i>&nbsp;&nbsp;Dark/Light Mode</a>
+      <a id="menu-load-session"><i id="menu-load-icon" class="fa-solid fa-rotate-right"></i>&nbsp;&nbsp;Load Saved Session</a>
+      <a id="menu-save-session"><i id="menu-save-icon" class="fa-solid fa-floppy-disk"></i>&nbsp;&nbsp;Save Session</a>
+      <hr>
+      <a id="menu-settings" href="/setup"><i id="menu-settings-icon" class="fas fa-cog"></i>&nbsp;&nbsp;Settings</a>
+      <a id="menu-documentation" href="https://shakedzy.xyz/companion" target="_blank"><i id="menu-documentation-icon" class="fa-solid fa-book"></i>&nbsp;&nbsp;Documentation</a>
+    </div>
+    <div class="container my-0" id="audio-init">
+      <div class="d-flex justify-content-center align-items-center mb-4">
+        <h1 class="mb-0"><img src="/static/logo.png" style="max-width: 300px;"></h1>
+      </div>
+      <div class="d-flex justify-content-center align-items-center mb-4" style="padding-top: 20px;">
+        <button type="button" class="btn btn-primary" style="padding: 15px; border-radius: 50px" onclick="initChat();">
+          <i class="fa-solid fa-play"></i>
+          Click to Begin
+        </button>
+      </div>
+    </div>
+    <div class="container my-0" id="main-chat" style="display: none">
+      <div class="d-flex justify-content-center align-items-center mb-4">
+        <h1 class="mb-0"><img src="/static/logo.png" style="max-width: 300px;" id="logo-image"></h1>
+      </div>
+      <div id="message-box" class="bg-light p-3"></div>
+      <form id="message-form" class="d-flex">
+        <div class="input-group">
+          <button type="button" id="mode-toggle-button" class="btn btn-secondary non-mobile" title="Dark/Light Mode">
+            <i id="mode-icon" class="fas fa-moon"></i>
+          </button>
+          <button type="button" id="load-saved-session" class="btn btn-secondary non-mobile" title="Continue last saved session">
+            <i id="load-saved-icon" class="fa-solid fa-rotate-right"></i>
+          </button>
+          <button type="button" id="save-session" class="btn btn-secondary non-mobile" title="Save session for later">
+            <i id="save-icon" class="fa-solid fa-floppy-disk"></i>
+          </button>
+          <textarea autocomplete="off" class="form-control" id="message-input" placeholder="Type your message here..."></textarea>
+          <button type="submit" id="submit-button" class="btn btn-primary" title="Submit Message">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+          <button type="button" id="lang-toggle-button" class="btn btn-secondary non-mobile" name="lang-record" title="Switch Recording Language [Alt+L]">
+            <span id="lang-text" style="display: block">fr</span>
+            <i class="fa-solid fa-pause" id="pause-icon" style="display: none"></i>
+          </button>
+          <button type="button" id="record-button" class="btn btn-secondary off" name="record" title="Record Message [Alt+R]">
+            <i class="fas fa-microphone" id="record-icon"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>

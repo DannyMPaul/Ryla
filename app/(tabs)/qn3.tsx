@@ -95,6 +95,18 @@ const ModelSettingsScreen = () => {
 
       const dbRef = ref(getDatabase(), `users/${user.uid}/modelData/target_uses`);
       await set(dbRef, data);
+      
+      // Save selected goals count for profile summary
+      const selectedGoals = Object.values(data.en)
+        .filter(goal => goal.selected)
+        .length;
+      
+      const profileRef = ref(getDatabase(), `users/${user.uid}/profile`);
+      await set(profileRef, {
+        learningGoalsCount: selectedGoals,
+        lastUpdated: new Date().toISOString()
+      });
+
       Alert.alert('Success', 'Learning goals saved successfully');
     } catch (error) {
       console.error('Error saving model data:', error);
