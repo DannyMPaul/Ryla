@@ -162,7 +162,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
       // User exists, check if they completed onboarding
       if (userData.quizResults?.isAssessmentComplete) {
         // User has completed onboarding, go to home
-        router.replace('./home');
+        router.replace('./TabNavigator');
       } else if (userData.currentStep) {
         // User was in the middle of onboarding, resume from their last step
         router.replace(`./${userData.currentStep}`);
