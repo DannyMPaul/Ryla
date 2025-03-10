@@ -5,6 +5,7 @@ from firebase_admin import credentials, db
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from fastapi.responses import JSONResponse
+from src.translation_service import TranslationService
 import asyncio
 import traceback
 
@@ -25,14 +26,14 @@ class ProcessingError(Exception):
 
 class UserSessionInit(BaseModel):
     user_id: str
-    language: Optional[str] = 'en'
+    language: Optional[str] = 'fr'
     proficiency: Optional[str] = 'intermediate'
     target: Optional[str] = 'grammar_correction'
 
 class UserInput(BaseModel):
     user_id: str
     text: str
-    language: Optional[str] = 'en'
+    language: Optional[str] = 'fr'
     proficiency: Optional[str] = 'intermediate'
     target: Optional[str] = 'grammar_correction'
 
@@ -41,6 +42,19 @@ class ProcessedResponse(BaseModel):
     corrected_text: str
     response: str
     metadata: Dict[str, Any]
+
+class TranslationRequest(BaseModel):
+    text: str
+    source_language: str
+    target_language: str
+    user_id: Optional[str] = None
+
+class TranslationResponse(BaseModel):
+    translated_text: str
+    source_language: str
+    target_language: str
+    success: bool
+    error: Optional[str] = None
 
 def initialize_firebase():
     try:
@@ -260,6 +274,57 @@ async def processing_error_handler(request, exc: ProcessingError):
             "timestamp": datetime.utcnow().isoformat()
         }
     )
+
+translation_service = TranslationService()
+
+# Add this endpoint to your main.py
+@app.post("/translate", response_model=TranslationResponse)
+async def translate_text(request: TranslationRequest):
+    """
+    Translate text from source language to target language.
+    
+    Args:
+        request: TranslationRequest with text and language parameters
+        
+    Returns:
+        TranslationResponse with translated text
+    """
+    try:
+        # Log the translation request
+        logging.info(f"Translation request: {len(request.text)} chars from {request.source_language} to {request.target_language}")
+        
+        # Perform the translation
+        translated_text = await translation_service.translate_text(
+            text=request.text,
+            source_lang=request.source_language,
+            target_lang=request.target_language
+        )
+        
+        # If translation failed, raise an exception
+        if translated_text is None:
+            raise Exception("Translation failed")
+        
+        # Return the successful response
+        return TranslationResponse(
+            translated_text=translated_text,
+            source_language=request.source_language,
+            target_language=request.target_language,
+            success=True
+        )
+        
+    except Exception as e:
+        # Log the error
+        error_message = f"Translation error: {str(e)}"
+        logging.error(error_message)
+        
+        # Return error response but with original text
+        return TranslationResponse(
+            translated_text=request.text,  # Return original text on error
+            source_language=request.source_language,
+            target_language=request.target_language,
+            success=False,
+            error=str(e)
+        )
 
 @app.get("/health")
 async def health_check():

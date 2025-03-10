@@ -11,7 +11,8 @@ pydantic
 pydantic_settings
 gunicorn
 fastapi
-
+aiohttp
+python-multipart
 
 
 # numpy>=1.24.0 

@@ -24,9 +24,9 @@ from transformers import (
     AutoTokenizer,
     BlenderbotTokenizer, 
     BlenderbotForConditionalGeneration,
-    T5ForConditionalGeneration,
-    AutoModelForCausalLM,
-    AutoModelForSeq2SeqLM
+    AutoModelForSeq2SeqLM,
+    CamembertTokenizer,
+    CamembertForCausalLM
 )
 
 class MultilingualAssistant:
@@ -40,9 +40,9 @@ class MultilingualAssistant:
         self.language_configs = {
             'fr': {
                 'grammar_model': "PoloHuggingface/French_grammar_error_corrector",
-                'chat_model': "microsoft/DialoGPT-medium",
-                'tokenizer_class': AutoTokenizer,
-                'model_class': AutoModelForCausalLM
+                'chat_model': "camembert-base",
+                'tokenizer_class': CamembertTokenizer,
+                'model_class': CamembertForCausalLM
             },
             'en': {
                 'grammar_model': "grammarly/coedit-large",
@@ -55,7 +55,7 @@ class MultilingualAssistant:
         # Target uses for each language
         self.target_uses = {
             'fr': {
-                'grammar_correction': {'prompt': "Corriger la grammaire: ", 'weight': 1.0},
+                'grammar_correction': {'prompt': "", 'weight': 1.0},
                 'text_coherent': {'prompt': "Rendre ce texte plus cohérent: ", 'weight': 0.8},
                 'easier_understanding': {'prompt': "Simplifier ce texte: ", 'weight': 0.6},
                 'paraphrasing': {'prompt': "Paraphraser ce texte: ", 'weight': 0.7},
@@ -77,7 +77,7 @@ class MultilingualAssistant:
                 'complexity': 0.1,
                 'max_length': 50,
                 'context_prompts': {
-                    'fr': ["Répondre de manière très basique: "],
+                    'fr': [" "],
                     'en': ["Reply in a very basic manner: "]
                 }
             },
