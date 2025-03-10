@@ -1,0 +1,9 @@
+.git*
+docker*
+.Dockerfile.swp
+
+chart/
+.editorconfig
+*.yaml
+*.md
+!README.md

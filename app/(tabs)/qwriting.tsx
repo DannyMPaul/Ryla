@@ -359,10 +359,11 @@ const WritingAssessmentScreen = () => {
       <TouchableOpacity
         style={[
           styles.submitButton,
-          isSubmitting && styles.submitButtonDisabled,
+          (wordCount < WORD_LIMIT || isSubmitting) &&
+            styles.submitButtonDisabled,
         ]}
         onPress={handleSubmit}
-        disabled={isSubmitting}
+        disabled={wordCount < WORD_LIMIT || isSubmitting}
       >
         {isSubmitting ? (
           <ActivityIndicator color="#FFFFFF" />
@@ -413,6 +414,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 15,
     alignItems: "center",
+    flex: 1,
+    marginRight: 10,
   },
   submitButtonDisabled: {
     backgroundColor: "#3C3C3C",
@@ -466,6 +469,24 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   continueButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  skipButton: {
+    backgroundColor: "#3C3C3C",
+    padding: 16,
+    borderRadius: 15,
+    alignItems: "center",
+    width: 100,
+  },
+  skipButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",

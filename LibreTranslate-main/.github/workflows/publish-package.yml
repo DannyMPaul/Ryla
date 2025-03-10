@@ -1,0 +1,40 @@
+name: Publish package
+# Publish to PyPI when new release on GitHub, if tests pass
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+  # Manual trigger in case the release needs to be rerun
+
+jobs:
+
+  tests:
+    uses: LibreTranslate/LibreTranslate/.github/workflows/run-tests.yml@main
+    secrets: inherit
+
+
+  publish:
+    needs: [ tests ]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.8'
+    - name: Install dependencies
+      run: |
+        pip install build
+
+    - name: Build
+      run: |
+        pip install Babel==2.11.0
+        python scripts/compile_locales.py
+        python -m build
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: ${{ secrets.PYPI_USERNAME }}
+        password: ${{ secrets.PYPI_PASSWORD }}
