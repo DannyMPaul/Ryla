@@ -5,12 +5,23 @@ import { getAuth, onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getDatabase, ref as dbRef, onValue, update } from 'firebase/database';
+import { getDatabase, ref as dbRef, onValue, update, get } from 'firebase/database';
+
+interface TargetUse {
+  selected: boolean;
+  description: string;
+}
+
+interface LanguageSettings {
+  [key: string]: {
+    [key: string]: TargetUse;
+  };
+}
 
 interface UserData {
-  name: string;
-  email: string;
-  lastLogin: string;
+  name?: string;
+  email?: string;
+  lastLogin?: string;
   progress?: {
     currentQuestion: number;
     totalCorrect: number;
@@ -41,14 +52,7 @@ interface UserData {
     };
   };
   modelData?: {
-    target_uses: {
-      en: {
-        [key: string]: {
-          selected: boolean;
-          description: string;
-        };
-      };
-    };
+    target_uses: LanguageSettings;
   };
   learningGoals?: {
     selectedMode?: string;
@@ -61,6 +65,8 @@ const LearningGoalsSection = ({ userData, onUpdate }: { userData: UserData | nul
   const [isEditing, setIsEditing] = useState(false);
   const [selectedMode, setSelectedMode] = useState(userData?.learningGoals?.selectedMode || '');
   const [requirements, setRequirements] = useState<string[]>(userData?.learningGoals?.requirements || []);
+  const [targetUses, setTargetUses] = useState<LanguageSettings | null>(userData?.modelData?.target_uses || null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const learningModes = [
     { id: 'casual', label: 'Casual Learning' },
@@ -78,7 +84,36 @@ const LearningGoalsSection = ({ userData, onUpdate }: { userData: UserData | nul
     'Writing Skills'
   ];
 
-  const handleSave = async () => {
+  useEffect(() => {
+    if (userData?.modelData?.target_uses) {
+      setTargetUses(userData.modelData.target_uses);
+    } else {
+      loadTargetUses();
+    }
+  }, [userData]);
+
+  const loadTargetUses = async () => {
+    try {
+      setIsLoading(true);
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const db = getDatabase();
+      const targetUsesRef = dbRef(db, `users/${user.uid}/modelData/target_uses`);
+      const snapshot = await get(targetUsesRef);
+      
+      if (snapshot.exists()) {
+        setTargetUses(snapshot.val());
+      }
+    } catch (error) {
+      console.error('Error loading target uses:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveGoals = async () => {
     const auth = getAuth();
     const user = auth.currentUser;
     if (!user) return;
@@ -101,6 +136,64 @@ const LearningGoalsSection = ({ userData, onUpdate }: { userData: UserData | nul
     }
   };
 
+  const handleSelectTargetUse = async (language: string, useCase: string) => {
+    if (!targetUses) return;
+    
+    try {
+      const updatedTargetUses = { ...targetUses };
+      
+      // Set all options to false first
+      Object.keys(updatedTargetUses[language]).forEach(key => {
+        updatedTargetUses[language][key].selected = false;
+      });
+      
+      // Set the selected option to true
+      updatedTargetUses[language][useCase].selected = true;
+      
+      // Update state
+      setTargetUses(updatedTargetUses);
+      
+      // Save to Firebase
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const db = getDatabase();
+      const targetUsesRef = dbRef(db, `users/${user.uid}/modelData/target_uses`);
+      await update(targetUsesRef, updatedTargetUses);
+      
+      onUpdate();
+    } catch (error) {
+      console.error('Error updating target use:', error);
+    }
+  };
+
+  // Helper function to get currently selected target use
+  const getSelectedTargetUse = () => {
+    if (!targetUses) return null;
+    
+    const targetUseEntry = Object.entries(targetUses.en).find(([_, value]) => value.selected);
+    return targetUseEntry ? {
+      key: targetUseEntry[0],
+      description: targetUseEntry[1].description
+    } : null;
+  };
+
+  // Get icon for target use
+  const getIconForTargetUse = (useCase: string) => {
+    switch (useCase) {
+      case 'grammar_correction': return 'edit-2';
+      case 'text_coherent': return 'align-left';
+      case 'easier_understanding': return 'book-open';
+      case 'paraphrasing': return 'repeat';
+      case 'formal_tone': return 'briefcase'; 
+      case 'neutral_tone': return 'message-square';
+      default: return 'target';
+    }
+  };
+
+  const selectedTargetUse = getSelectedTargetUse();
+
   return (
     <View style={styles.statsSection}>
       <View style={styles.sectionHeader}>
@@ -112,7 +205,39 @@ const LearningGoalsSection = ({ userData, onUpdate }: { userData: UserData | nul
 
       {isEditing ? (
         <View style={styles.editContainer}>
-          <Text style={styles.label}>Learning Mode:</Text>
+          <Text style={styles.label}>Primary Learning Goal:</Text>
+          
+          {targetUses && (
+            <View style={styles.targetUsesContainer}>
+              {Object.entries(targetUses.en).map(([useCase, settings]) => (
+                <TouchableOpacity 
+                  key={useCase} 
+                  style={[
+                    styles.targetUseOption,
+                    settings.selected && styles.selectedTargetUse
+                  ]}
+                  onPress={() => handleSelectTargetUse('en', useCase)}
+                >
+                  <View style={styles.targetUseContent}>
+                    <Feather 
+                      name={getIconForTargetUse(useCase)} 
+                      size={18} 
+                      color={settings.selected ? "#FFFFFF" : "#BBBBBB"} 
+                      style={styles.targetUseIcon}
+                    />
+                    <Text style={[
+                      styles.targetUseText, 
+                      settings.selected && styles.selectedTargetUseText
+                    ]}>
+                      {settings.description}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          
+          <Text style={[styles.label, { marginTop: 16 }]}>Learning Mode:</Text>
           {learningModes.map(mode => (
             <TouchableOpacity
               key={mode.id}
@@ -125,7 +250,7 @@ const LearningGoalsSection = ({ userData, onUpdate }: { userData: UserData | nul
             </TouchableOpacity>
           ))}
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Requirements:</Text>
+          <Text style={[styles.label, { marginTop: 16 }]}>Additional Focus Areas:</Text>
           <View style={styles.requirementsContainer}>
             {requirementOptions.map(req => (
               <TouchableOpacity
@@ -145,24 +270,46 @@ const LearningGoalsSection = ({ userData, onUpdate }: { userData: UserData | nul
             ))}
           </View>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSaveGoals}>
             <Text style={styles.saveButtonText}>Save Goals</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <View>
+          {selectedTargetUse && (
+            <View style={styles.currentTargetUse}>
+              <Text style={styles.goalLabel}>Primary Goal:</Text>
+              <View style={styles.targetUseDisplay}>
+                <Feather 
+                  name={getIconForTargetUse(selectedTargetUse.key)} 
+                  size={18} 
+                  color="#58cc02" 
+                  style={styles.targetUseDisplayIcon}
+                />
+                <Text style={styles.targetUseDescription}>{selectedTargetUse.description}</Text>
+              </View>
+            </View>
+          )}
+          
           {userData?.learningGoals?.selectedMode && (
             <View style={styles.goalDisplay}>
+              <Text style={styles.goalLabel}>Learning Mode:</Text>
               <Text style={styles.goalMode}>
-                Mode: {learningModes.find(m => m.id === userData.learningGoals?.selectedMode)?.label}
+                {learningModes.find(m => m.id === userData.learningGoals?.selectedMode)?.label}
               </Text>
-              <View style={styles.requirementsList}>
-                {userData.learningGoals.requirements?.map(req => (
-                  <View key={req} style={styles.requirementTag}>
-                    <Text style={styles.requirementTagText}>{req}</Text>
+              
+              {userData.learningGoals.requirements && userData.learningGoals.requirements.length > 0 && (
+                <>
+                  <Text style={[styles.goalLabel, {marginTop: 12}]}>Focus Areas:</Text>
+                  <View style={styles.requirementsList}>
+                    {userData.learningGoals.requirements?.map(req => (
+                      <View key={req} style={styles.requirementTag}>
+                        <Text style={styles.requirementTagText}>{req}</Text>
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </View>
+                </>
+              )}
             </View>
           )}
         </View>
@@ -201,6 +348,12 @@ const ProfileScreen = () => {
 
   useEffect(() => {
     if (auth.currentUser) {
+      loadUserData();
+    }
+  }, [auth.currentUser]);
+
+  const loadUserData = () => {
+    if (auth.currentUser) {
       const db = getDatabase();
       const userRef = dbRef(db, `users/${auth.currentUser.uid}`);
       
@@ -210,7 +363,7 @@ const ProfileScreen = () => {
         console.log('User Data:', data);
       });
     }
-  }, [auth.currentUser]);
+  };
 
   const pickImage = async () => {
     try {
@@ -258,19 +411,6 @@ const ProfileScreen = () => {
     }
   };
 
-  const loadUserData = () => {
-    if (auth.currentUser) {
-      const db = getDatabase();
-      const userRef = dbRef(db, `users/${auth.currentUser.uid}`);
-      
-      onValue(userRef, (snapshot) => {
-        const data = snapshot.val();
-        setUserData(data);
-        console.log('User Data:', data);
-      });
-    }
-  };
-
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -305,10 +445,7 @@ const ProfileScreen = () => {
 
       <LearningGoalsSection 
         userData={userData} 
-        onUpdate={() => {
-          // Refresh user data if needed
-          loadUserData();
-        }} 
+        onUpdate={loadUserData} 
       />
 
       <View style={styles.statsSection}>
@@ -450,32 +587,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
   },
-  settingsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1f2937',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-    marginTop: 22,
-  },
-  settingsText: {
-    marginLeft: 12,
-    fontSize: 16,
-    color: '#FFFFFF',
-  },
-  signOutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1f2937',
-    padding: 16,
-    borderRadius: 8,
-  },
-  signOutText: {
-    marginLeft: 12,
-    fontSize: 16,
-    color: '#FF3B30',
-  },
   statsSection: {
     backgroundColor: '#1f2937',
     borderRadius: 12,
@@ -487,107 +598,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 12,
-  },
-  quizStats: {
-    gap: 8,
-  },
-  quizStatLabel: {
-    color: '#BBBBBB',
-    fontSize: 16,
-  },
-  quizStatValue: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  statHighlight: {
-    color: '#58cc02',
-    fontWeight: 'bold',
-  },
-  statDetail: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    marginLeft: 8,
-  },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: '#2d3748',
-    marginVertical: 8,
-  },
-  noQuizText: {
-    color: '#BBBBBB',
-    fontStyle: 'italic',
-  },
-  wordsContainer: {
-    gap: 12,
-    marginTop: 12,
-  },
-  wordCard: {
-    backgroundColor: '#2d3748',
-    borderRadius: 8,
-    padding: 12,
-  },
-  frenchWord: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#58cc02',
-    marginBottom: 4,
-  },
-  englishWord: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  learnedDate: {
-    fontSize: 12,
-    color: '#9ca3af',
-  },
-  dropdownHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  wordHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  sectionBadge: {
-    backgroundColor: '#58cc02',
-    color: '#FFFFFF',
-    padding: 4,
-    borderRadius: 4,
-    fontSize: 12,
-    textTransform: 'capitalize',
-  },
-  contextText: {
-    color: '#9ca3af',
-    fontSize: 14,
-    fontStyle: 'italic',
-    marginVertical: 4,
-  },
-  noWordsText: {
-    color: '#9ca3af',
-    textAlign: 'center',
-    fontStyle: 'italic',
-    padding: 16,
-  },
-  goalsContainer: {
-    gap: 8,
-  },
-  goalItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2d3748',
-    padding: 12,
-    borderRadius: 8,
-    gap: 12,
-  },
-  goalText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    flex: 1,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -602,6 +612,32 @@ const styles = StyleSheet.create({
     color: '#BBBBBB',
     fontSize: 16,
     marginBottom: 8,
+  },
+  targetUsesContainer: {
+    gap: 8,
+  },
+  targetUseOption: {
+    backgroundColor: '#2d3748',
+    borderRadius: 8,
+    padding: 12,
+  },
+  selectedTargetUse: {
+    backgroundColor: '#58cc02',
+  },
+  targetUseContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  targetUseIcon: {
+    marginRight: 12,
+  },
+  targetUseText: {
+    color: '#BBBBBB',
+    fontSize: 15,
+  },
+  selectedTargetUseText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
   modeOption: {
     padding: 12,
@@ -651,8 +687,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  currentTargetUse: {
+    marginBottom: 16,
+  },
+  targetUseDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2d3748',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  targetUseDisplayIcon: {
+    marginRight: 12,
+  },
+  targetUseDescription: {
+    color: '#FFFFFF',
+    fontSize: 15,
+  },
   goalDisplay: {
-    gap: 12,
+    gap: 8,
+  },
+  goalLabel: {
+    color: '#BBBBBB',
+    fontSize: 14,
   },
   goalMode: {
     color: '#FFFFFF',
@@ -672,6 +730,113 @@ const styles = StyleSheet.create({
   requirementTagText: {
     color: '#58cc02',
     fontSize: 14,
+  },
+  settingsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1f2937',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    marginTop: 22,
+  },
+  settingsText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1f2937',
+    padding: 16,
+    borderRadius: 8,
+  },
+  signOutText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#FF3B30',
+  },
+  quizStats: {
+    gap: 8,
+  },
+  quizStatLabel: {
+    color: '#BBBBBB',
+    fontSize: 16,
+  },
+  quizStatValue: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  statHighlight: {
+    color: '#58cc02',
+    fontWeight: 'bold',
+  },
+  statDetail: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#2d3748',
+    marginVertical: 8,
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  wordsContainer: {
+    gap: 12,
+    marginTop: 12,
+  },
+  wordCard: {
+    backgroundColor: '#2d3748',
+    borderRadius: 8,
+    padding: 12,
+  },
+  wordHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  frenchWord: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#58cc02',
+    marginBottom: 4,
+  },
+  englishWord: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  contextText: {
+    color: '#9ca3af',
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginVertical: 4,
+  },
+  learnedDate: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+  sectionBadge: {
+    backgroundColor: '#58cc02',
+    color: '#FFFFFF',
+    padding: 4,
+    borderRadius: 4,
+    fontSize: 12,
+    textTransform: 'capitalize',
+  },
+  noWordsText: {
+    color: '#9ca3af',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    padding: 16,
   },
 });
 

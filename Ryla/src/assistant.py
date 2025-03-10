@@ -656,6 +656,33 @@ class MultilingualAssistant:
             logger.error(f"Grammar correction error: {e}")
             return None
 
+    async def check_language_models(self, language: str) -> bool:
+        """
+        Check if language models are available or can be loaded
+        
+        Args:
+            language: The language code to check
+            
+        Returns:
+            bool: True if models are available, False otherwise
+        """
+        try:
+            if language not in self.language_configs:
+                logger.warning(f"Unsupported language: {language}")
+                return False
+                
+            # If models are already loaded, return True
+            if language in self.models and self.models[language]:
+                return True
+                
+            # Try loading the models if not already loaded
+            await self.load_language_models(language)
+            return language in self.models and bool(self.models[language])
+            
+        except Exception as e:
+            logger.error(f"Error checking language models: {e}")
+            return False
+
     async def generate_response(self, input_text: str, language: str, proficiency: str) -> str:
         try:
             config = self.model_configs[proficiency]

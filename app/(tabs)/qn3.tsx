@@ -24,8 +24,6 @@ interface LanguageSettings {
 }
 
 const defaultTargetUses: LanguageSettings = {
- 
-  
   en: {
     grammar_correction: { 
       selected: false,
@@ -76,8 +74,11 @@ const ModelSettingsScreen = () => {
       if (snapshot.exists()) {
         setModelData(snapshot.val());
       } else {
-        await saveModelData(defaultTargetUses);
-        setModelData(defaultTargetUses);
+        // Set a default selection if none exists
+        const initialData = {...defaultTargetUses};
+        initialData.en.easier_understanding.selected = true;
+        await saveModelData(initialData);
+        setModelData(initialData);
       }
     } catch (error) {
       console.error('Error loading model data:', error);
@@ -96,40 +97,32 @@ const ModelSettingsScreen = () => {
       const dbRef = ref(getDatabase(), `users/${user.uid}/modelData/target_uses`);
       await set(dbRef, data);
       
-      // Save selected goals count for profile summary
-      const selectedGoals = Object.values(data.en)
-        .filter(goal => goal.selected)
-        .length;
-      
-      const profileRef = ref(getDatabase(), `users/${user.uid}/profile`);
-      await set(profileRef, {
-        learningGoalsCount: selectedGoals,
-        lastUpdated: new Date().toISOString()
-      });
-
-      Alert.alert('Success', 'Learning goals saved successfully');
+      Alert.alert('Success', 'Learning goal saved successfully');
     } catch (error) {
       console.error('Error saving model data:', error);
       Alert.alert('Error', 'Failed to save preferences');
     }
   };
 
-  const toggleGoal = (useCase: string) => {
+  const selectGoal = (useCase: string) => {
     const updatedData = { ...modelData };
-    updatedData[selectedLanguage][useCase].selected = 
-      !updatedData[selectedLanguage][useCase].selected;
+    
+    // First, set all options to false
+    Object.keys(updatedData[selectedLanguage]).forEach(key => {
+      updatedData[selectedLanguage][key].selected = false;
+    });
+    
+    // Then set the selected option to true
+    updatedData[selectedLanguage][useCase].selected = true;
+    
     setModelData(updatedData);
     saveModelData(updatedData);
-  };
-
-  const toggleLanguage = () => {
-    setSelectedLanguage(prev => prev === 'en' ? 'fr' : 'en');
   };
 
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text>Loading...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
@@ -137,7 +130,8 @@ const ModelSettingsScreen = () => {
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollContent}>
-        <Text style={styles.title}>What are your learning goals?</Text>
+        <Text style={styles.title}>What is your primary learning goal?</Text>
+        <Text style={styles.subtitle}>Select one option that best describes your goal</Text>
 
         <View style={styles.optionsContainer}>
           {Object.entries(modelData[selectedLanguage]).map(([useCase, settings]) => (
@@ -147,7 +141,7 @@ const ModelSettingsScreen = () => {
                 styles.optionCard,
                 settings.selected && styles.optionCardSelected
               ]}
-              onPress={() => toggleGoal(useCase)}
+              onPress={() => selectGoal(useCase)}
             >
               <View style={styles.optionContent}>
                 <View style={styles.iconContainer}>
@@ -177,12 +171,11 @@ const ModelSettingsScreen = () => {
 
       <TouchableOpacity 
         style={styles.nextButton}
-        onPress={async () => {
-          await saveModelData(modelData);
+        onPress={() => {
           router.replace('/(tabs)/quiz');
         }}
       >
-        <Text style={styles.nextButtonText}>Save Goals and proceed to the Quiz</Text>
+        <Text style={styles.nextButtonText}>Continue to Quiz</Text>
       </TouchableOpacity>
     </View>
   );
@@ -203,9 +196,22 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    margin: 30,
+    marginTop: 30,
+    marginBottom: 10,
     textAlign: 'center',
     letterSpacing: 1.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#BBBBBB',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 50,
   },
   optionsContainer: {
     gap: 12,
@@ -279,4 +285,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ModelSettingsScreen; 
+export default ModelSettingsScreen;

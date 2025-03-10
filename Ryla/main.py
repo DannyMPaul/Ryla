@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from fastapi.responses import JSONResponse
 from src.translation_service import TranslationService
+translation_service = TranslationService()
 import asyncio
 import traceback
 
@@ -146,6 +147,87 @@ async def initialize_session(session_data: UserSessionInit):
         logging.error(f"Session initialization error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/translate", response_model=TranslationResponse)
+async def translate_text(request: TranslationRequest):
+    """
+    Translate text from source language to target language with enhanced error handling.
+    
+    Args:
+        request: TranslationRequest with text and language parameters
+        
+    Returns:
+        TranslationResponse with translated text or appropriate error
+    """
+    try:
+        # Log the translation request
+        logging.info(f"Translation request: {len(request.text)} chars from {request.source_language} to {request.target_language}")
+        
+        # Quick validation to avoid unnecessary processing
+        if not request.text.strip():
+            return TranslationResponse(
+                translated_text="",
+                source_language=request.source_language,
+                target_language=request.target_language,
+                success=True
+            )
+            
+        # Same language - no translation needed
+        if request.source_language == request.target_language:
+            return TranslationResponse(
+                translated_text=request.text,
+                source_language=request.source_language,
+                target_language=request.target_language,
+                success=True
+            )
+        
+        # Perform the translation with timeout
+        try:
+            translated_text = await asyncio.wait_for(
+                translation_service.translate_text(
+                    text=request.text,
+                    source_lang=request.source_language,
+                    target_lang=request.target_language
+                ),
+                timeout=15.0  # Increase timeout for slower translation services
+            )
+            
+            # If translation returns None, it's a service error
+            if translated_text is None:
+                raise Exception("Translation service unavailable")
+                
+            # Return the successful response
+            return TranslationResponse(
+                translated_text=translated_text,
+                source_language=request.source_language,
+                target_language=request.target_language,
+                success=True
+            )
+            
+        except asyncio.TimeoutError:
+            logging.warning(f"Translation service timeout after 15 seconds")
+            return TranslationResponse(
+                translated_text=request.text,  # Return original text on timeout
+                source_language=request.source_language,
+                target_language=request.target_language,
+                success=False,
+                error="Translation service timeout"
+            )
+            
+    except Exception as e:
+        # Log the error with traceback for debugging
+        error_message = f"Translation error: {str(e)}"
+        logging.error(f"{error_message}\n{traceback.format_exc()}")
+        
+        # Return error response with original text
+        return TranslationResponse(
+            translated_text=request.text,  # Return original text on error
+            source_language=request.source_language,
+            target_language=request.target_language,
+            success=False,
+            error=str(e)
+        )
+
+
 @app.post("/process_text")
 async def process_text(user_input: UserInput) -> ProcessedResponse:
     """
@@ -219,14 +301,30 @@ async def process_text(user_input: UserInput) -> ProcessedResponse:
             'input_length': len(user_input.text)
         })
 
-        # Process the input text
+        # Process the input text with better error handling around model loading
         try:
-            result = await assistant.process_input(
-                text=user_input.text,
-                language=language,
-                proficiency=proficiency,
-                target=target
-            )
+            # First, check if the models are available
+            models_available = await assistant.check_language_models(language)
+            
+            if not models_available:
+                # If models aren't available, handle gracefully
+                logging.warning(f"Language models for {language} not available, using fallback mode")
+                metadata['model_status'] = 'unavailable'
+                
+                # Simple fallback for when models aren't available
+                # Return the input text with a helpful message
+                result = {
+                    'corrected_text': user_input.text,
+                    'response': "I'm currently unable to process text in this language. Please try again later or try English."
+                }
+            else:
+                # Models are available, proceed with normal processing
+                result = await assistant.process_input(
+                    text=user_input.text,
+                    language=language,
+                    proficiency=proficiency,
+                    target=target
+                )
             
             metadata['success'] = True
             
@@ -243,14 +341,20 @@ async def process_text(user_input: UserInput) -> ProcessedResponse:
         except Exception as processing_error:
             error_details = str(processing_error)
             logging.error(f"Processing error: {error_details}\n{traceback.format_exc()}")
-            raise ProcessingError(f"Text processing failed: {error_details}")
+            
+            # Create a fallback response when processing fails
+            metadata['error_type'] = 'processing'
+            metadata['error_details'] = error_details
+            
+            fallback_response = ProcessedResponse(
+                original_text=user_input.text,
+                corrected_text=user_input.text,  # Return original text unchanged
+                response="I'm having trouble processing your text right now. Please try again later.",
+                metadata=metadata
+            )
+            
+            return fallback_response
 
-    except ProcessingError as pe:
-        raise HTTPException(
-            status_code=422,
-            detail=str(pe)
-        )
-    
     except Exception as e:
         error_id = datetime.utcnow().strftime('%Y%m%d%H%M%S')
         logging.error(f"Error ID: {error_id}\nUnhandled error: {str(e)}\n{traceback.format_exc()}")
@@ -262,68 +366,6 @@ async def process_text(user_input: UserInput) -> ProcessedResponse:
                 "error_id": error_id,
                 "error_type": type(e).__name__
             }
-        )
-
-# Error handler for ProcessingError
-@app.exception_handler(ProcessingError)
-async def processing_error_handler(request, exc: ProcessingError):
-    return JSONResponse(
-        status_code=422,
-        content={
-            "detail": str(exc),
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    )
-
-translation_service = TranslationService()
-
-# Add this endpoint to your main.py
-@app.post("/translate", response_model=TranslationResponse)
-async def translate_text(request: TranslationRequest):
-    """
-    Translate text from source language to target language.
-    
-    Args:
-        request: TranslationRequest with text and language parameters
-        
-    Returns:
-        TranslationResponse with translated text
-    """
-    try:
-        # Log the translation request
-        logging.info(f"Translation request: {len(request.text)} chars from {request.source_language} to {request.target_language}")
-        
-        # Perform the translation
-        translated_text = await translation_service.translate_text(
-            text=request.text,
-            source_lang=request.source_language,
-            target_lang=request.target_language
-        )
-        
-        # If translation failed, raise an exception
-        if translated_text is None:
-            raise Exception("Translation failed")
-        
-        # Return the successful response
-        return TranslationResponse(
-            translated_text=translated_text,
-            source_language=request.source_language,
-            target_language=request.target_language,
-            success=True
-        )
-        
-    except Exception as e:
-        # Log the error
-        error_message = f"Translation error: {str(e)}"
-        logging.error(error_message)
-        
-        # Return error response but with original text
-        return TranslationResponse(
-            translated_text=request.text,  # Return original text on error
-            source_language=request.source_language,
-            target_language=request.target_language,
-            success=False,
-            error=str(e)
         )
 
 @app.get("/health")

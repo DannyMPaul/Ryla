@@ -606,7 +606,6 @@
 //   },
 // });
 
-
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -673,7 +672,7 @@ export default function LanguageLearningScreen() {
   const [learningLanguage, setLearningLanguage] = useState("en"); // Default language
   const [nativeLanguage, setNativeLanguage] = useState("fr"); // Default native language
   const [isTranslating, setIsTranslating] = useState(false);
-  
+
   const flatListRef = useRef<FlatList>(null);
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const inputRef = useRef<TextInput>(null);
@@ -745,7 +744,11 @@ export default function LanguageLearningScreen() {
           let greetingText = data.greeting;
           if (learningLanguage !== "en") {
             try {
-              const translatedGreeting = await translateText(data.greeting, learningLanguage, "en");
+              const translatedGreeting = await translateText(
+                data.greeting,
+                learningLanguage,
+                "en"
+              );
               if (translatedGreeting) {
                 greetingText = translatedGreeting;
               }
@@ -759,9 +762,9 @@ export default function LanguageLearningScreen() {
             sender: "bot",
             type: "greeting",
             originalText: data.greeting,
-            isTranslated: learningLanguage !== "en"
+            isTranslated: learningLanguage !== "en",
           });
-          
+
           if (isSpeechEnabled) await speakText(greetingText);
         }
       } catch (error) {
@@ -780,8 +783,32 @@ export default function LanguageLearningScreen() {
     }
   };
 
-  const translateText = async (text: string, fromLang: string, toLang: string): Promise<string | null> => {
+  const translateText = async (
+    text: string,
+    fromLang: string,
+    toLang: string
+  ): Promise<string | null> => {
+    // Don't attempt translation if text is empty or languages are the same
+    if (!text || !text.trim() || fromLang === toLang) {
+      return text;
+    }
+
+    // Show a brief loading message for longer translations
+    if (text.length > 100) {
+      setIsTranslating(true);
+    }
+
     try {
+      // Record start time for monitoring
+      const startTime = Date.now();
+
+      // Set up a timeout to abort excessive wait times
+      const timeoutId = setTimeout(() => {
+        console.warn("Translation taking too long, using original text");
+        setIsTranslating(false);
+        return text;
+      }, 8000); // 8 second timeout
+
       const response = await fetch(`${API_URL}/translate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -793,62 +820,109 @@ export default function LanguageLearningScreen() {
         }),
       });
 
+      // Clear the timeout since we got a response
+      clearTimeout(timeoutId);
+
+      // Log translation time for monitoring
+      const elapsedTime = Date.now() - startTime;
+      console.log(`Translation took ${elapsedTime}ms`);
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Translation failed");
       }
 
-      const data: TranslationResponse = await response.json();
+      const data = await response.json();
+
+      // Check if translation was successful according to API
+      if (!data.success) {
+        console.warn("Translation marked as unsuccessful:", data.error);
+        // If translation failed but server returned something, check if it's usable
+        if (data.translated_text && data.translated_text !== text) {
+          // Server provided a partial translation, use it
+          return data.translated_text;
+        }
+        // Otherwise use original text
+        return text;
+      }
+
+      // Verify we actually got a real translation (not empty or identical)
+      if (
+        !data.translated_text ||
+        data.translated_text.trim() === "" ||
+        data.translated_text === text
+      ) {
+        return text;
+      }
+
       return data.translated_text;
     } catch (error) {
       console.error("Translation error:", error);
-      return null;
+      return text; // Fallback to original text
+    } finally {
+      setIsTranslating(false);
     }
   };
 
   const toggleMessageTranslation = async (messageId: string) => {
-    setMessages((prevMessages) => {
-      return prevMessages.map(async (message) => {
-        if (message.id === messageId) {
-          // Already translated - switch back to original
-          if (message.isTranslated && message.originalText) {
-            return {
-              ...message,
-              text: message.originalText,
-              originalText: message.text,
-              isTranslated: false,
-            };
-          }
-          
-          // Not translated yet - translate now
-          else {
-            setIsTranslating(true);
-            try {
-              // Determine translation direction based on message sender
-              const fromLang = message.sender === "bot" ? learningLanguage : nativeLanguage;
-              const toLang = message.sender === "bot" ? nativeLanguage : learningLanguage;
-              
-              const translatedText = await translateText(message.text, fromLang, toLang);
-              
-              if (translatedText) {
-                return {
+    // Find the message to translate
+    const messageToTranslate = messages.find(
+      (message) => message.id === messageId
+    );
+    if (!messageToTranslate) return;
+
+    // Already translated - switch back to original
+    if (messageToTranslate.isTranslated && messageToTranslate.originalText) {
+      setMessages((prevMessages) =>
+        prevMessages.map((message) =>
+          message.id === messageId
+            ? {
+                ...message,
+                text: message.originalText!,
+                originalText: message.text,
+                isTranslated: false,
+              }
+            : message
+        )
+      );
+      return;
+    }
+
+    // Not translated yet - translate now
+    setIsTranslating(true);
+    try {
+      // Determine translation direction based on message sender
+      const fromLang =
+        messageToTranslate.sender === "bot" ? learningLanguage : nativeLanguage;
+      const toLang =
+        messageToTranslate.sender === "bot" ? nativeLanguage : learningLanguage;
+
+      const translatedText = await translateText(
+        messageToTranslate.text,
+        fromLang,
+        toLang
+      );
+
+      if (translatedText) {
+        setMessages((prevMessages) =>
+          prevMessages.map((message) =>
+            message.id === messageId
+              ? {
                   ...message,
                   text: translatedText,
                   originalText: message.text,
                   isTranslated: true,
-                };
-              }
-            } catch (error) {
-              console.error("Translation toggle error:", error);
-              Alert.alert("Translation Error", "Failed to translate message.");
-            } finally {
-              setIsTranslating(false);
-            }
-          }
-        }
-        return message;
-      });
-    });
+                }
+              : message
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Translation toggle error:", error);
+      Alert.alert("Translation Error", "Failed to translate message.");
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   const processMessage = async (text: string) => {
@@ -857,30 +931,54 @@ export default function LanguageLearningScreen() {
 
     let processedText = text.trim();
     let originalText = processedText;
-    
-    // Translate user input to French if learning English
-    if (learningLanguage === "en" && nativeLanguage === "fr") {
-      try {
-        const translatedInput = await translateText(processedText, "en", "fr");
-        if (translatedInput) {
-          processedText = translatedInput;
-        }
-      } catch (error) {
-        console.error("Failed to translate user input:", error);
-      }
-    }
+    let translationFailed = false;
 
-    // Add user message with original text
+    // Add user message immediately to improve perceived responsiveness
+    const userMessageId = Date.now().toString();
     addMessage({
       text: originalText,
       sender: "user1",
       type: "original",
-      originalText: processedText !== originalText ? processedText : undefined,
     });
+
+    // Translate user input if needed
+    if (learningLanguage !== nativeLanguage) {
+      try {
+        const translatedInput = await translateText(
+          processedText,
+          nativeLanguage,
+          learningLanguage
+        );
+
+        if (translatedInput) {
+          if (translatedInput !== processedText) {
+            // Update the message with translation metadata if translation succeeded
+            processedText = translatedInput;
+
+            // Update the user message to include original text reference
+            setMessages((prevMessages) =>
+              prevMessages.map((message) =>
+                message.id === userMessageId
+                  ? {
+                      ...message,
+                      originalText: translatedInput,
+                    }
+                  : message
+              )
+            );
+          }
+        } else {
+          translationFailed = true;
+        }
+      } catch (error) {
+        console.error("Failed to translate user input:", error);
+        translationFailed = true;
+      }
+    }
 
     try {
       if (connectionError) {
-        // Fallback offline mode
+        // Fallback offline mode with more context
         setTimeout(() => {
           addMessage({
             text: "I'm currently offline. Your message was received, but I can't process it right now. Please check your internet connection.",
@@ -893,12 +991,26 @@ export default function LanguageLearningScreen() {
         return;
       }
 
+      // If translation failed, add a notice but continue processing with original text
+      if (translationFailed) {
+        addMessage({
+          text: "Note: Translation service is currently unavailable. Processing your original message.",
+          sender: "bot",
+          type: "response",
+        });
+        // Continue with the original text
+        processedText = originalText;
+      }
+
       const response = await fetch(`${API_URL}/process_text`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: processedText, // Send the potentially translated text
+          text: processedText,
           user_id: userId,
+          language: learningLanguage,
+          proficiency: "intermediate",
+          target: "grammar_correction",
         }),
       });
 
@@ -911,18 +1023,24 @@ export default function LanguageLearningScreen() {
 
       // Handle correction message if exists and differs from input
       if (data.corrected_text && data.corrected_text !== processedText) {
-        // Translate correction to English if learning language is not English
         let correctionText = data.corrected_text;
         let originalCorrection = correctionText;
-        
-        if (learningLanguage !== "en") {
+
+        // Only attempt translation if the service is working
+        if (!translationFailed && learningLanguage !== nativeLanguage) {
           try {
-            const translatedCorrection = await translateText(correctionText, learningLanguage, "en");
+            const translatedCorrection = await translateText(
+              correctionText,
+              learningLanguage,
+              nativeLanguage
+            );
+
             if (translatedCorrection) {
               correctionText = translatedCorrection;
             }
           } catch (error) {
             console.error("Failed to translate correction:", error);
+            // Continue with untranslated text - don't add another failure message
           }
         }
 
@@ -930,25 +1048,35 @@ export default function LanguageLearningScreen() {
           text: correctionText,
           sender: "bot",
           type: "correction",
-          originalText: learningLanguage !== "en" ? originalCorrection : undefined,
-          isTranslated: learningLanguage !== "en",
+          originalText:
+            learningLanguage !== nativeLanguage
+              ? originalCorrection
+              : undefined,
+          isTranslated:
+            learningLanguage !== nativeLanguage && !translationFailed,
         });
       }
 
       // Handle response message
       if (data.response) {
-        // Translate bot response to English if learning language is not English
         let responseText = data.response;
         let originalResponse = responseText;
-        
-        if (learningLanguage !== "en") {
+
+        // Only attempt translation if the service is working
+        if (!translationFailed && learningLanguage !== nativeLanguage) {
           try {
-            const translatedResponse = await translateText(responseText, learningLanguage, "en");
+            const translatedResponse = await translateText(
+              responseText,
+              learningLanguage,
+              nativeLanguage
+            );
+
             if (translatedResponse) {
               responseText = translatedResponse;
             }
           } catch (error) {
             console.error("Failed to translate response:", error);
+            // Continue with untranslated text
           }
         }
 
@@ -956,15 +1084,16 @@ export default function LanguageLearningScreen() {
           text: responseText,
           sender: "bot",
           type: "response",
-          originalText: learningLanguage !== "en" ? originalResponse : undefined,
-          isTranslated: learningLanguage !== "en",
+          originalText:
+            learningLanguage !== nativeLanguage ? originalResponse : undefined,
+          isTranslated:
+            learningLanguage !== nativeLanguage && !translationFailed,
         });
-        
+
         if (isSpeechEnabled) await speakText(responseText);
       }
     } catch (error) {
       console.error("Process message error:", error);
-      Alert.alert("Error", "Failed to process message. Please try again.");
 
       // Add error message to chat
       addMessage({
@@ -1131,7 +1260,7 @@ export default function LanguageLearningScreen() {
   };
 
   const handleKeyPress = (e: any) => {
-    if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
+    if (e.nativeEvent.key === "Enter" && !e.nativeEvent.shiftKey) {
       e.preventDefault();
       processMessage(inputText);
     }
@@ -1154,9 +1283,9 @@ export default function LanguageLearningScreen() {
           </Text>
         )}
       </View>
-      
+
       {/* Translation button */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.translateButton}
         onPress={() => toggleMessageTranslation(item.id)}
         disabled={isTranslating}
@@ -1164,10 +1293,10 @@ export default function LanguageLearningScreen() {
         <Text style={styles.translateButtonText}>
           {item.isTranslated ? "Show Original" : "Translate"}
         </Text>
-        <MaterialIcons 
-          name="translate" 
-          size={16} 
-          color="rgba(255,255,255,0.7)" 
+        <MaterialIcons
+          name="translate"
+          size={16}
+          color="rgba(255,255,255,0.7)"
         />
       </TouchableOpacity>
     </View>

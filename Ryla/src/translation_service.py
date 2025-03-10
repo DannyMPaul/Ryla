@@ -1,65 +1,88 @@
-# src/translation_service.py
-import aiohttp
+from typing import Optional, Dict, Any
 import logging
-from typing import Optional
+import aiohttp
+import os
+from datetime import datetime
+import traceback
 
 class TranslationService:
-    """A service for translating text using free translation APIs"""
+    """
+    Service for handling text translations with multiple fallback strategies
+    """
     
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
-        # LibreTranslate API configuration - a free and open source machine translation API
-        self.libre_translate_url = "https://libretranslate.com/translate"
+        self.libre_translate_url = os.getenv("LIBRE_TRANSLATE_URL", "https://libretranslate.com/translate")
+        self.libre_translate_api_key = os.getenv("LIBRE_TRANSLATE_API_KEY", "")
         
-        # Fallback to MyMemory API if LibreTranslate fails
-        self.mymemory_url = "https://api.mymemory.translated.net/get"
-
-    async def translate_text(self, text: str, source_lang: str, target_lang: str) -> Optional[str]:
+        # If using other translation services, configure them here
+        self.use_fallback_methods = True
+        
+        logging.info(f"Translation service initialized with URL: {self.libre_translate_url}")
+    
+    async def translate_text(
+        self, 
+        text: str, 
+        source_lang: str, 
+        target_lang: str, 
+        retry_count: int = 0
+    ) -> Optional[str]:
         """
-        Translate text from source language to target language
-        using free translation APIs with fallback mechanisms.
+        Translate text with cascading fallback options:
+        1. Try LibreTranslate API
+        2. If that fails, try fallback methods
+        3. If all translation attempts fail, return original text with a log
         
         Args:
             text: Text to translate
-            source_lang: Source language code (e.g., 'en', 'fr')
-            target_lang: Target language code (e.g., 'en', 'fr')
+            source_lang: Source language code (e.g., 'en')
+            target_lang: Target language code (e.g., 'fr')
+            retry_count: Internal counter for retry attempts
             
         Returns:
-            Translated text or None if translation failed
+            Translated text or None if all translation methods fail
         """
-        if not text or source_lang == target_lang:
+        # Don't translate if languages are the same or text is empty
+        if source_lang == target_lang or not text.strip():
             return text
             
-        # Standardize language codes
-        source_lang = self._normalize_lang_code(source_lang)
-        target_lang = self._normalize_lang_code(target_lang)
+        # Limit retries to prevent infinite loops
+        if retry_count >= 3:
+            logging.warning(f"Max retries reached for translation request")
+            return text
         
-        # Try LibreTranslate first (no API key required for self-hosted instances)
         try:
-            translated_text = await self._translate_with_libretranslate(text, source_lang, target_lang)
-            if translated_text:
-                return translated_text
-        except Exception as e:
-            self.logger.warning(f"LibreTranslate failed: {str(e)}. Trying fallback...")
+            # Try primary translation service (LibreTranslate)
+            translated = await self._try_libre_translate(text, source_lang, target_lang)
+            if translated:
+                return translated
+                
+            # If primary fails and fallbacks are enabled, try alternatives
+            if self.use_fallback_methods:
+                # Attempt dictionary-based translation for common phrases if appropriate
+                fallback_translated = self._simple_fallback_translation(text, source_lang, target_lang)
+                if fallback_translated:
+                    logging.info(f"Used fallback translation method")
+                    return fallback_translated
             
-        # Fallback to MyMemory API (free tier, no API key required)
+            # If all methods fail, return original text
+            logging.warning(f"All translation methods failed, returning original text")
+            return text
+            
+        except Exception as e:
+            error_id = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+            logging.error(f"Translation error ID: {error_id}\n{str(e)}\n{traceback.format_exc()}")
+            
+            # On exception, try fallback or return original
+            if self.use_fallback_methods and retry_count < 2:
+                logging.info(f"Retrying with fallback method after error")
+                return await self.translate_text(text, source_lang, target_lang, retry_count + 1)
+            
+            return text
+    
+    async def _try_libre_translate(self, text: str, source_lang: str, target_lang: str) -> Optional[str]:
+        """Attempt translation using LibreTranslate API"""
         try:
-            translated_text = await self._translate_with_mymemory(text, source_lang, target_lang)
-            if translated_text:
-                return translated_text
-        except Exception as e:
-            self.logger.error(f"Translation fallback failed: {str(e)}")
-            
-        # Second fallback - simple word-by-word replacement for common phrases
-        # This is extremely limited but can serve as a last resort
-        if source_lang == "en" and target_lang == "fr" or source_lang == "fr" and target_lang == "en":
-            return self._basic_translation_fallback(text, source_lang, target_lang)
-            
-        return None
-
-    async def _translate_with_libretranslate(self, text: str, source_lang: str, target_lang: str) -> Optional[str]:
-        """Use LibreTranslate API for translation"""
-        async with aiohttp.ClientSession() as session:
+            # Prepare request data
             payload = {
                 "q": text,
                 "source": source_lang,
@@ -67,101 +90,54 @@ class TranslationService:
                 "format": "text"
             }
             
-            async with session.post(self.libre_translate_url, json=payload) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return data.get("translatedText")
-                else:
-                    error_text = await response.text()
-                    self.logger.error(f"LibreTranslate API error: {response.status} - {error_text}")
-                    return None
-
-    async def _translate_with_mymemory(self, text: str, source_lang: str, target_lang: str) -> Optional[str]:
-        """Use MyMemory API for translation (free tier)"""
-        # MyMemory has a limit of 1000 words per day for free users
-        if len(text.split()) > 500:  # Be conservative and limit to 500 words
-            text = " ".join(text.split()[:500]) + "..."
+            # Add API key if available
+            if self.libre_translate_api_key:
+                payload["api_key"] = self.libre_translate_api_key
+                
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    self.libre_translate_url, 
+                    json=payload,
+                    timeout=10
+                ) as response:
+                    
+                    if response.status == 200:
+                        data = await response.json()
+                        if "translatedText" in data:
+                            return data["translatedText"]
+                    else:
+                        error_response = await response.text()
+                        logging.error(f"LibreTranslate API error: {response.status} - {error_response}")
+                        
+            return None
             
-        lang_pair = f"{source_lang}|{target_lang}"
-        
-        async with aiohttp.ClientSession() as session:
-            params = {
-                "q": text,
-                "langpair": lang_pair,
-                "de": "your-email@example.com"  # Add your email for higher rate limits
+        except aiohttp.ClientError as e:
+            logging.error(f"LibreTranslate request error: {str(e)}")
+            return None
+        except Exception as e:
+            logging.error(f"LibreTranslate unexpected error: {str(e)}")
+            return None
+    
+    def _simple_fallback_translation(self, text: str, source_lang: str, target_lang: str) -> Optional[str]:
+        """
+        Very simple fallback for critical phrases when all else fails.
+        In a production app, this would be more comprehensive or use an offline model.
+        """
+        # Only implement for critical language pairs
+        if source_lang == "en" and target_lang == "fr":
+            common_phrases = {
+                "Hello": "Bonjour",
+                "Welcome": "Bienvenue",
+                "Sorry": "Désolé",
+                "Please try again": "Veuillez réessayer",
+                "Error": "Erreur",
+                "Thank you": "Merci"
             }
             
-            async with session.get(self.mymemory_url, params=params) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    if data.get("responseStatus") == 200:
-                        return data.get("responseData", {}).get("translatedText")
-                    else:
-                        self.logger.error(f"MyMemory API error: {data.get('responseStatus')} - {data.get('responseDetails')}")
-                        return None
-                else:
-                    error_text = await response.text()
-                    self.logger.error(f"MyMemory API error: {response.status} - {error_text}")
-                    return None
-
-    def _basic_translation_fallback(self, text: str, source_lang: str, target_lang: str) -> str:
-        """
-        Extremely basic word-for-word translation as a last resort.
-        Only supports a few common phrases between English and French.
-        """
-        # Basic dictionaries for emergency fallback
-        en_to_fr = {
-            "hello": "bonjour",
-            "goodbye": "au revoir",
-            "thank you": "merci",
-            "please": "s'il vous plaît",
-            "yes": "oui",
-            "no": "non",
-            "how are you": "comment allez-vous",
-            "what is your name": "comment vous appelez-vous",
-            "I don't understand": "je ne comprends pas",
-            "help": "aidez-moi"
-        }
+            # Only use for exact matches of critical phrases
+            if text in common_phrases:
+                return common_phrases[text]
+                
+        # Add other language pairs as needed
         
-        fr_to_en = {v: k for k, v in en_to_fr.items()}
-        
-        # Select the appropriate dictionary
-        dictionary = en_to_fr if source_lang == "en" and target_lang == "fr" else fr_to_en
-        
-        # Very simple word-by-word replacement
-        result = text.lower()
-        for source_phrase, target_phrase in dictionary.items():
-            result = result.replace(source_phrase, target_phrase)
-            
-        # Return original if no changes were made
-        return result if result != text.lower() else text
-
-    def _normalize_lang_code(self, lang_code: str) -> str:
-        """
-        Normalize language codes to the format expected by the translation APIs.
-        Most APIs use ISO 639-1 two-letter codes.
-        """
-        # Map of common language codes
-        lang_map = {
-            "english": "en",
-            "french": "fr",
-            "spanish": "es",
-            "german": "de",
-            "italian": "it",
-            "portuguese": "pt",
-            "russian": "ru",
-            "chinese": "zh",
-            "japanese": "ja",
-            "korean": "ko"
-        }
-        
-        # Return the normalized code
-        if lang_code.lower() in lang_map:
-            return lang_map[lang_code.lower()]
-        
-        # If already a 2-letter code, return as is
-        if len(lang_code) == 2:
-            return lang_code.lower()
-            
-        # Default to English if unrecognized
-        return "en"
+        return None

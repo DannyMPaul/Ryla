@@ -22,7 +22,6 @@ const getQuizProficiencyLevel = (accuracy: number): ProficiencyLevel => {
   return "expert";
 };
 
-const WORD_LIMIT = 120;
 const EVALUATION_PROMPT = `As a French language expert, evaluate the following text written in French. 
 Analyze grammar, vocabulary, sentence structure, and overall coherence. 
 Categorize the writer as:
@@ -47,6 +46,7 @@ const getLowestProficiency = (
 const WritingAssessmentScreen = () => {
   const [text, setText] = useState("");
   const [wordCount, setWordCount] = useState(0);
+  const [isDevelopmentMode, setIsDevelopmentMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [proficiencyLevel, setProficiencyLevel] =
@@ -56,6 +56,7 @@ const WritingAssessmentScreen = () => {
   const router = useRouter();
   const [quizAccuracy, setQuizAccuracy] = useState<number | null>(null);
   const [quizLevel, setQuizLevel] = useState<ProficiencyLevel | null>(null);
+  const [apiErrorOccurred, setApiErrorOccurred] = useState(false);
 
   const countWords = (text: string) => {
     return text
@@ -69,7 +70,30 @@ const WritingAssessmentScreen = () => {
     setWordCount(countWords(newText));
   };
 
-  const evaluateWriting = async (text: string) => {
+  const evaluateWriting = async (text: string): Promise<ProficiencyLevel> => {
+    // Set timeout to prevent waiting indefinitely for API response
+    const timeoutPromise = new Promise<ProficiencyLevel>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error("Request timed out after 10 seconds"));
+      }, 10000); // 10 second timeout
+    });
+
+    try {
+      // Race condition between API call and timeout
+      return await Promise.race([
+        evaluateWithAPI(text),
+        timeoutPromise
+      ]);
+    } catch (error) {
+      console.error("Evaluation error:", error);
+      setApiErrorOccurred(true);
+      
+      // Default to intermediate on error
+      return "intermediate";
+    }
+  };
+
+  const evaluateWithAPI = async (text: string): Promise<ProficiencyLevel> => {
     try {
       const response = await fetch(
         "https://api.openai.com/v1/chat/completions",
@@ -80,7 +104,7 @@ const WritingAssessmentScreen = () => {
             Authorization: `Bearer ${EXPO_PUBLIC_OPENAI_API_KEY}`,
           },
           body: JSON.stringify({
-            model: "gpt-4-turbo-preview",
+            model: "gpt-3.5-turbo",
             messages: [
               {
                 role: "system",
@@ -97,16 +121,127 @@ const WritingAssessmentScreen = () => {
         }
       );
 
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.error?.message || "Evaluation failed");
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API Error Details:", errorData);
+        throw new Error(
+          errorData.error?.message || `API request failed: ${response.status}`
+        );
+      }
 
-      return data.choices[0].message.content
-        .toLowerCase()
-        .trim() as ProficiencyLevel;
+      const data = await response.json();
+      const result = data.choices[0]?.message?.content?.toLowerCase()?.trim();
+
+      // Validate the response format
+      if (!result || !["beginner", "intermediate", "expert"].includes(result)) {
+        console.error("Invalid API response format:", result);
+        throw new Error("Invalid response format from API");
+      }
+
+      return result as ProficiencyLevel;
     } catch (error) {
-      console.error("Evaluation error:", error);
+      console.error("API call error:", error);
       throw error;
+    }
+  };
+
+  const evaluateWritingWithFallback = async (text: string): Promise<ProficiencyLevel> => {
+    if (isDevelopmentMode) {
+      // Simulate API response based on text length and complexity
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API delay
+      const wordCount = text.split(/\s+/).length;
+      const hasComplexStructures = /[;:(),]/.test(text);
+
+      if (wordCount < 50) return "beginner";
+      if (wordCount < 100 || !hasComplexStructures) return "intermediate";
+      return "expert";
+    }
+
+    try {
+      return await evaluateWriting(text);
+    } catch (error) {
+      console.error("Evaluation with fallback error:", error);
+      setApiErrorOccurred(true);
+      
+      // Default to intermediate on any error
+      return "intermediate";
+    }
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    setApiErrorOccurred(false);
+    
+    try {
+      const writingLevel = await evaluateWritingWithFallback(text);
+      setProficiencyLevel(writingLevel);
+
+      const finalProficiency = await determineActualProficiency(writingLevel);
+      setActualProficiency(finalProficiency);
+
+      const user = getAuth().currentUser;
+      if (user) {
+        const db = getDatabase();
+        const userRef = dbRef(db, `users/${user.uid}`);
+
+        await update(userRef, {
+          writing_assessment: {
+            text,
+            wordCount,
+            proficiencyLevel: writingLevel,
+            timestamp: new Date().toISOString(),
+            isDevelopmentMode,
+            apiErrorOccurred, // Track if assessment was completed with error fallback
+          },
+          writing_level: writingLevel,
+          actual_proficiency: finalProficiency,
+        });
+      }
+
+      setShowResults(true);
+    } catch (error) {
+      console.error("Submission error:", error);
+      // Even with errors, we proceed with intermediate level
+      const defaultLevel: ProficiencyLevel = "intermediate";
+      setProficiencyLevel(defaultLevel);
+      
+      const finalProficiency = await determineActualProficiency(defaultLevel)
+        .catch((e) => {
+          console.error("Error determining proficiency:", e);
+          return defaultLevel;
+        });
+      
+      setActualProficiency(finalProficiency);
+      setApiErrorOccurred(true);
+
+      // Save fallback assessment to database
+      const user = getAuth().currentUser;
+      if (user) {
+        const db = getDatabase();
+        const userRef = dbRef(db, `users/${user.uid}`);
+        
+        try {
+          await update(userRef, {
+            writing_assessment: {
+              text,
+              wordCount,
+              proficiencyLevel: defaultLevel,
+              timestamp: new Date().toISOString(),
+              isDevelopmentMode,
+              apiErrorOccurred: true,
+              errorDetails: error instanceof Error ? error.message : "Unknown error",
+            },
+            writing_level: defaultLevel,
+            actual_proficiency: finalProficiency,
+          });
+        } catch (dbError) {
+          console.error("Database update error:", dbError);
+        }
+      }
+      
+      setShowResults(true);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -148,53 +283,17 @@ const WritingAssessmentScreen = () => {
     }
   };
 
-  const handleSubmit = async () => {
-    if (wordCount < WORD_LIMIT) {
-      Alert.alert(
-        "Not enough words",
-        `Please write at least ${WORD_LIMIT} words.`
-      );
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const writingLevel = await evaluateWriting(text);
-      setProficiencyLevel(writingLevel);
-
-      const finalProficiency = await determineActualProficiency(writingLevel);
-      setActualProficiency(finalProficiency);
-
-      const user = getAuth().currentUser;
-      if (user) {
-        const db = getDatabase();
-        const userRef = dbRef(db, `users/${user.uid}`);
-
-        await update(userRef, {
-          writing_assessment: {
-            text,
-            wordCount,
-            proficiencyLevel: writingLevel,
-            timestamp: new Date().toISOString(),
-          },
-          writing_level: writingLevel,
-          actual_proficiency: finalProficiency,
-        });
-      }
-
-      setShowResults(true);
-    } catch (error) {
-      Alert.alert("Error", "Failed to evaluate writing. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   if (showResults) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.resultContainer}>
           <Text style={styles.resultText}>Assessment Complete!</Text>
+
+          {apiErrorOccurred && (
+            <Text style={styles.errorText}>
+              Note: We experienced a technical issue during evaluation, but we've provided an estimated level.
+            </Text>
+          )}
 
           <Text style={styles.levelText}>
             Writing Level:{" "}
@@ -228,7 +327,7 @@ const WritingAssessmentScreen = () => {
 
           <TouchableOpacity
             style={styles.continueButton}
-            onPress={() => router.replace("./Welcome")}
+            onPress={() => router.replace("./Frn/welcome")}
           >
             <Text style={styles.continueButtonText}>Submit</Text>
           </TouchableOpacity>
@@ -243,7 +342,7 @@ const WritingAssessmentScreen = () => {
 
       <Text style={styles.instructions}>
         Write a paragraph in French about your daily routine, hobbies, or future
-        plans. Minimum {WORD_LIMIT} words.
+        plans.
       </Text>
 
       <TextInput
@@ -255,18 +354,15 @@ const WritingAssessmentScreen = () => {
         onChangeText={handleTextChange}
       />
 
-      <Text style={styles.wordCount}>
-        Words: {wordCount}/{WORD_LIMIT}
-      </Text>
+      <Text style={styles.wordCount}>Words: {wordCount}</Text>
 
       <TouchableOpacity
         style={[
           styles.submitButton,
-          (wordCount < WORD_LIMIT || isSubmitting) &&
-            styles.submitButtonDisabled,
+          isSubmitting && styles.submitButtonDisabled,
         ]}
         onPress={handleSubmit}
-        disabled={wordCount < WORD_LIMIT || isSubmitting}
+        disabled={isSubmitting}
       >
         {isSubmitting ? (
           <ActivityIndicator color="#FFFFFF" />
@@ -336,6 +432,15 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFFFFF",
     marginBottom: 20,
+  },
+  errorText: {
+    fontSize: 14,
+    color: "#F9A8A8",
+    marginBottom: 20,
+    textAlign: "center",
+    padding: 10,
+    backgroundColor: "rgba(255, 0, 0, 0.1)",
+    borderRadius: 8,
   },
   levelText: {
     fontSize: 20,
