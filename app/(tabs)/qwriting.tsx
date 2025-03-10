@@ -43,6 +43,8 @@ const getLowestProficiency = (
   return levels[level1] <= levels[level2] ? level1 : level2;
 };
 
+const WORD_LIMIT = 120;
+
 const WritingAssessmentScreen = () => {
   const [text, setText] = useState("");
   const [wordCount, setWordCount] = useState(0);
