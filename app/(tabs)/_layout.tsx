@@ -2,14 +2,18 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, StyleSheet, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import TranslatorFooter from '../../components/TranslatorFooter';
 
 export default function TabsLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-      }}
-    />
+    <View style={{ flex: 1 }}>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
+      <TranslatorFooter />
+    </View>
   );
 }
 

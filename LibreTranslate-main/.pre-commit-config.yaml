@@ -1,0 +1,15 @@
+# See https://pre-commit.com for more information
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+    - id: check-added-large-files
+      name: " 🐘 Check for added large files"
+    - id: check-toml
+      name: " ✔️  Check TOML"
+    - id: check-json
+      name: " ✔️  Check JSON"
+
+ci:
+    autofix_commit_msg: 🎨 [pre-commit] Auto format
+    autoupdate_commit_msg: ⬆ [pre-commit] pre-commit auto update

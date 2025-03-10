@@ -1,0 +1,49 @@
+name: Run tests
+# Run test at each push to main, if changes to package or tests files
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+    paths:
+    - '*.py'
+    - 'requirements.txt'
+    - 'libretranslate/**'
+    - '.github/workflows/run-tests.yml'
+
+jobs:
+
+  tests_python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10']
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        pipx install hatch
+        hatch run locales
+
+    - name: Test with pytest
+      run: hatch run test
+
+
+  test_docker_build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker build
+        run: docker build -f docker/Dockerfile -t libretranslate .
+
+      - name: Docker build with some models
+        run: docker build -f docker/Dockerfile -t libretranslate --build-arg models=en,es  .
