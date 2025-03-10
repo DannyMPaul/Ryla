@@ -263,11 +263,10 @@ const WritingAssessmentScreen = () => {
         <TouchableOpacity
           style={[
             styles.submitButton,
-            (wordCount < WORD_LIMIT || isSubmitting) &&
-              styles.submitButtonDisabled,
+            isSubmitting && styles.submitButtonDisabled,
           ]}
           onPress={handleSubmit}
-          disabled={wordCount < WORD_LIMIT || isSubmitting}
+          disabled={isSubmitting}
         >
           {isSubmitting ? (
             <ActivityIndicator color="#FFFFFF" />
