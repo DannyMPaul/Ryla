@@ -259,21 +259,30 @@ const WritingAssessmentScreen = () => {
         Words: {wordCount}/{WORD_LIMIT}
       </Text>
 
-      <TouchableOpacity
-        style={[
-          styles.submitButton,
-          (wordCount < WORD_LIMIT || isSubmitting) &&
-            styles.submitButtonDisabled,
-        ]}
-        onPress={handleSubmit}
-        disabled={wordCount < WORD_LIMIT || isSubmitting}
-      >
-        {isSubmitting ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text style={styles.submitButtonText}>Submit</Text>
-        )}
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            (wordCount < WORD_LIMIT || isSubmitting) &&
+              styles.submitButtonDisabled,
+          ]}
+          onPress={handleSubmit}
+          disabled={wordCount < WORD_LIMIT || isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.submitButtonText}>Submit</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.skipButton}
+          onPress={() => router.replace("./Welcome")}
+        >
+          <Text style={styles.skipButtonText}>Skip</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -317,6 +326,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 15,
     alignItems: "center",
+    flex: 1,
+    marginRight: 10,
   },
   submitButtonDisabled: {
     backgroundColor: "#3C3C3C",
@@ -361,6 +372,24 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   continueButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  skipButton: {
+    backgroundColor: "#3C3C3C",
+    padding: 16,
+    borderRadius: 15,
+    alignItems: "center",
+    width: 100,
+  },
+  skipButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",

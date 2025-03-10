@@ -7,9 +7,11 @@ import axios from 'axios';
 // LibreTranslate API URL - update this to your computer's IP address when testing on physical devices
 // For emulators, localhost or 10.0.2.2 (Android) should work
 // For physical devices, use your computer's IP address (e.g., 192.168.1.X)
-const LIBRE_TRANSLATE_API_URL = 'http://10.0.2.2:5000'; // For Android emulator
-// const LIBRE_TRANSLATE_API_URL = 'http://localhost:5000'; // For iOS simulator
-// const LIBRE_TRANSLATE_API_URL = 'http://YOUR_COMPUTER_IP:5000'; // For physical devices
+// Uncomment the appropriate line for your environment:
+
+// const LIBRE_TRANSLATE_API_URL = 'http://10.0.2.2:5000'; // For Android emulator
+const LIBRE_TRANSLATE_API_URL = 'http://127.0.0.1:5000'; // For iOS simulator
+// const LIBRE_TRANSLATE_API_URL = 'http://192.168.1.36:5000'; // For physical devices
 
 const TranslatorFooter = () => {
   const router = useRouter();
@@ -36,7 +38,7 @@ const TranslatorFooter = () => {
 
   const checkServerAvailability = async () => {
     try {
-      const response = await axios.get(`${LIBRE_TRANSLATE_API_URL}/languages`, { timeout: 3000 });
+      const response = await axios.get(`${LIBRE_TRANSLATE_API_URL}/languages`, { timeout: 10000 });
       setIsServerAvailable(response.status === 200);
     } catch (error) {
       console.log('Translation server not available:', error);

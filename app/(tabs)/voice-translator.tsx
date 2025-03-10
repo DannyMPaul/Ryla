@@ -35,9 +35,11 @@ const LANGUAGES = [
 // LibreTranslate API URL - this should point to your local LibreTranslate instance
 // For emulators, localhost or 10.0.2.2 (Android) should work
 // For physical devices, use your computer's IP address (e.g., 192.168.1.X)
-const LIBRE_TRANSLATE_API_URL = 'http://10.0.2.2:5000'; // For Android emulator
-// const LIBRE_TRANSLATE_API_URL = 'http://localhost:5000'; // For iOS simulator
-// const LIBRE_TRANSLATE_API_URL = 'http://YOUR_COMPUTER_IP:5000'; // For physical devices
+// Uncomment the appropriate line for your environment:
+
+// const LIBRE_TRANSLATE_API_URL = 'http://10.0.2.2:5000'; // For Android emulator
+const LIBRE_TRANSLATE_API_URL = 'http://127.0.0.1:5000'; // For iOS simulator
+// const LIBRE_TRANSLATE_API_URL = 'http://192.168.1.36:5000'; // For physical devices
 
 export default function VoiceTranslatorScreen() {
   const router = useRouter();
@@ -60,9 +62,11 @@ export default function VoiceTranslatorScreen() {
   }, []);
 
   const checkLibreTranslateAvailability = async () => {
+    console.log(`Attempting to connect to LibreTranslate at: ${LIBRE_TRANSLATE_API_URL}`);
     try {
       // Try to connect to LibreTranslate API
-      const response = await axios.get(`${LIBRE_TRANSLATE_API_URL}/languages`);
+      const response = await axios.get(`${LIBRE_TRANSLATE_API_URL}/languages`, { timeout: 10000 });
+      console.log('LibreTranslate response:', response.status, response.data ? 'Data received' : 'No data');
       if (response.status === 200) {
         console.log('LibreTranslate is available');
         setLibreTranslateAvailable(true);
@@ -72,6 +76,14 @@ export default function VoiceTranslatorScreen() {
       }
     } catch (error) {
       console.error('LibreTranslate is not available:', error);
+      // Try a simple fetch to see if the server is running at all
+      try {
+        console.log('Trying a simple fetch to check server...');
+        const simpleResponse = await fetch(LIBRE_TRANSLATE_API_URL);
+        console.log('Server is running but API endpoint may be wrong. Status:', simpleResponse.status);
+      } catch (fetchError) {
+        console.error('Server is completely unreachable:', fetchError);
+      }
       setLibreTranslateAvailable(false);
       Alert.alert(
         'Translation Service Unavailable',
@@ -216,7 +228,7 @@ export default function VoiceTranslatorScreen() {
 
   const fallbackTranslation = (text: string, from: string, to: string): string => {
     // Simple translation dictionary for fallback
-    const translations: Record<string, Record<string, string>> = {
+    const translations: Record<string, Record<string, Record<string, string>>> = {
       'en': {
         'fr': {
           "Hello, how are you today?": "Bonjour, comment allez-vous aujourd'hui?",
