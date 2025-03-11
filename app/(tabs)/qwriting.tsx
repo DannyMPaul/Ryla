@@ -43,8 +43,6 @@ const getLowestProficiency = (
   return levels[level1] <= levels[level2] ? level1 : level2;
 };
 
-const WORD_LIMIT = 120;
-
 const WritingAssessmentScreen = () => {
   const [text, setText] = useState("");
   const [wordCount, setWordCount] = useState(0);
@@ -82,14 +80,11 @@ const WritingAssessmentScreen = () => {
 
     try {
       // Race condition between API call and timeout
-      return await Promise.race([
-        evaluateWithAPI(text),
-        timeoutPromise
-      ]);
+      return await Promise.race([evaluateWithAPI(text), timeoutPromise]);
     } catch (error) {
       console.error("Evaluation error:", error);
       setApiErrorOccurred(true);
-      
+
       // Default to intermediate on error
       return "intermediate";
     }
@@ -147,7 +142,9 @@ const WritingAssessmentScreen = () => {
     }
   };
 
-  const evaluateWritingWithFallback = async (text: string): Promise<ProficiencyLevel> => {
+  const evaluateWritingWithFallback = async (
+    text: string
+  ): Promise<ProficiencyLevel> => {
     if (isDevelopmentMode) {
       // Simulate API response based on text length and complexity
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API delay
@@ -164,7 +161,7 @@ const WritingAssessmentScreen = () => {
     } catch (error) {
       console.error("Evaluation with fallback error:", error);
       setApiErrorOccurred(true);
-      
+
       // Default to intermediate on any error
       return "intermediate";
     }
@@ -173,7 +170,7 @@ const WritingAssessmentScreen = () => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setApiErrorOccurred(false);
-    
+
     try {
       const writingLevel = await evaluateWritingWithFallback(text);
       setProficiencyLevel(writingLevel);
@@ -206,13 +203,14 @@ const WritingAssessmentScreen = () => {
       // Even with errors, we proceed with intermediate level
       const defaultLevel: ProficiencyLevel = "intermediate";
       setProficiencyLevel(defaultLevel);
-      
-      const finalProficiency = await determineActualProficiency(defaultLevel)
-        .catch((e) => {
-          console.error("Error determining proficiency:", e);
-          return defaultLevel;
-        });
-      
+
+      const finalProficiency = await determineActualProficiency(
+        defaultLevel
+      ).catch((e) => {
+        console.error("Error determining proficiency:", e);
+        return defaultLevel;
+      });
+
       setActualProficiency(finalProficiency);
       setApiErrorOccurred(true);
 
@@ -221,7 +219,7 @@ const WritingAssessmentScreen = () => {
       if (user) {
         const db = getDatabase();
         const userRef = dbRef(db, `users/${user.uid}`);
-        
+
         try {
           await update(userRef, {
             writing_assessment: {
@@ -231,7 +229,8 @@ const WritingAssessmentScreen = () => {
               timestamp: new Date().toISOString(),
               isDevelopmentMode,
               apiErrorOccurred: true,
-              errorDetails: error instanceof Error ? error.message : "Unknown error",
+              errorDetails:
+                error instanceof Error ? error.message : "Unknown error",
             },
             writing_level: defaultLevel,
             actual_proficiency: finalProficiency,
@@ -240,7 +239,7 @@ const WritingAssessmentScreen = () => {
           console.error("Database update error:", dbError);
         }
       }
-      
+
       setShowResults(true);
     } finally {
       setIsSubmitting(false);
@@ -293,7 +292,8 @@ const WritingAssessmentScreen = () => {
 
           {apiErrorOccurred && (
             <Text style={styles.errorText}>
-              Note: We experienced a technical issue during evaluation, but we've provided an estimated level.
+              Note: We experienced a technical issue during evaluation, but
+              we've provided an estimated level.
             </Text>
           )}
 
@@ -361,11 +361,10 @@ const WritingAssessmentScreen = () => {
       <TouchableOpacity
         style={[
           styles.submitButton,
-          (wordCount < WORD_LIMIT || isSubmitting) &&
-            styles.submitButtonDisabled,
+          isSubmitting && styles.submitButtonDisabled,
         ]}
         onPress={handleSubmit}
-        disabled={wordCount < WORD_LIMIT || isSubmitting}
+        disabled={isSubmitting}
       >
         {isSubmitting ? (
           <ActivityIndicator color="#FFFFFF" />
@@ -416,8 +415,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 15,
     alignItems: "center",
-    flex: 1,
-    marginRight: 10,
   },
   submitButtonDisabled: {
     backgroundColor: "#3C3C3C",
@@ -471,24 +468,6 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   continueButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 10,
-  },
-  skipButton: {
-    backgroundColor: "#3C3C3C",
-    padding: 16,
-    borderRadius: 15,
-    alignItems: "center",
-    width: 100,
-  },
-  skipButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
