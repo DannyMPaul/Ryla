@@ -24,7 +24,7 @@ export default function TabsLayout() {
           headerShown: false,
         }}
       />
-      {isLoggedIn && <TranslatorFooter />}
+      {/* {isLoggedIn && <TranslatorFooter />} */}
     </View>
   );
 }

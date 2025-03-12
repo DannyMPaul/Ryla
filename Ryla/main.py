@@ -21,9 +21,9 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-class ProcessingError(Exception):
-    """Custom exception for processing errors"""
-    pass
+# class ProcessingError(Exception):
+#     "Custom exception for processing errors"
+#     pass
 
 class UserSessionInit(BaseModel):
     user_id: str
@@ -64,8 +64,12 @@ def initialize_firebase():
     except ValueError:
         try:
             cred = credentials.Certificate(settings.firebase_credentials_path)
+            # The key part: add the databaseAuthVariableOverride
             firebase_admin.initialize_app(cred, {
-                'databaseURL': settings.firebase_database_url
+                'databaseURL': settings.firebase_database_url,
+                'databaseAuthVariableOverride': {
+                    'uid': 'admin-service-account'  # This will be passed as auth.uid
+                }
             })
             logging.info("Firebase initialized successfully")
         except Exception as e:
@@ -112,28 +116,61 @@ async def http_exception_handler(request, exc):
 
 @app.post("/initialize_session")
 async def initialize_session(session_data: UserSessionInit):
+    start_time = datetime.utcnow()
+    request_id = f"req-{start_time.strftime('%Y%m%d%H%M%S')}-{session_data.user_id[:8]}"
+    
+    logging.info(f"[{request_id}] Session initialization request for user {session_data.user_id}")
+    
     try:
-        # Retrieve user preferences from Firebase
-        user_ref = db.reference(f'users/{session_data.user_id}/model_data')
+        # Set default values in case of any failures
+        user_data = {}
+        firebase_status = "not_attempted"
         
+        # Attempt to retrieve user preferences from Firebase
         try:
+            user_ref = db.reference(f'users/{session_data.user_id}/model_data')
+            
+            # Use timeout to prevent hanging requests
             user_data = await asyncio.wait_for(
                 asyncio.get_event_loop().run_in_executor(None, user_ref.get),
                 timeout=5.0
             ) or {}
+            
+            if user_data:
+                logging.info(f"[{request_id}] Successfully retrieved Firebase data for user {session_data.user_id}")
+                firebase_status = "success"
+            else:
+                logging.warning(f"[{request_id}] No data found in Firebase for user {session_data.user_id}")
+                firebase_status = "no_data"
         except asyncio.TimeoutError:
-            logging.warning(f"Firebase timeout for user {session_data.user_id}")
-            user_data = {}
-        except Exception as e:
-            logging.error(f"Firebase error: {str(e)}")
-            user_data = {}
+            logging.warning(f"[{request_id}] Firebase timeout after 5s for user {session_data.user_id}")
+            firebase_status = "timeout"
+        except Exception as firebase_error:
+            error_type = type(firebase_error).__name__
+            logging.error(f"[{request_id}] Firebase error ({error_type}): {str(firebase_error)}")
+            firebase_status = f"error:{error_type}"
         
-        # Use provided values or fallback to Firebase data or defaults
+        # Use provided values or fallback to Firebase data or defaults with precedence
+        # Client values override Firebase values, which override system defaults
         language = session_data.language or user_data.get('lang_to_learn', 'en')
         proficiency = session_data.proficiency or user_data.get('proficiency_level', 'intermediate')
         target = session_data.target or user_data.get('target_use', 'grammar_correction')
         
-        # Initialize user session
+        # Validate settings
+        if language not in ["en", "fr"]:  # Add other supported languages as needed
+            logging.warning(f"[{request_id}] Unsupported language {language}, defaulting to 'en'")
+            language = "en"
+            
+        if proficiency not in ["beginner", "intermediate", "expert"]:
+            logging.warning(f"[{request_id}] Invalid proficiency {proficiency}, defaulting to 'intermediate'")
+            proficiency = "intermediate"
+        
+        # Check if language models are available before proceeding
+        models_available = await assistant.check_language_models(language)
+        if not models_available:
+            logging.warning(f"[{request_id}] Language models for {language} not available")
+        
+        # Initialize user session - this method should be made resilient in the MultilingualAssistant class
         session_result = await assistant.initialize_user_session(
             user_id=session_data.user_id,
             language=language,
@@ -141,11 +178,44 @@ async def initialize_session(session_data: UserSessionInit):
             target=target
         )
         
+        # Add diagnostic information to the response
+        session_result.update({
+            "metadata": {
+                "firebase_status": firebase_status,
+                "models_available": models_available,
+                "request_id": request_id,
+                "processing_time_ms": int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            }
+        })
+        
+        logging.info(f"[{request_id}] Session initialized successfully in "
+                     f"{int((datetime.utcnow() - start_time).total_seconds() * 1000)}ms")
+        
         return session_result
     
     except Exception as e:
-        logging.error(f"Session initialization error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_type = type(e).__name__
+        error_detail = str(e)
+        processing_time = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+        
+        # Log the full exception for debugging
+        logging.error(
+            f"[{request_id}] Session initialization failed with {error_type}: {error_detail}",
+            exc_info=True
+        )
+        
+        # Return a structured error response that doesn't expose sensitive details
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "session_initialization_failed",
+                "message": "Unable to initialize user session",
+                "user_id": session_data.user_id,
+                "request_id": request_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "processing_time_ms": processing_time
+            }
+        )
 
 @app.post("/translate", response_model=TranslationResponse)
 async def translate_text(request: TranslationRequest):

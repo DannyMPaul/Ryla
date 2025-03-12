@@ -466,11 +466,24 @@ class MultilingualAssistant:
 
     async def initialize_user_session(self, user_id: str, language: str = 'en', proficiency: str = 'intermediate', target: str = 'grammar_correction') -> Dict[str, Any]:
         try:
+            logger.info(f"Session initialization request for user {user_id}")
             # Fetch user preferences from Firebase
             user_ref = db.reference(f'users/{user_id}/model_data')
-            user_data = user_ref.get()
-
-            # Override with provided or default values if not found in Firebase
+            try:
+                user_data = await asyncio.wait_for(
+                    asyncio.get_event_loop().run_in_executor(None, user_ref.get),
+                    timeout=5.0
+                ) or {}
+                logger.info(f"Retrieved user data for {user_id}: {user_data}")
+            except asyncio.TimeoutError:
+                logger.warning(f"Firebase timeout for user {user_id}")
+                user_data = {}
+            except Exception as firebase_error:
+                logger.error(f"Firebase error for user {user_id}: {str(firebase_error)}")
+                # Use empty user data instead of raising error
+                user_data = {}
+                
+            # Use provided values or fallback to defaults
             language = user_data.get('lang_to_learn', language)
             proficiency = user_data.get('proficiency_level', proficiency)
             target = user_data.get('target_use', target)
@@ -496,7 +509,9 @@ class MultilingualAssistant:
                 ],
                 'fr': [
                     "Bonjour! Comment allez-vous aujourd'hui?",
-                    "Salut! Prêt à pratiquer votre français?"
+                    "Salut! Prêt à pratiquer votre français?",
+                    "Bienvenue! Je suis là pour vous aider à apprendre.",
+                    "Bonjour! C'est un plaisir de vous aider avec votre français."
                 ]
             }
             
@@ -504,8 +519,7 @@ class MultilingualAssistant:
             greeting = await self.generate_response(
                 random.choice(greeting_prompts.get(language, greeting_prompts['en'])), 
                 language, 
-                proficiency,
-                target
+                proficiency
             )
             
             return {
@@ -521,7 +535,8 @@ class MultilingualAssistant:
             logger.error(f"User session initialization error: {e}")
             return {
                 "error": "Could not initialize user session",
-                "details": str(e)
+                "details": str(e),
+                "initialized": False
             }
 
     async def load_language_models(self, language: str):
