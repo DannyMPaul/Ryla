@@ -8,7 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import LearnScreen from '../../components/screens/LearnScreen';
 import CommunityScreen from '../../components/screens/CommunityScreen';
 import SpeakScreen from '../../components/screens/SpeakScreen';
-import ReviewScreen from '../../components/screens/ReviewScreen';
+import DiscussionScreen from '../../components/screens/DiscussionScreen';
 import ProfileScreen from '../../components/screens/ProfileScreen';
 // import HoneScreen from './Home';
 import HomeScreen from './Home1';
@@ -66,11 +66,11 @@ const TabNavigator = () => {
         }}
       />
       <Tab.Screen
-        name="Review"
-        component={ReviewScreen}
+        name="Discussion"
+        component={DiscussionScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Feather name="trending-up" size={24} color={color} />
+            <Feather name="message-square" size={24} color={color} />
           ),
         }}
       />
