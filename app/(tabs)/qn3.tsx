@@ -12,50 +12,28 @@ import { getAuth } from "firebase/auth";
 import { getDatabase, ref, set, get } from "firebase/database";
 import { useRouter } from "expo-router";
 
-interface TargetUse {
-  selected: boolean;
-  description: string;
-}
+// Define the possible target use options
+type TargetUseOption =
+  | "grammar_correction"
+  | "text_coherent"
+  | "easier_understanding"
+  | "paraphrasing"
+  | "formal_tone"
+  | "neutral_tone";
 
-interface LanguageSettings {
-  [key: string]: {
-    [key: string]: TargetUse;
-  };
-}
-
-const defaultTargetUses: LanguageSettings = {
-  en: {
-    grammar_correction: {
-      selected: false,
-      description: "I want to improve my grammar",
-    },
-    text_coherent: {
-      selected: false,
-      description: "I want to learn to express myself clearly",
-    },
-    easier_understanding: {
-      selected: false,
-      description: "I want to understand French more easily",
-    },
-    paraphrasing: {
-      selected: false,
-      description: "I want to learn different ways to express myself",
-    },
-    formal_tone: {
-      selected: false,
-      description: "I want to learn formal French",
-    },
-    neutral_tone: {
-      selected: false,
-      description: "I want a neutral communication style",
-    },
-  },
+// Define the descriptions for each option
+const targetUseDescriptions: Record<TargetUseOption, string> = {
+  grammar_correction: "I want to improve my grammar",
+  text_coherent: "I want to learn to express myself clearly",
+  easier_understanding: "I want to understand French more easily",
+  paraphrasing: "I want to learn different ways to express myself",
+  formal_tone: "I want to learn formal French",
+  neutral_tone: "I want a neutral communication style",
 };
 
 const ModelSettingsScreen = () => {
-  const [modelData, setModelData] =
-    useState<LanguageSettings>(defaultTargetUses);
-  const [selectedLanguage, setSelectedLanguage] = useState<"en" | "fr">("en");
+  const [selectedTargetUse, setSelectedTargetUse] =
+    useState<TargetUseOption | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -68,22 +46,21 @@ const ModelSettingsScreen = () => {
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) return;
-  
+
       // Use the correct path structure
       const dbRef = ref(
         getDatabase(),
         `users/${user.uid}/model_data/target_uses`
       );
       const snapshot = await get(dbRef);
-  
+
       if (snapshot.exists()) {
-        setModelData(snapshot.val());
+        setSelectedTargetUse(snapshot.val());
       } else {
         // Set a default selection if none exists
-        const initialData = { ...defaultTargetUses };
-        initialData.en.easier_understanding.selected = true;
-        await saveModelData(initialData);
-        setModelData(initialData);
+        const defaultTargetUse: TargetUseOption = "easier_understanding";
+        await saveModelData(defaultTargetUse);
+        setSelectedTargetUse(defaultTargetUse);
       }
     } catch (error) {
       console.error("Error loading model data:", error);
@@ -93,21 +70,21 @@ const ModelSettingsScreen = () => {
     }
   };
 
-  const saveModelData = async (data: LanguageSettings) => {
+  const saveModelData = async (targetUse: TargetUseOption) => {
     try {
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) return;
-  
-      // Reference directly to the target_uses field to avoid overwriting other fields
+
+      // Reference directly to the target_uses field
       const dbRef = ref(
         getDatabase(),
         `users/${user.uid}/model_data/target_uses`
       );
-      
-      // Set only updates the specific path we referenced
-      await set(dbRef, data);
-  
+
+      // Set the target use as a simple string
+      await set(dbRef, targetUse);
+
       Alert.alert("Success", "Learning goal saved successfully");
     } catch (error) {
       console.error("Error saving model data:", error);
@@ -115,19 +92,9 @@ const ModelSettingsScreen = () => {
     }
   };
 
-  const selectGoal = (useCase: string) => {
-    const updatedData = { ...modelData };
-
-    // First, set all options to false
-    Object.keys(updatedData[selectedLanguage]).forEach((key) => {
-      updatedData[selectedLanguage][key].selected = false;
-    });
-
-    // Then set the selected option to true
-    updatedData[selectedLanguage][useCase].selected = true;
-
-    setModelData(updatedData);
-    saveModelData(updatedData);
+  const selectGoal = (targetUse: TargetUseOption) => {
+    setSelectedTargetUse(targetUse);
+    saveModelData(targetUse);
   };
 
   if (isLoading) {
@@ -147,15 +114,15 @@ const ModelSettingsScreen = () => {
         </Text>
 
         <View style={styles.optionsContainer}>
-          {Object.entries(modelData[selectedLanguage]).map(
-            ([useCase, settings]) => (
+          {Object.entries(targetUseDescriptions).map(
+            ([useCase, description]) => (
               <TouchableOpacity
                 key={useCase}
                 style={[
                   styles.optionCard,
-                  settings.selected && styles.optionCardSelected,
+                  selectedTargetUse === useCase && styles.optionCardSelected,
                 ]}
-                onPress={() => selectGoal(useCase)}
+                onPress={() => selectGoal(useCase as TargetUseOption)}
               >
                 <View style={styles.optionContent}>
                   <View style={styles.iconContainer}>
@@ -177,11 +144,13 @@ const ModelSettingsScreen = () => {
                       color="#000000"
                     />
                   </View>
-                  <Text style={styles.optionText}>{settings.description}</Text>
+                  <Text style={styles.optionText}>{description}</Text>
                 </View>
                 <View style={styles.radioContainer}>
                   <View style={styles.radioOuter}>
-                    {settings.selected && <View style={styles.radioInner} />}
+                    {selectedTargetUse === useCase && (
+                      <View style={styles.radioInner} />
+                    )}
                   </View>
                 </View>
               </TouchableOpacity>

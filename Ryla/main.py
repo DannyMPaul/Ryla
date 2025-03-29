@@ -64,12 +64,9 @@ def initialize_firebase():
     except ValueError:
         try:
             cred = credentials.Certificate(settings.firebase_credentials_path)
-            # The key part: add the databaseAuthVariableOverride
             firebase_admin.initialize_app(cred, {
                 'databaseURL': settings.firebase_database_url,
-                'databaseAuthVariableOverride': {
-                    'uid': 'admin-service-account'  # This will be passed as auth.uid
-                }
+                # Remove databaseAuthVariableOverride since we're using service account
             })
             logging.info("Firebase initialized successfully")
         except Exception as e:
