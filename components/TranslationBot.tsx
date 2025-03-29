@@ -13,9 +13,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import axios from 'axios';
 
-// Use localhost for the API
-const LIBRE_TRANSLATE_API_URL = 'http://127.0.0.1:5000';
-// Alternatively you can use: https://translate.argosopentech.com
+const MYMEMORY_API_URL = 'https://api.mymemory.translated.net/get';
 
 const fallbackTranslations = {
   'tomato': 'tomate',
@@ -34,43 +32,34 @@ const TranslationBot = () => {
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
-    checkLibreTranslateAvailability();
+    checkApiAvailability();
   }, []);
 
-  const checkLibreTranslateAvailability = async () => {
+  const checkApiAvailability = async () => {
     try {
-      console.log('Checking LibreTranslate availability...');
-      const response = await fetch(`${LIBRE_TRANSLATE_API_URL}/languages`);
-      console.log('LibreTranslate response status:', response.status);
+      console.log('Checking MyMemory API availability...');
+      const response = await fetch(`${MYMEMORY_API_URL}?q=test&langpair=en|fr`);
+      console.log('MyMemory API response status:', response.status);
       
       if (response.ok) {
-        console.log('LibreTranslate is available');
+        console.log('MyMemory API is available');
         setIsOnline(true);
       } else {
-        console.log('LibreTranslate returned error status:', response.status);
+        console.log('MyMemory API returned error status:', response.status);
         setIsOnline(false);
       }
     } catch (error) {
-      console.error('LibreTranslate connection error:', error);
+      console.error('MyMemory API connection error:', error);
       setIsOnline(false);
     }
   };
 
   const translateWithAPI = async (text: string, from: string, to: string): Promise<string> => {
     try {
-      console.log('Attempting translation with LibreTranslate...');
-      const response = await fetch(`${LIBRE_TRANSLATE_API_URL}/translate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          q: text,
-          source: from,
-          target: to,
-          format: 'text'
-        })
-      });
+      console.log('Attempting translation with MyMemory API...');
+      const response = await fetch(
+        `${MYMEMORY_API_URL}?q=${encodeURIComponent(text)}&langpair=${from}|${to}`
+      );
       
       if (!response.ok) {
         throw new Error(`Translation failed with status: ${response.status}`);
@@ -78,7 +67,7 @@ const TranslationBot = () => {
       
       const data = await response.json();
       console.log('Translation successful:', data);
-      return data.translatedText || text;
+      return data.responseData?.translatedText || text;
     } catch (error) {
       console.error('Translation API error:', error);
       throw error;
