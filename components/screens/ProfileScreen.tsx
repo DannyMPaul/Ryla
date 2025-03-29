@@ -6,9 +6,10 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { getAuth, onAuthStateChanged, updateProfile } from "firebase/auth";
+import { getAuth, onAuthStateChanged, updateProfile, signOut } from "firebase/auth";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -490,10 +491,11 @@ const ProfileScreen = () => {
 
   const handleSignOut = async () => {
     try {
-      await auth.signOut();
-      router.replace("./index");
+      await signOut(auth);
+      router.replace('/');
     } catch (error) {
-      console.error("Error signing out:", error);
+      console.error('Error signing out:', error);
+      Alert.alert('Error', 'Failed to sign out. Please try again.');
     }
   };
 

@@ -1,167 +1,229 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
+  ScrollView,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
-  Linking,
-  Image,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { ref, onValue, push, serverTimestamp } from 'firebase/database';
+import { database } from '../../app/firebase/firebase';
+import { getAuth } from 'firebase/auth';
+import axios from 'axios';
+
+interface Message {
+  id: string;
+  text: string;
+  userId: string;
+  userName: string;
+  timestamp: number;
+  isAdmin?: boolean;
+  isMentor?: boolean;
+  mentorId?: string;
+}
 
 interface Mentor {
   id: string;
-  name: string;
-  expertise: string;
-  availability: string;
   email: string;
-  image: string;
-  rating: number;
+  name: string;
+  isOnline: boolean;
 }
 
-const mentors: Mentor[] = [
-  {
-    id: '1',
-    name: 'Dr. Sophie Martin',
-    expertise: 'French Literature & Grammar',
-    availability: 'Mon, Wed, Fri',
-    email: 'sophie.martin@example.com',
-    image: 'https://randomuser.me/api/portraits/women/1.jpg',
-    rating: 4.8,
-  },
-  {
-    id: '2',
-    name: 'Pierre Dubois',
-    expertise: 'Conversational French',
-    availability: 'Tue, Thu, Sat',
-    email: 'pierre.dubois@example.com',
-    image: 'https://randomuser.me/api/portraits/men/1.jpg',
-    rating: 4.9,
-  },
-  {
-    id: '3',
-    name: 'Marie Laurent',
-    expertise: 'Business French & Culture',
-    availability: 'Mon-Fri',
-    email: 'marie.laurent@example.com',
-    image: 'https://randomuser.me/api/portraits/women/2.jpg',
-    rating: 4.7,
-  },
-];
-
 const DiscussionScreen = () => {
-  const [selectedMentor, setSelectedMentor] = useState<Mentor | null>(null);
-  const [emailSubject, setEmailSubject] = useState('');
-  const [emailBody, setEmailBody] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [mentors, setMentors] = useState<Mentor[]>([]);
+  const auth = getAuth();
 
-  const handleSendEmail = (mentor: Mentor) => {
-    const subject = encodeURIComponent(emailSubject || 'Mentoring Session Request');
-    const body = encodeURIComponent(emailBody || `Hi ${mentor.name},\n\nI would like to schedule a mentoring session with you.`);
-    const mailtoLink = `mailto:${mentor.email}?subject=${subject}&body=${body}`;
-    
-    Linking.canOpenURL(mailtoLink)
-      .then(supported => {
-        if (supported) {
-          return Linking.openURL(mailtoLink);
-        }
-      })
-      .catch(error => console.error('Error opening email:', error));
+  useEffect(() => {
+    loadMessages();
+    loadMentors();
+  }, []);
+
+  const loadMessages = () => {
+    const messagesRef = ref(database, 'messages');
+    const unsubscribe = onValue(messagesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const messageList = Object.entries(data).map(([id, msg]: [string, any]) => ({
+          id,
+          text: msg.text,
+          userId: msg.userId,
+          userName: msg.userName,
+          timestamp: msg.timestamp,
+          isAdmin: msg.isAdmin,
+          isMentor: msg.isMentor,
+          mentorId: msg.mentorId,
+        }));
+        setMessages(messageList.sort((a, b) => b.timestamp - a.timestamp));
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   };
 
-  const renderMentorCard = (mentor: Mentor) => (
-    <TouchableOpacity
-      key={mentor.id}
-      style={styles.mentorCard}
-      onPress={() => setSelectedMentor(mentor)}
-    >
-      <Image
-        source={{ uri: mentor.image }}
-        style={styles.mentorImage}
-      />
-      <View style={styles.mentorInfo}>
-        <Text style={styles.mentorName}>{mentor.name}</Text>
-        <Text style={styles.mentorExpertise}>{mentor.expertise}</Text>
-        <View style={styles.availabilityContainer}>
-          <Feather name="calendar" size={14} color="#666" />
-          <Text style={styles.availabilityText}>{mentor.availability}</Text>
-        </View>
-        <View style={styles.ratingContainer}>
-          <Feather name="star" size={14} color="#FFD700" />
-          <Text style={styles.ratingText}>{mentor.rating}</Text>
-        </View>
+  const loadMentors = () => {
+    const mentorsRef = ref(database, 'mentors');
+    onValue(mentorsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const mentorList = Object.entries(data).map(([id, mentor]: [string, any]) => ({
+          id,
+          email: mentor.email,
+          name: mentor.name,
+          isOnline: mentor.isOnline,
+        }));
+        setMentors(mentorList);
+      }
+    });
+  };
+
+  const sendEmailNotification = async (message: string, userName: string) => {
+    try {
+      // Send to admin
+      await axios.post('https://api.emailjs.com/api/v1.0/email/send', {
+        service_id: 'YOUR_SERVICE_ID',
+        template_id: 'YOUR_TEMPLATE_ID',
+        user_id: 'YOUR_USER_ID',
+        template_params: {
+          to_email: 'admin@example.com',
+          message: message,
+          user_name: userName,
+        },
+      });
+
+      // Send to all online mentors
+      const onlineMentors = mentors.filter(mentor => mentor.isOnline);
+      for (const mentor of onlineMentors) {
+        await axios.post('https://api.emailjs.com/api/v1.0/email/send', {
+          service_id: 'YOUR_SERVICE_ID',
+          template_id: 'YOUR_TEMPLATE_ID',
+          user_id: 'YOUR_USER_ID',
+          template_params: {
+            to_email: mentor.email,
+            message: message,
+            user_name: userName,
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error sending email notifications:', error);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!newMessage.trim() || !auth.currentUser) return;
+
+    setSending(true);
+    try {
+      const messagesRef = ref(database, 'messages');
+      const messageData = {
+        text: newMessage,
+        userId: auth.currentUser.uid,
+        userName: auth.currentUser.displayName || 'Anonymous',
+        timestamp: serverTimestamp(),
+        isAdmin: false,
+        isMentor: false,
+      };
+
+      await push(messagesRef, messageData);
+      
+      // Send email notifications
+      await sendEmailNotification(newMessage, messageData.userName);
+      
+      setNewMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      Alert.alert('Error', 'Failed to send message. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const formatTime = (timestamp: number) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0066FF" />
       </View>
-    </TouchableOpacity>
-  );
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Meet Your Mentors</Text>
-        <Text style={styles.headerSubtitle}>Schedule a session with expert French tutors</Text>
+        <Text style={styles.headerTitle}>Discussion</Text>
+        <View style={styles.onlineMentors}>
+          <Text style={styles.onlineText}>
+            {mentors.filter(m => m.isOnline).length} mentors online
+          </Text>
+        </View>
       </View>
 
-      {!selectedMentor ? (
-        <ScrollView style={styles.mentorList}>
-          {mentors.map(renderMentorCard)}
-        </ScrollView>
-      ) : (
-        <View style={styles.emailForm}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => setSelectedMentor(null)}
+      <ScrollView style={styles.messagesContainer}>
+        {messages.map((message) => (
+          <View
+            key={message.id}
+            style={[
+              styles.messageContainer,
+              message.userId === auth.currentUser?.uid ? styles.userMessage : styles.otherMessage,
+              message.isAdmin && styles.adminMessage,
+              message.isMentor && styles.mentorMessage,
+            ]}
           >
-            <Feather name="arrow-left" size={24} color="#0066FF" />
-            <Text style={styles.backButtonText}>Back to Mentors</Text>
-          </TouchableOpacity>
-
-          <View style={styles.selectedMentorInfo}>
-            <Image
-              source={{ uri: selectedMentor.image }}
-              style={styles.selectedMentorImage}
-            />
-            <Text style={styles.selectedMentorName}>{selectedMentor.name}</Text>
-            <Text style={styles.selectedMentorExpertise}>{selectedMentor.expertise}</Text>
+            <View style={styles.messageContent}>
+              <Text style={styles.userName}>
+                {message.userId === auth.currentUser?.uid ? 'You' : message.userName}
+                {message.isAdmin && ' (Admin)'}
+                {message.isMentor && ' (Mentor)'}
+              </Text>
+              <Text style={styles.messageText}>{message.text}</Text>
+              <Text style={styles.timestamp}>{formatTime(message.timestamp)}</Text>
+            </View>
           </View>
+        ))}
+      </ScrollView>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Subject</Text>
-            <TextInput
-              style={styles.input}
-              value={emailSubject}
-              onChangeText={setEmailSubject}
-              placeholder="Enter email subject"
-              placeholderTextColor="#666"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Message</Text>
-            <TextInput
-              style={[styles.input, styles.messageInput]}
-              value={emailBody}
-              onChangeText={setEmailBody}
-              placeholder="Type your message here..."
-              placeholderTextColor="#666"
-              multiline
-              numberOfLines={6}
-            />
-          </View>
-
-          <TouchableOpacity
-            style={styles.sendButton}
-            onPress={() => handleSendEmail(selectedMentor)}
-          >
-            <Feather name="mail" size={20} color="white" />
-            <Text style={styles.sendButtonText}>Send Email</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </SafeAreaView>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          value={newMessage}
+          onChangeText={setNewMessage}
+          placeholder="Type a message..."
+          placeholderTextColor="#666666"
+          multiline
+        />
+        <TouchableOpacity
+          style={[styles.sendButton, (!newMessage.trim() || sending) && styles.sendButtonDisabled]}
+          onPress={handleSend}
+          disabled={!newMessage.trim() || sending}
+        >
+          {sending ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Feather name="send" size={24} color={newMessage.trim() ? '#fff' : '#666666'} />
+          )}
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -170,138 +232,101 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#111b21',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#111b21',
+  },
   header: {
     padding: 20,
-    backgroundColor: '#0066FF',
+    backgroundColor: '#1f2937',
+    borderBottomWidth: 1,
+    borderBottomColor: '#2b3940',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 5,
   },
-  headerSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+  onlineMentors: {
+    marginTop: 5,
   },
-  mentorList: {
+  onlineText: {
+    color: '#58cc02',
+    fontSize: 14,
+  },
+  messagesContainer: {
     flex: 1,
-    padding: 15,
+    padding: 10,
   },
-  mentorCard: {
-    flexDirection: 'row',
-    backgroundColor: '#2b3940',
+  messageContainer: {
+    marginVertical: 5,
+    maxWidth: '80%',
+  },
+  userMessage: {
+    alignSelf: 'flex-end',
+  },
+  otherMessage: {
+    alignSelf: 'flex-start',
+  },
+  adminMessage: {
+    borderColor: '#FFD700',
+    borderWidth: 1,
+  },
+  mentorMessage: {
+    borderColor: '#58cc02',
+    borderWidth: 1,
+  },
+  messageContent: {
+    backgroundColor: '#1f2937',
+    padding: 10,
     borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    alignItems: 'center',
   },
-  mentorImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginRight: 15,
-  },
-  mentorInfo: {
-    flex: 1,
-  },
-  mentorName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 4,
-  },
-  mentorExpertise: {
-    fontSize: 14,
-    color: '#ccc',
-    marginBottom: 4,
-  },
-  availabilityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  availabilityText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 6,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingText: {
-    fontSize: 14,
-    color: '#FFD700',
-    marginLeft: 6,
-  },
-  emailForm: {
-    flex: 1,
-    padding: 20,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  backButtonText: {
+  userName: {
+    fontSize: 12,
     color: '#0066FF',
+    marginBottom: 4,
+  },
+  messageText: {
     fontSize: 16,
-    marginLeft: 10,
-  },
-  selectedMentorInfo: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  selectedMentorImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
-  },
-  selectedMentorName: {
-    fontSize: 20,
-    fontWeight: 'bold',
     color: 'white',
-    marginBottom: 5,
   },
-  selectedMentorExpertise: {
-    fontSize: 16,
-    color: '#ccc',
+  timestamp: {
+    fontSize: 10,
+    color: '#666666',
+    alignSelf: 'flex-end',
+    marginTop: 4,
   },
   inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 16,
-    color: 'white',
-    marginBottom: 8,
+    flexDirection: 'row',
+    padding: 10,
+    backgroundColor: '#1f2937',
+    borderTopWidth: 1,
+    borderTopColor: '#2b3940',
+    alignItems: 'center',
   },
   input: {
+    flex: 1,
     backgroundColor: '#2b3940',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginRight: 10,
     color: 'white',
-    fontSize: 16,
-  },
-  messageInput: {
-    height: 120,
-    textAlignVertical: 'top',
+    maxHeight: 100,
   },
   sendButton: {
     backgroundColor: '#0066FF',
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 20,
+    alignItems: 'center',
   },
-  sendButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 10,
+  sendButtonDisabled: {
+    backgroundColor: '#2b3940',
+    opacity: 0.5,
   },
 });
 
