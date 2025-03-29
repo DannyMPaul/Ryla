@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { database } from '../../firebase/firebase';
+import { database, auth } from '../../firebase/firebase';
 import { ref, onValue, get } from 'firebase/database';
+import { signOut } from 'firebase/auth';
 
 interface Quiz {
   id: string;
@@ -167,6 +168,16 @@ const AdminDashboard = () => {
   const [videos, setVideos] = useState<Record<string, Video>>({});
   const router = useRouter();
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.replace('/(tabs)'); // Navigate back to main tabs after logout
+    } catch (error) {
+      console.error('Error logging out:', error);
+      Alert.alert('Error', 'Failed to logout. Please try again.');
+    }
+  };
+
   useEffect(() => {
     // Fetch quizzes
     const quizzesRef = ref(database, 'quizzes');
@@ -194,7 +205,15 @@ const AdminDashboard = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Admin Dashboard</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Admin Dashboard</Text>
+        <TouchableOpacity 
+          style={styles.logoutButton}
+          onPress={handleLogout}
+        >
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* User Management Section */}
       <UserManagementSection />
@@ -381,6 +400,22 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 20,
     fontStyle: 'italic',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logoutButton: {
+    backgroundColor: '#F04A63',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 5,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 
