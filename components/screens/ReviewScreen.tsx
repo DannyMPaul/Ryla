@@ -134,11 +134,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     borderWidth: 1, // Border for better contrast
-    borderColor: '#333333', // Subtle border color
+    borderColor: '#1A1A1A', // Subtle border color
   },
   chartText: {
     fontSize: 16,
-    color: '#AAAAAA', // Lighter text for placeholder
+    color: '#1A1A1A', // Lighter text for placeholder
   },
 });
 
