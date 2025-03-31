@@ -4,124 +4,126 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
+  Modal,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { ref, onValue, push, serverTimestamp } from 'firebase/database';
+import { ref, onValue, set, push, serverTimestamp } from 'firebase/database';
 import { database } from '../../app/firebase/firebase';
 import { getAuth } from 'firebase/auth';
-import axios from 'axios';
-
-interface Message {
-  id: string;
-  text: string;
-  userId: string;
-  userName: string;
-  timestamp: number;
-  isAdmin?: boolean;
-  isMentor?: boolean;
-  mentorId?: string;
-}
+import { Feather } from '@expo/vector-icons';
 
 interface Mentor {
   id: string;
   email: string;
   name: string;
   isOnline: boolean;
+  lastSeen: number;
+  expertise: string;
+  avatar: string;
 }
 
+interface Message {
+  id: string;
+  text: string;
+  userId: string;
+  userName: string;
+  mentorId: string;
+  mentorName: string;
+  timestamp: number;
+  isReply: boolean;
+}
+
+const STATIC_MENTORS = [
+  {
+    id: '1',
+    name: "Sarah Johnson",
+    email: "sarah.j@ryla.com",
+    isOnline: true,
+    lastSeen: Date.now(),
+    expertise: "French Grammar & Conversation",
+    avatar: "SJ"
+  },
+  {
+    id: '2',
+    name: "Michael Chen",
+    email: "michael.c@ryla.com",
+    isOnline: false,
+    lastSeen: Date.now() - 3600000, // 1 hour ago
+    expertise: "Pronunciation & Accent",
+    avatar: "MC"
+  },
+  {
+    id: '3',
+    name: "Emma Rodriguez",
+    email: "emma.r@ryla.com",
+    isOnline: true,
+    lastSeen: Date.now(),
+    expertise: "Business French & Culture",
+    avatar: "ER"
+  }
+];
+
 const DiscussionScreen = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [mentors] = useState<Mentor[]>(STATIC_MENTORS);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedMentor, setSelectedMentor] = useState<Mentor | null>(null);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const [mentors, setMentors] = useState<Mentor[]>([]);
   const auth = getAuth();
 
   useEffect(() => {
+    initializeMentors();
     loadMessages();
-    loadMentors();
   }, []);
+
+  const initializeMentors = async () => {
+    try {
+      const mentorsRef = ref(database, 'mentors');
+      await set(mentorsRef, STATIC_MENTORS);
+      console.log('Mentors initialized in database');
+      setLoading(false);
+    } catch (error) {
+      console.error('Error initializing mentors:', error);
+      setLoading(false);
+    }
+  };
 
   const loadMessages = () => {
     const messagesRef = ref(database, 'messages');
     const unsubscribe = onValue(messagesRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const messageList = Object.entries(data).map(([id, msg]: [string, any]) => ({
-          id,
-          text: msg.text,
-          userId: msg.userId,
-          userName: msg.userName,
-          timestamp: msg.timestamp,
-          isAdmin: msg.isAdmin,
-          isMentor: msg.isMentor,
-          mentorId: msg.mentorId,
-        }));
-        setMessages(messageList.sort((a, b) => b.timestamp - a.timestamp));
+      try {
+        const data = snapshot.val();
+        if (data) {
+          const messageList = Object.entries(data).map(([id, msg]: [string, any]) => ({
+            id,
+            text: msg.text,
+            userId: msg.userId,
+            userName: msg.userName,
+            mentorId: msg.mentorId,
+            mentorName: msg.mentorName,
+            timestamp: msg.timestamp,
+            isReply: msg.isReply,
+          }));
+          setMessages(messageList.sort((a, b) => b.timestamp - a.timestamp));
+        } else {
+          setMessages([]);
+        }
+      } catch (error) {
+        console.error('Error processing messages:', error);
+        setMessages([]);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
   };
 
-  const loadMentors = () => {
-    const mentorsRef = ref(database, 'mentors');
-    onValue(mentorsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const mentorList = Object.entries(data).map(([id, mentor]: [string, any]) => ({
-          id,
-          email: mentor.email,
-          name: mentor.name,
-          isOnline: mentor.isOnline,
-        }));
-        setMentors(mentorList);
-      }
-    });
-  };
-
-  const sendEmailNotification = async (message: string, userName: string) => {
-    try {
-      // Send to admin
-      await axios.post('https://api.emailjs.com/api/v1.0/email/send', {
-        service_id: 'YOUR_SERVICE_ID',
-        template_id: 'YOUR_TEMPLATE_ID',
-        user_id: 'YOUR_USER_ID',
-        template_params: {
-          to_email: 'admin@example.com',
-          message: message,
-          user_name: userName,
-        },
-      });
-
-      // Send to all online mentors
-      const onlineMentors = mentors.filter(mentor => mentor.isOnline);
-      for (const mentor of onlineMentors) {
-        await axios.post('https://api.emailjs.com/api/v1.0/email/send', {
-          service_id: 'YOUR_SERVICE_ID',
-          template_id: 'YOUR_TEMPLATE_ID',
-          user_id: 'YOUR_USER_ID',
-          template_params: {
-            to_email: mentor.email,
-            message: message,
-            user_name: userName,
-          },
-        });
-      }
-    } catch (error) {
-      console.error('Error sending email notifications:', error);
-    }
-  };
-
-  const handleSend = async () => {
-    if (!newMessage.trim() || !auth.currentUser) return;
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedMentor || !auth.currentUser) return;
 
     setSending(true);
     try {
@@ -130,17 +132,16 @@ const DiscussionScreen = () => {
         text: newMessage,
         userId: auth.currentUser.uid,
         userName: auth.currentUser.displayName || 'Anonymous',
+        mentorId: selectedMentor.id,
+        mentorName: selectedMentor.name,
         timestamp: serverTimestamp(),
-        isAdmin: false,
-        isMentor: false,
+        isReply: false,
       };
 
       await push(messagesRef, messageData);
-      
-      // Send email notifications
-      await sendEmailNotification(newMessage, messageData.userName);
-      
       setNewMessage('');
+      setShowMessageModal(false);
+      Alert.alert('Success', 'Message sent successfully!');
     } catch (error) {
       console.error('Error sending message:', error);
       Alert.alert('Error', 'Failed to send message. Please try again.');
@@ -164,66 +165,114 @@ const DiscussionScreen = () => {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Discussion</Text>
-        <View style={styles.onlineMentors}>
-          <Text style={styles.onlineText}>
-            {mentors.filter(m => m.isOnline).length} mentors online
-          </Text>
-        </View>
+        <Text style={styles.headerTitle}>Available Mentors</Text>
       </View>
 
-      <ScrollView style={styles.messagesContainer}>
-        {messages.map((message) => (
-          <View
-            key={message.id}
-            style={[
-              styles.messageContainer,
-              message.userId === auth.currentUser?.uid ? styles.userMessage : styles.otherMessage,
-              message.isAdmin && styles.adminMessage,
-              message.isMentor && styles.mentorMessage,
-            ]}
+      <ScrollView style={styles.mentorsContainer}>
+        {mentors.map((mentor) => (
+          <TouchableOpacity 
+            key={mentor.id} 
+            style={styles.mentorCard}
+            onPress={() => {
+              setSelectedMentor(mentor);
+              setShowMessageModal(true);
+            }}
           >
-            <View style={styles.messageContent}>
-              <Text style={styles.userName}>
-                {message.userId === auth.currentUser?.uid ? 'You' : message.userName}
-                {message.isAdmin && ' (Admin)'}
-                {message.isMentor && ' (Mentor)'}
+            <View style={styles.mentorAvatar}>
+              <Text style={styles.mentorInitial}>
+                {mentor.avatar}
               </Text>
-              <Text style={styles.messageText}>{message.text}</Text>
-              <Text style={styles.timestamp}>{formatTime(message.timestamp)}</Text>
             </View>
-          </View>
+            <View style={styles.mentorInfo}>
+              <Text style={styles.mentorName}>{mentor.name}</Text>
+              <Text style={styles.mentorEmail}>{mentor.email}</Text>
+              <Text style={styles.mentorExpertise}>{mentor.expertise}</Text>
+              <View style={styles.onlineStatus}>
+                <View style={[
+                  styles.statusDot,
+                  mentor.isOnline ? styles.onlineDot : styles.offlineDot
+                ]} />
+                <Text style={styles.statusText}>
+                  {mentor.isOnline ? 'Online' : 'Offline'}
+                </Text>
+              </View>
+              {!mentor.isOnline && mentor.lastSeen && (
+                <Text style={styles.lastSeen}>
+                  Last seen: {formatTime(mentor.lastSeen)}
+                </Text>
+              )}
+            </View>
+          </TouchableOpacity>
         ))}
+
+        {/* Messages Section */}
+        <View style={styles.messagesSection}>
+          <Text style={styles.messagesTitle}>Recent Messages</Text>
+          {messages.map((message) => (
+            <View
+              key={message.id}
+              style={[
+                styles.messageContainer,
+                message.isReply ? styles.replyMessage : styles.userMessage
+              ]}
+            >
+              <View style={styles.messageHeader}>
+                <Text style={styles.messageSender}>
+                  {message.isReply ? message.mentorName : 'You'}
+                </Text>
+                <Text style={styles.messageTime}>
+                  {formatTime(message.timestamp)}
+                </Text>
+              </View>
+              <Text style={styles.messageText}>{message.text}</Text>
+            </View>
+          ))}
+        </View>
       </ScrollView>
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={newMessage}
-          onChangeText={setNewMessage}
-          placeholder="Type a message..."
-          placeholderTextColor="#666666"
-          multiline
-        />
-        <TouchableOpacity
-          style={[styles.sendButton, (!newMessage.trim() || sending) && styles.sendButtonDisabled]}
-          onPress={handleSend}
-          disabled={!newMessage.trim() || sending}
-        >
-          {sending ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Feather name="send" size={24} color={newMessage.trim() ? '#fff' : '#666666'} />
-          )}
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+      {/* Message Modal */}
+      <Modal
+        visible={showMessageModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowMessageModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Message to {selectedMentor?.name}</Text>
+              <TouchableOpacity
+                onPress={() => setShowMessageModal(false)}
+                style={styles.closeButton}
+              >
+                <Feather name="x" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={styles.messageInput}
+              value={newMessage}
+              onChangeText={setNewMessage}
+              placeholder="Type your message..."
+              placeholderTextColor="#666"
+              multiline
+            />
+            <TouchableOpacity
+              style={[styles.sendButton, (!newMessage.trim() || sending) && styles.sendButtonDisabled]}
+              onPress={handleSendMessage}
+              disabled={!newMessage.trim() || sending}
+            >
+              {sending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.sendButtonText}>Send Message</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 };
 
@@ -249,84 +298,170 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
-  onlineMentors: {
-    marginTop: 5,
-  },
-  onlineText: {
-    color: '#58cc02',
-    fontSize: 14,
-  },
-  messagesContainer: {
+  mentorsContainer: {
     flex: 1,
-    padding: 10,
+    padding: 15,
   },
-  messageContainer: {
-    marginVertical: 5,
-    maxWidth: '80%',
-  },
-  userMessage: {
-    alignSelf: 'flex-end',
-  },
-  otherMessage: {
-    alignSelf: 'flex-start',
-  },
-  adminMessage: {
-    borderColor: '#FFD700',
-    borderWidth: 1,
-  },
-  mentorMessage: {
-    borderColor: '#58cc02',
-    borderWidth: 1,
-  },
-  messageContent: {
-    backgroundColor: '#1f2937',
-    padding: 10,
+  mentorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2b3940',
+    padding: 15,
     borderRadius: 12,
+    marginBottom: 15,
   },
-  userName: {
+  mentorAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#0066FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  mentorInitial: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  mentorInfo: {
+    flex: 1,
+  },
+  mentorName: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  mentorEmail: {
+    color: '#a0aec0',
     fontSize: 12,
-    color: '#0066FF',
     marginBottom: 4,
   },
-  messageText: {
-    fontSize: 16,
-    color: 'white',
+  mentorExpertise: {
+    color: '#58cc02',
+    fontSize: 12,
+    marginBottom: 4,
   },
-  timestamp: {
-    fontSize: 10,
-    color: '#666666',
-    alignSelf: 'flex-end',
-    marginTop: 4,
-  },
-  inputContainer: {
+  onlineStatus: {
     flexDirection: 'row',
-    padding: 10,
-    backgroundColor: '#1f2937',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  onlineDot: {
+    backgroundColor: '#58cc02',
+  },
+  offlineDot: {
+    backgroundColor: '#666666',
+  },
+  statusText: {
+    color: '#a0aec0',
+    fontSize: 12,
+  },
+  lastSeen: {
+    color: '#666666',
+    fontSize: 10,
+    fontStyle: 'italic',
+  },
+  messagesSection: {
+    marginTop: 20,
+    paddingTop: 20,
     borderTopWidth: 1,
     borderTopColor: '#2b3940',
-    alignItems: 'center',
   },
-  input: {
-    flex: 1,
-    backgroundColor: '#2b3940',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginRight: 10,
+  messagesTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
     color: 'white',
-    maxHeight: 100,
+    marginBottom: 15,
+  },
+  messageContainer: {
+    backgroundColor: '#2b3940',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  userMessage: {
+    backgroundColor: '#1f2937',
+  },
+  replyMessage: {
+    backgroundColor: '#2b3940',
+    borderLeftWidth: 4,
+    borderLeftColor: '#58cc02',
+  },
+  messageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  messageSender: {
+    color: '#58cc02',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  messageTime: {
+    color: '#666666',
+    fontSize: 12,
+  },
+  messageText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#1f2937',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  closeButton: {
+    padding: 5,
+  },
+  messageInput: {
+    backgroundColor: '#2b3940',
+    borderRadius: 10,
+    padding: 15,
+    color: 'white',
+    minHeight: 100,
+    textAlignVertical: 'top',
+    marginBottom: 15,
   },
   sendButton: {
     backgroundColor: '#0066FF',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
+    padding: 15,
+    borderRadius: 10,
     alignItems: 'center',
   },
   sendButtonDisabled: {
     backgroundColor: '#2b3940',
     opacity: 0.5,
+  },
+  sendButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

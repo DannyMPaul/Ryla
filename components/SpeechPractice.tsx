@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, SafeAreaView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
@@ -21,9 +21,22 @@ interface LearnedWord {
   pronunciationScore?: number;
 }
 
+interface TranslatedContent {
+  original: string;
+  translated: string;
+}
+
+interface Translations {
+  context?: TranslatedContent;
+  feedbackMessage?: TranslatedContent;
+  improvements?: TranslatedContent[];
+}
+
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 const OPENAI_API_KEY = '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';
+
+const MYMEMORY_API_URL = 'https://api.mymemory.translated.net/get';
 
 const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'fr'>('en');
@@ -39,6 +52,10 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
     message: string;
     improvements: string[];
   } | null>(null);
+  const [translation, setTranslation] = useState<string>('');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translations, setTranslations] = useState<Translations>({});
+  const [isTranslatingAll, setIsTranslatingAll] = useState(false);
 
   useEffect(() => {
     setupAudio();
@@ -208,6 +225,90 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
     setCurrentWordIndex((prev) => (prev + 1) % learnedWords.length);
   };
 
+  const translateText = async (text: string, fromLang: string, toLang: string): Promise<string> => {
+    try {
+      const response = await fetch(
+        `${MYMEMORY_API_URL}?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Translation failed with status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data && data.responseData && data.responseData.translatedText) {
+        return data.responseData.translatedText;
+      }
+      throw new Error('Invalid translation response');
+    } catch (error) {
+      console.error('Translation error:', error);
+      return text; // Return original text if translation fails
+    }
+  };
+
+  const translateAllContent = async () => {
+    if (!currentWord) return;
+    setIsTranslatingAll(true);
+    
+    try {
+      const newTranslations: Translations = {};
+      
+      // Translate context
+      const contextTranslation = await translateText(
+        currentWord.context,
+        currentLanguage,
+        currentLanguage === 'en' ? 'fr' : 'en'
+      );
+      newTranslations.context = {
+        original: currentWord.context,
+        translated: contextTranslation
+      };
+
+      // Translate feedback messages if they exist
+      if (feedback) {
+        const messageTranslation = await translateText(
+          feedback.message,
+          'en',
+          currentLanguage
+        );
+        newTranslations.feedbackMessage = {
+          original: feedback.message,
+          translated: messageTranslation
+        };
+
+        const improvementsTranslations = await Promise.all(
+          feedback.improvements.map(async (improvement) => ({
+            original: improvement,
+            translated: await translateText(improvement, 'en', currentLanguage)
+          }))
+        );
+        newTranslations.improvements = improvementsTranslations;
+      }
+
+      setTranslations(newTranslations);
+    } catch (error) {
+      console.error('Error translating all content:', error);
+      Alert.alert('Translation Error', 'Failed to translate some content. Please try again.');
+    } finally {
+      setIsTranslatingAll(false);
+    }
+  };
+
+  // Update useEffect to translate content when language changes
+  useEffect(() => {
+    if (currentWord) {
+      translateAllContent();
+    }
+  }, [currentLanguage, currentWord]);
+
+  const handleTranslate = async () => {
+    if (!currentWord) return;
+    const textToTranslate = currentLanguage === 'en' ? currentWord.english : currentWord.french;
+    const fromLang = currentLanguage === 'en' ? 'en' : 'fr';
+    const toLang = currentLanguage === 'en' ? 'fr' : 'en';
+    await translateText(textToTranslate, fromLang, toLang);
+  };
+
   return (
     <Modal
       visible={visible}
@@ -223,22 +324,27 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
         {learnedWords.length === 0 ? (
           <View style={styles.card}>
             <Text style={styles.noWordsText}>
-              No words learned yet. Complete some lessons first!
+              {currentLanguage === 'en' 
+                ? "No words learned yet. Complete some lessons first!"
+                : "Aucun mot appris encore. Complétez d'abord quelques leçons!"}
             </Text>
           </View>
         ) : (
           <View style={styles.card}>
             <Text style={styles.languageLabel}>
-              {currentLanguage === 'en' ? 'English' : 'French'}
+              {currentLanguage === 'en' ? 'English' : 'Français'}
             </Text>
             <Text style={styles.wordText}>
               {currentLanguage === 'en' ? currentWord.english : currentWord.french}
             </Text>
-            <Text style={styles.contextText}>{currentWord.context}</Text>
+            <Text style={styles.contextText}>
+              {translations.context?.translated || currentWord.context}
+            </Text>
 
             {currentWord.pronunciationScore && (
               <Text style={styles.scoreText}>
-                Best Score: {currentWord.pronunciationScore}%
+                {currentLanguage === 'en' ? 'Best Score: ' : 'Meilleur Score: '}
+                {currentWord.pronunciationScore}%
               </Text>
             )}
 
@@ -258,6 +364,14 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
               </TouchableOpacity>
 
               <TouchableOpacity 
+                style={[styles.circleButton, styles.translateButton]}
+                onPress={handleTranslate}
+                disabled={isTranslating}
+              >
+                <Feather name="refresh-cw" size={28} color="white" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
                 style={[styles.circleButton, styles.languageButton]}
                 onPress={() => setCurrentLanguage(prev => prev === 'en' ? 'fr' : 'en')}
               >
@@ -271,13 +385,33 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
                 <Feather name="skip-forward" size={28} color="white" />
               </TouchableOpacity>
             </View>
+
+            {translation && (
+              <View style={styles.translationContainer}>
+                <Text style={styles.translationLabel}>
+                  {currentLanguage === 'en' ? 'French Translation' : 'English Translation'}
+                </Text>
+                <Text style={styles.translationText}>{translation}</Text>
+              </View>
+            )}
+
+            {isTranslatingAll && (
+              <View style={styles.translatingIndicator}>
+                <ActivityIndicator color="#1cb0f6" />
+                <Text style={styles.translatingText}>
+                  {currentLanguage === 'en' ? 'Translating...' : 'Traduction...'}
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
         {showFeedback && feedback && (
           <View style={styles.feedbackModal}>
             <View style={styles.feedbackContent}>
-              <Text style={styles.scoreTitle}>Your Pronunciation</Text>
+              <Text style={styles.scoreTitle}>
+                {currentLanguage === 'en' ? 'Your Pronunciation' : 'Votre Prononciation'}
+              </Text>
               <Text style={[
                 styles.scoreValue,
                 feedback.score >= 90 ? styles.excellentScore :
@@ -286,14 +420,18 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
               ]}>
                 {feedback.score}%
               </Text>
-              <Text style={styles.feedbackMessage}>{feedback.message}</Text>
+              <Text style={styles.feedbackMessage}>
+                {translations.feedbackMessage?.translated || feedback.message}
+              </Text>
               
               {feedback.improvements.length > 0 && (
                 <View style={styles.improvementSection}>
-                  <Text style={styles.improvementTitle}>Areas to Improve:</Text>
+                  <Text style={styles.improvementTitle}>
+                    {currentLanguage === 'en' ? 'Areas to Improve:' : 'Points à Améliorer:'}
+                  </Text>
                   {feedback.improvements.map((item, index) => (
                     <Text key={index} style={styles.improvementItem}>
-                      • {item}
+                      • {translations.improvements?.[index]?.translated || item}
                     </Text>
                   ))}
                 </View>
@@ -303,7 +441,9 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
                 style={styles.closeButton}
                 onPress={() => setShowFeedback(false)}
               >
-                <Text style={styles.closeButtonText}>Continue</Text>
+                <Text style={styles.closeButtonText}>
+                  {currentLanguage === 'en' ? 'Continue' : 'Continuer'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -445,6 +585,38 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  translateButton: {
+    backgroundColor: '#1cb0f6',
+  },
+  translationContainer: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    width: '100%',
+    alignItems: 'center',
+  },
+  translationLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 5,
+  },
+  translationText: {
+    fontSize: 18,
+    color: '#333',
+    fontWeight: '500',
+  },
+  translatingIndicator: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  translatingText: {
+    marginLeft: 10,
+    color: '#666',
+    fontSize: 14,
   },
 });
 
