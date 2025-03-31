@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 14,
-    color: '#BBBBBB', // Subtle light text
+    color: '#1A1A1A', // Subtle light text
   },
   chartPlaceholder: {
     height: 200,
