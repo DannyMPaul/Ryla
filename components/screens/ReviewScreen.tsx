@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1E90FF', // Bright blue for stats
+    color: '#1A1A1A', // Bright blue for stats
   },
   statLabel: {
     fontSize: 14,
