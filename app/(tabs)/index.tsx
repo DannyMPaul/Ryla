@@ -185,6 +185,55 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
           return;
         }
 
+        // Check for mentor credentials
+        const mentorEmails = ['sarah.j@ryla.com', 'michael.c@ryla.com', 'emma.r@ryla.com'];
+        if (mentorEmails.includes(email) && password === 'passcode') {
+          try {
+            // Try to sign in the mentor
+            const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+            const user = userCredential.user;
+            
+            // Update mentor's last login time and ensure role is set
+            const userRef = dbRef(database, `users/${user.uid}`);
+            await update(userRef, {
+              lastLogin: new Date().toISOString(),
+              role: 'mentor',
+              email: email.trim()
+            });
+
+            console.log('Mentor authenticated successfully:', {
+              email: user.email,
+              uid: user.uid
+            });
+
+            router.replace('/admin/mentor-dashboard');
+            return;
+          } catch (error: any) {
+            console.error('Mentor authentication error:', error);
+            if (error.code === 'auth/user-not-found') {
+              Alert.alert(
+                'Account Not Found',
+                'Please contact the administrator to set up your mentor account.',
+                [{ text: 'OK' }]
+              );
+            } else if (error.code === 'auth/invalid-credential') {
+              Alert.alert(
+                'Invalid Credentials',
+                'Please check your email and password and try again.',
+                [{ text: 'OK' }]
+              );
+            } else {
+              Alert.alert(
+                'Authentication Error',
+                'An error occurred during login. Please try again.',
+                [{ text: 'OK' }]
+              );
+            }
+            return;
+          }
+        }
+
+        // Handle regular user login/registration
         if (isLogin) {
           const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
           const user = userCredential.user;

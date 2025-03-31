@@ -69,7 +69,7 @@ const STATIC_MENTORS = [
 const DiscussionScreen = () => {
   const [loading, setLoading] = useState(true);
   const [mentors] = useState<Mentor[]>(STATIC_MENTORS);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<{ [key: string]: Message[] }>({});
   const [selectedMentor, setSelectedMentor] = useState<Mentor | null>(null);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [newMessage, setNewMessage] = useState('');
@@ -99,23 +99,38 @@ const DiscussionScreen = () => {
       try {
         const data = snapshot.val();
         if (data) {
-          const messageList = Object.entries(data).map(([id, msg]: [string, any]) => ({
-            id,
-            text: msg.text,
-            userId: msg.userId,
-            userName: msg.userName,
-            mentorId: msg.mentorId,
-            mentorName: msg.mentorName,
-            timestamp: msg.timestamp,
-            isReply: msg.isReply,
-          }));
-          setMessages(messageList.sort((a, b) => b.timestamp - a.timestamp));
+          // Group messages by mentor
+          const mentorMessages: { [key: string]: Message[] } = {};
+          
+          Object.entries(data).forEach(([id, msg]: [string, any]) => {
+            const mentorId = msg.mentorId;
+            if (!mentorMessages[mentorId]) {
+              mentorMessages[mentorId] = [];
+            }
+            mentorMessages[mentorId].push({
+              id,
+              text: msg.text,
+              userId: msg.userId,
+              userName: msg.userName,
+              mentorId: msg.mentorId,
+              mentorName: msg.mentorName,
+              timestamp: msg.timestamp,
+              isReply: msg.isReply,
+            });
+          });
+
+          // Sort messages within each mentor group by timestamp
+          Object.keys(mentorMessages).forEach(mentorId => {
+            mentorMessages[mentorId].sort((a, b) => b.timestamp - a.timestamp);
+          });
+
+          setMessages(mentorMessages);
         } else {
-          setMessages([]);
+          setMessages({});
         }
       } catch (error) {
         console.error('Error processing messages:', error);
-        setMessages([]);
+        setMessages({});
       }
     });
 
@@ -132,7 +147,7 @@ const DiscussionScreen = () => {
         text: newMessage,
         userId: auth.currentUser.uid,
         userName: auth.currentUser.displayName || 'Anonymous',
-        mentorId: selectedMentor.id,
+        mentorId: selectedMentor.email, // Use email as mentorId
         mentorName: selectedMentor.name,
         timestamp: serverTimestamp(),
         isReply: false,
@@ -172,64 +187,82 @@ const DiscussionScreen = () => {
 
       <ScrollView style={styles.mentorsContainer}>
         {mentors.map((mentor) => (
-          <TouchableOpacity 
-            key={mentor.id} 
-            style={styles.mentorCard}
-            onPress={() => {
-              setSelectedMentor(mentor);
-              setShowMessageModal(true);
-            }}
-          >
-            <View style={styles.mentorAvatar}>
-              <Text style={styles.mentorInitial}>
-                {mentor.avatar}
-              </Text>
-            </View>
-            <View style={styles.mentorInfo}>
-              <Text style={styles.mentorName}>{mentor.name}</Text>
-              <Text style={styles.mentorEmail}>{mentor.email}</Text>
-              <Text style={styles.mentorExpertise}>{mentor.expertise}</Text>
-              <View style={styles.onlineStatus}>
-                <View style={[
-                  styles.statusDot,
-                  mentor.isOnline ? styles.onlineDot : styles.offlineDot
-                ]} />
-                <Text style={styles.statusText}>
-                  {mentor.isOnline ? 'Online' : 'Offline'}
-                </Text>
-              </View>
-              {!mentor.isOnline && mentor.lastSeen && (
-                <Text style={styles.lastSeen}>
-                  Last seen: {formatTime(mentor.lastSeen)}
-                </Text>
-              )}
-            </View>
-          </TouchableOpacity>
-        ))}
-
-        {/* Messages Section */}
-        <View style={styles.messagesSection}>
-          <Text style={styles.messagesTitle}>Recent Messages</Text>
-          {messages.map((message) => (
-            <View
-              key={message.id}
-              style={[
-                styles.messageContainer,
-                message.isReply ? styles.replyMessage : styles.userMessage
-              ]}
+          <View key={mentor.id}>
+            <TouchableOpacity 
+              style={styles.mentorCard}
+              onPress={() => {
+                setSelectedMentor(mentor);
+                setShowMessageModal(true);
+              }}
             >
-              <View style={styles.messageHeader}>
-                <Text style={styles.messageSender}>
-                  {message.isReply ? message.mentorName : 'You'}
-                </Text>
-                <Text style={styles.messageTime}>
-                  {formatTime(message.timestamp)}
+              <View style={styles.mentorAvatar}>
+                <Text style={styles.mentorInitial}>
+                  {mentor.avatar}
                 </Text>
               </View>
-              <Text style={styles.messageText}>{message.text}</Text>
-            </View>
-          ))}
-        </View>
+              <View style={styles.mentorInfo}>
+                <Text style={styles.mentorName}>{mentor.name}</Text>
+                <Text style={styles.mentorEmail}>{mentor.email}</Text>
+                <Text style={styles.mentorExpertise}>{mentor.expertise}</Text>
+                <View style={styles.onlineStatus}>
+                  <View style={[
+                    styles.statusDot,
+                    mentor.isOnline ? styles.onlineDot : styles.offlineDot
+                  ]} />
+                  <Text style={styles.statusText}>
+                    {mentor.isOnline ? 'Online' : 'Offline'}
+                  </Text>
+                </View>
+                {!mentor.isOnline && mentor.lastSeen && (
+                  <Text style={styles.lastSeen}>
+                    Last seen: {formatTime(mentor.lastSeen)}
+                  </Text>
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {/* Messages for this mentor */}
+            {messages[mentor.email] && messages[mentor.email].length > 0 && (
+              <View style={styles.mentorMessagesSection}>
+                <Text style={styles.messagesTitle}>Messages with {mentor.name}</Text>
+                {messages[mentor.email].map((message) => (
+                  <View
+                    key={message.id}
+                    style={[
+                      styles.messageContainer,
+                      message.isReply ? styles.replyMessage : styles.userMessage
+                    ]}
+                  >
+                    <View style={styles.messageHeader}>
+                      <View style={styles.messageSenderContainer}>
+                        {message.isReply ? (
+                          <View style={styles.mentorReplyHeader}>
+                            <View style={styles.mentorAvatarSmall}>
+                              <Text style={styles.mentorInitialSmall}>
+                                {mentor.avatar}
+                              </Text>
+                            </View>
+                            <Text style={styles.messageSender}>
+                              {message.mentorName}
+                            </Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.messageSender}>
+                            You
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={styles.messageTime}>
+                        {formatTime(message.timestamp)}
+                      </Text>
+                    </View>
+                    <Text style={styles.messageText}>{message.text}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        ))}
       </ScrollView>
 
       {/* Message Modal */}
@@ -369,11 +402,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontStyle: 'italic',
   },
-  messagesSection: {
-    marginTop: 20,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#2b3940',
+  mentorMessagesSection: {
+    marginTop: 10,
+    marginBottom: 20,
+    padding: 10,
+    backgroundColor: '#1f2937',
+    borderRadius: 8,
   },
   messagesTitle: {
     fontSize: 18,
@@ -382,23 +416,48 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   messageContainer: {
-    backgroundColor: '#2b3940',
     padding: 15,
     borderRadius: 12,
     marginBottom: 10,
+    maxWidth: '85%',
   },
   userMessage: {
-    backgroundColor: '#1f2937',
+    backgroundColor: '#2b3940',
+    alignSelf: 'flex-end',
   },
   replyMessage: {
-    backgroundColor: '#2b3940',
+    backgroundColor: '#1f2937',
+    alignSelf: 'flex-start',
     borderLeftWidth: 4,
     borderLeftColor: '#58cc02',
   },
   messageHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
+  },
+  messageSenderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mentorReplyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mentorAvatarSmall: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#0066FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  mentorInitialSmall: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   messageSender: {
     color: '#58cc02',
