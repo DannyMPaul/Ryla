@@ -173,11 +173,7 @@ const HomeScreen: React.FC = () => {
         // Find first incomplete question
         for (let i = 1; i <= 10; i++) { // Assuming 10 questions
           if (!questions[`q${i}`]?.completed) {
-            // Only redirect if not coming from Home1
-            const currentPath = router.pathname;
-            if (!currentPath.includes('Home1')) {
-              router.replace(`/(tabs)/q${i}` as any);
-            }
+            router.replace(`/(tabs)/q${i}` as any);
             return;
           }
         }
@@ -185,19 +181,13 @@ const HomeScreen: React.FC = () => {
         // All questions completed
         router.replace('/(tabs)/completion' as any);
       } else {
-        // No progress, start from first question only if not coming from Home1
-        const currentPath = router.pathname;
-        if (!currentPath.includes('Home1')) {
-          router.replace('/(tabs)/q1' as any);
-        }
+        // No progress, start from first question
+        router.replace('/(tabs)/q1' as any);
       }
     } catch (error) {
       console.error('Error checking progress:', error);
-      // Default to first question on error only if not coming from Home1
-      const currentPath = router.pathname;
-      if (!currentPath.includes('Home1')) {
-        router.replace('/(tabs)/q1' as any);
-      }
+      // Default to first question on error
+      router.replace('/(tabs)/q1' as any);
     }
   };
 

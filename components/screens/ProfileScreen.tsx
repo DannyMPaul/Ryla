@@ -24,6 +24,7 @@ import {
   onValue,
   update,
   get,
+  set,
 } from "firebase/database";
 
 interface TargetUse {
@@ -94,9 +95,7 @@ const LearningGoalsSection = ({
   const [requirements, setRequirements] = useState<string[]>(
     userData?.learningGoals?.requirements || []
   );
-  const [targetUses, setTargetUses] = useState<LanguageSettings | null>(
-    userData?.modelData?.target_uses || null
-  );
+  const [targetUses, setTargetUses] = useState<LanguageSettings | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const learningModes = [
@@ -116,12 +115,8 @@ const LearningGoalsSection = ({
   ];
 
   useEffect(() => {
-    if (userData?.modelData?.target_uses) {
-      setTargetUses(userData.modelData.target_uses);
-    } else {
-      loadTargetUses();
-    }
-  }, [userData]);
+    loadTargetUses();
+  }, []);
 
   const loadTargetUses = async () => {
     try {
@@ -131,15 +126,41 @@ const LearningGoalsSection = ({
       if (!user) return;
 
       const db = getDatabase();
-      // Update the path to match the DB structure
-      const targetUsesRef = dbRef(
-        db,
-        `users/${user.uid}/model_data/target_uses`
-      );
+      const targetUsesRef = dbRef(db, `users/${user.uid}/model_data/target_uses`);
       const snapshot = await get(targetUsesRef);
 
       if (snapshot.exists()) {
-        setTargetUses(snapshot.val());
+        const data = snapshot.val();
+        // If the data is a string (simple target use), convert it to the expected format
+        if (typeof data === 'string') {
+          const defaultTargetUses: LanguageSettings = {
+            en: {
+              grammar_correction: { selected: data === 'grammar_correction', description: "I want to improve my grammar" },
+              text_coherent: { selected: data === 'text_coherent', description: "I want to learn to express myself clearly" },
+              easier_understanding: { selected: data === 'easier_understanding', description: "I want to understand English more easily" },
+              paraphrasing: { selected: data === 'paraphrasing', description: "I want to learn different ways to express myself" },
+              formal_tone: { selected: data === 'formal_tone', description: "I want to learn formal English" },
+              neutral_tone: { selected: data === 'neutral_tone', description: "I want a neutral communication style" },
+            }
+          };
+          setTargetUses(defaultTargetUses);
+        } else {
+          setTargetUses(data);
+        }
+      } else {
+        // Set default target uses if none exist
+        const defaultTargetUses: LanguageSettings = {
+          en: {
+            grammar_correction: { selected: false, description: "I want to improve my grammar" },
+            text_coherent: { selected: false, description: "I want to learn to express myself clearly" },
+            easier_understanding: { selected: false, description: "I want to understand English more easily" },
+            paraphrasing: { selected: false, description: "I want to learn different ways to express myself" },
+            formal_tone: { selected: false, description: "I want to learn formal English" },
+            neutral_tone: { selected: false, description: "I want a neutral communication style" },
+          }
+        };
+        setTargetUses(defaultTargetUses);
+        await set(targetUsesRef, defaultTargetUses);
       }
     } catch (error) {
       console.error("Error loading target uses:", error);
@@ -188,20 +209,14 @@ const LearningGoalsSection = ({
       // Update state
       setTargetUses(updatedTargetUses);
 
-      // Save to Firebase - use the correct path
+      // Save to Firebase
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) return;
 
       const db = getDatabase();
-      // Reference directly to the target_uses to avoid overwriting other data
-      const targetUsesRef = dbRef(
-        db,
-        `users/${user.uid}/model_data/target_uses`
-      );
-
-      // Use set() with the specific path
-      await update(targetUsesRef, updatedTargetUses);
+      const targetUsesRef = dbRef(db, `users/${user.uid}/model_data/target_uses`);
+      await set(targetUsesRef, updatedTargetUses);
 
       onUpdate();
     } catch (error) {
