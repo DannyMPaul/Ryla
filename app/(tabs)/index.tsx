@@ -154,24 +154,30 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'AuthScreen'>>();
 
   const checkUserProgress = async (user: any) => {
-    const userRef = dbRef(database, `users/${user.uid}`);
-    const snapshot = await get(userRef);
-    const userData = snapshot.val();
-    
-    if (userData) {
-      // User exists, check if they completed onboarding
-      if (userData.quizResults?.isAssessmentComplete) {
-        // User has completed onboarding, go to home
-        router.replace('./TabNavigator');
-      } else if (userData.currentStep) {
-        // User was in the middle of onboarding, resume from their last step
-        router.replace(`./${userData.currentStep}`);
+    try {
+      const userRef = dbRef(database, `users/${user.uid}`);
+      const snapshot = await get(userRef);
+      const userData = snapshot.val();
+      
+      if (userData) {
+        // User exists, check if they completed onboarding
+        if (userData.quizResults && userData.quizResults.completedAt) {
+          // User has completed the quiz before
+          router.replace('./TabNavigator');
+        } else if (userData.currentStep) {
+          // User was in the middle of onboarding, resume from their last step
+          router.replace(`./${userData.currentStep}`);
+        } else {
+          // User hasn't started onboarding
+          router.replace('./qn1');
+        }
       } else {
-        // User hasn't started onboarding
+        // New user, start onboarding
         router.replace('./qn1');
       }
-    } else {
-      // New user, start onboarding
+    } catch (error) {
+      console.error('Error checking user progress:', error);
+      // In case of error, default to starting onboarding
       router.replace('./qn1');
     }
   };
