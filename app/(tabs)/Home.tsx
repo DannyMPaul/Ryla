@@ -174,7 +174,7 @@ const HomeScreen: React.FC = () => {
         for (let i = 1; i <= 10; i++) { // Assuming 10 questions
           if (!questions[`q${i}`]?.completed) {
             // Only redirect if not coming from Home1
-            const currentPath = router.pathname || '';
+            const currentPath = router.pathname;
             if (!currentPath.includes('Home1')) {
               router.replace(`/(tabs)/q${i}` as any);
             }
@@ -186,7 +186,7 @@ const HomeScreen: React.FC = () => {
         router.replace('/(tabs)/completion' as any);
       } else {
         // No progress, start from first question only if not coming from Home1
-        const currentPath = router.pathname || '';
+        const currentPath = router.pathname;
         if (!currentPath.includes('Home1')) {
           router.replace('/(tabs)/q1' as any);
         }
@@ -194,7 +194,7 @@ const HomeScreen: React.FC = () => {
     } catch (error) {
       console.error('Error checking progress:', error);
       // Default to first question on error only if not coming from Home1
-      const currentPath = router.pathname || '';
+      const currentPath = router.pathname;
       if (!currentPath.includes('Home1')) {
         router.replace('/(tabs)/q1' as any);
       }

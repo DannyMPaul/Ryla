@@ -593,15 +593,7 @@ const ProfileScreen = () => {
 
       {userData?.quizResults && (
         <View style={styles.statsSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Your Progress</Text>
-            <TouchableOpacity 
-              style={styles.retakeQuizButton}
-              onPress={() => router.replace('/(tabs)/qn1')}
-            >
-              <Text style={styles.retakeQuizText}>Retake Quiz</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.sectionTitle}>Your Progress</Text>
 
           <View style={styles.quizStats}>
             <Text style={styles.quizStatLabel}>
@@ -720,9 +712,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   editContainer: {
@@ -957,17 +949,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontStyle: "italic",
     padding: 16,
-  },
-  retakeQuizButton: {
-    backgroundColor: '#58cc02',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  retakeQuizText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
   },
 });
 
