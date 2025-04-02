@@ -287,6 +287,15 @@ const WritingAssessmentScreen = () => {
   if (showResults) {
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.skipButton}
+            onPress={() => router.replace("./Frn/welcome")}
+          >
+            <Text style={styles.skipButtonText}>Skip</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.resultContainer}>
           <Text style={styles.resultText}>Assessment Complete!</Text>
 
@@ -340,6 +349,15 @@ const WritingAssessmentScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.skipButton}
+          onPress={() => router.replace("./Welcome")}
+        >
+          <Text style={styles.skipButtonText}>Skip</Text>
+        </TouchableOpacity>
+      </View>
+
       <Text style={styles.title}>Writing Assessment</Text>
 
       <Text style={styles.instructions}>
@@ -381,6 +399,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(10, 0, 1, 0.91)",
     padding: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 20,
+  },
+  skipButton: {
+    backgroundColor: '#3C3C3C',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  skipButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   title: {
     fontSize: 24,

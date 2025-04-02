@@ -201,7 +201,12 @@ const Home1Screen = () => {
     if (lesson.speechPractice) {
       setShowSpeechPractice(true);
     } else {
-      router.push(lesson.route as any);
+      // Use replace for "Learn the Basics" lesson
+      if (lesson.title === 'Learn the Basics') {
+        router.replace(lesson.route as any);
+      } else {
+        router.push(lesson.route as any);
+      }
     }
   };
 
