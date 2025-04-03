@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import firebase_admin
 from firebase_admin import credentials, db
@@ -9,6 +9,17 @@ from src.translation_service import TranslationService
 translation_service = TranslationService()
 import asyncio
 import traceback
+import tempfile
+from vosk import Model, KaldiRecognizer
+import os
+import wave
+import json
+from pydub import AudioSegment
+from pydub.utils import which
+
+AudioSegment.converter = (
+    which("ffmpeg") or r"C:\\Users\\DAN\\OneDrive\\Desktop\\Git Up\\Project-MWS-01\\FFmpeg\\bin\\ffmpeg.exe"
+)
 
 from config import get_settings
 settings = get_settings()
@@ -21,9 +32,10 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-# class ProcessingError(Exception):
-#     "Custom exception for processing errors"
-#     pass
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+VOSK_MODEL_PATH = os.environ.get("VOSK_MODEL_PATH", r"C:\Users\DAN\OneDrive\Desktop\Git Up\Project-MWS-01\Ryla\vosk-model-small-fr-0.22")
+_vosk_model = None
 
 class UserSessionInit(BaseModel):
     user_id: str
@@ -57,6 +69,19 @@ class TranslationResponse(BaseModel):
     success: bool
     error: Optional[str] = None
 
+def get_vosk_model():
+    """Lazily load the Vosk model to avoid startup issues"""
+    global _vosk_model
+    if _vosk_model is None:
+        try:
+            logging.info(f"Loading Vosk model from: {VOSK_MODEL_PATH}")
+            _vosk_model = Model(VOSK_MODEL_PATH)
+            logging.info("Vosk model loaded successfully")
+        except Exception as e:
+            logging.error(f"Failed to load Vosk model: {str(e)}")
+            raise RuntimeError(f"Could not load speech recognition model: {str(e)}")
+    return _vosk_model
+
 def initialize_firebase():
     try:
         firebase_admin.get_app()
@@ -86,7 +111,6 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:8081",
         "http://192.168.137.1:8000",
-        # Add more origins for production
         "*",  # Consider restricting this in production
     ],
     allow_credentials=True,
@@ -434,6 +458,55 @@ async def process_text(user_input: UserInput) -> ProcessedResponse:
                 "error_type": type(e).__name__
             }
         )
+    
+@app.post("/speech-to-text")
+async def speech_to_text(audio: UploadFile = File(...)):
+    request_id = f"stt-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    temp_wav_path = None
+
+    try:
+        # Save uploaded file temporarily
+        temp_input_path = os.path.join(tempfile.gettempdir(), f"input_{request_id}")
+        with open(temp_input_path, "wb") as buffer:
+            buffer.write(await audio.read())
+
+        # Convert to WAV if necessary
+        temp_wav_path = temp_input_path + ".wav"
+        audio_segment = AudioSegment.from_file(temp_input_path)
+        audio_segment = audio_segment.set_frame_rate(16000).set_channels(1).set_sample_width(2)
+        audio_segment.export(temp_wav_path, format="wav")
+
+        # Open WAV file for processing
+        with wave.open(temp_wav_path, "rb") as wf:
+            if wf.getnchannels() != 1 or wf.getsampwidth() != 2 or wf.getframerate() != 16000:
+                logging.error(f"[{request_id}] WAV format incorrect")
+                return JSONResponse(status_code=400, content={"error": "Invalid WAV format", "request_id": request_id})
+
+            recognizer = KaldiRecognizer(get_vosk_model(), 16000)
+            while True:
+                data = wf.readframes(4000)
+                if len(data) == 0:
+                    break
+                recognizer.AcceptWaveform(data)
+
+            # Get final transcription
+            result = json.loads(recognizer.FinalResult())
+            final_text = result.get("text", "")
+
+        return JSONResponse(status_code=200, content={"text": final_text, "request_id": request_id})
+
+    except Exception as e:
+        logging.error(f"[{request_id}] Error: {str(e)}")
+        return JSONResponse(status_code=500, content={"error": str(e), "request_id": request_id})
+
+    finally:
+        # Cleanup temporary files
+        for path in [temp_input_path, temp_wav_path]:
+            if path and os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception as cleanup_err:
+                    logging.warning(f"[{request_id}] Failed to delete {path}: {cleanup_err}")
 
 @app.get("/health")
 async def health_check():

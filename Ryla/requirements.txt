@@ -14,6 +14,8 @@ fastapi
 tf-keras
 aiohttp
 python-multipart
+vosk
+python-multipart
 
 
 # numpy>=1.24.0 

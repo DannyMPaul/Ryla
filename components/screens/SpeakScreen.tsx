@@ -49,7 +49,13 @@ interface TranslationResponse {
   target_language: string;
 }
 
-const API_URL = "http://172.16.239.189:8000";
+interface AudioError extends Error {
+  code?: string;
+}
+
+let recording: Audio.Recording | null = null;
+
+const API_URL = "http://192.168.1.37:8000";
 
 export default function LanguageLearningScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -64,6 +70,7 @@ export default function LanguageLearningScreen() {
   const [learningLanguage, setLearningLanguage] = useState("en"); // Default language
   const [nativeLanguage, setNativeLanguage] = useState("fr"); // Default native language
   const [isTranslating, setIsTranslating] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
   const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -72,25 +79,15 @@ export default function LanguageLearningScreen() {
   useEffect(() => {
     setupAudio();
     initializeSession();
-    return cleanup;
-  }, []);
 
-  const setupAudio = async () => {
-    try {
-      await Audio.requestPermissionsAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-      await Speech.getAvailableVoicesAsync();
-    } catch (error) {
-      console.error("Audio setup error:", error);
-      Alert.alert(
-        "Audio Setup Error",
-        "Could not initialize audio features. Some functionality may be limited."
-      );
-    }
-  };
+    return () => {
+      cleanup();
+      if (recording) {
+        recording.stopAndUnloadAsync().catch(console.error);
+      }
+      Speech.stop().catch(console.error);
+    };
+  }, []);
 
   const initializeSession = async () => {
     try {
@@ -499,28 +496,64 @@ export default function LanguageLearningScreen() {
     }
   };
 
-  const startRecording = async () => {
+  const setupAudio = async () => {
     try {
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "Permission denied",
-          "Please grant microphone permissions to use voice input."
-        );
-        return;
+        Alert.alert("Permission denied", "Please enable microphone access.");
       }
 
-      const newRecording = new Audio.Recording();
-      await newRecording.prepareToRecordAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      await newRecording.startAsync();
-      setRecording(newRecording);
-      setIsListening(true);
-      startPulseAnimation();
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+      });
+    } catch (error) {
+      console.error("Audio setup error:", error);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      if (!recording) {
+        const recordingInstance = new Audio.Recording();
+
+        await recordingInstance.prepareToRecordAsync({
+          isMeteringEnabled: true,
+          android: {
+            extension: ".wav",
+            outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_DEFAULT, // Ensure compatibility
+            audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AMR_NB, // More stable format
+            sampleRate: 16000,
+            numberOfChannels: 1,
+            bitRate: 64000, // Lower bitrate for better performance
+          },
+          ios: {
+            extension: ".wav",
+            audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_HIGH,
+            sampleRate: 16000,
+            numberOfChannels: 1,
+            bitRate: 64000,
+            linearPCMBitDepth: 16,
+            linearPCMIsBigEndian: false,
+            linearPCMIsFloat: false,
+          },
+          web: {
+            mimeType: "audio/wav",
+            bitsPerSecond: 128000,
+          },
+        });
+
+        await recordingInstance.startAsync();
+        setRecording(recordingInstance);
+        setIsListening(true);
+
+        // 🔥 Add this back to start the animation when recording starts
+        startPulseAnimation();
+      }
     } catch (error) {
       console.error("Recording error:", error);
-      Alert.alert("Error", "Failed to start recording");
+      Alert.alert("Error", "Failed to start recording.");
     }
   };
 
@@ -528,6 +561,7 @@ export default function LanguageLearningScreen() {
     try {
       if (!recording) return;
 
+      console.log("Stopping recording...");
       await recording.stopAndUnloadAsync();
       setIsListening(false);
       pulseAnim.setValue(0);
@@ -537,29 +571,35 @@ export default function LanguageLearningScreen() {
         throw new Error("No recording URI available");
       }
 
-      // Add a loading message while processing
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+      if (!fileInfo.exists) {
+        console.error("File does not exist:", uri);
+        throw new Error("Audio file not found");
+      }
+
+      // Try playing the file
+      const sound = new Audio.Sound();
+      await sound.loadAsync({ uri });
+      await sound.playAsync();
+
+      console.log("Recording URI:", uri);
+
+      setIsConverting(true);
       addMessage({
-        text: "Processing your voice input...",
+        text: "Converting speech to text...",
         sender: "bot",
         type: "response",
       });
 
-      // Implement actual speech-to-text here
-      // For now, we'll use a placeholder that indicates we need to implement
-      // a proper speech-to-text service
-
       try {
-        // This is where you would implement a real speech-to-text service
-        // Below is a placeholder function
+        // Directly convert and process message
         const transcribedText = await convertSpeechToText(uri);
 
-        // Remove the loading message
         setMessages((prev) =>
-          prev.filter((msg) => msg.text !== "Processing your voice input...")
+          prev.filter((msg) => msg.text !== "Converting speech to text...")
         );
 
-        // Process the transcribed text
-        if (transcribedText && transcribedText.trim() !== "") {
+        if (transcribedText.trim() !== "") {
           await processMessage(transcribedText);
         } else {
           addMessage({
@@ -570,13 +610,12 @@ export default function LanguageLearningScreen() {
         }
       } catch (sttError) {
         console.error("Speech-to-text error:", sttError);
-        // Remove the loading message
         setMessages((prev) =>
-          prev.filter((msg) => msg.text !== "Processing your voice input...")
+          prev.filter((msg) => msg.text !== "Converting speech to text...")
         );
 
         addMessage({
-          text: "Sorry, I had trouble understanding your speech. Please try again or type your message.",
+          text: "Sorry, I had trouble converting your speech. Please try again or type your message.",
           sender: "bot",
           type: "response",
         });
@@ -585,22 +624,54 @@ export default function LanguageLearningScreen() {
       console.error("Stop recording error:", error);
       Alert.alert("Error", "Failed to process your voice input");
     } finally {
+      setIsConverting(false);
       setRecording(null);
     }
   };
 
-  // Placeholder function for speech-to-text
-  // In a production app, you would integrate with a real STT service
   const convertSpeechToText = async (audioUri: string): Promise<string> => {
-    // In a real implementation, you would:
-    // 1. Either upload the audio file to a server for processing
-    // 2. Or use a local library/API for speech recognition
+    try {
+      console.log("Sending RAW PCM file to backend...");
 
-    // For now, simulate a delay and return a placeholder message
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+      const formData = new FormData();
+      formData.append("audio", {
+        uri: audioUri,
+        type: "audio/wav", // Ensure proper MIME type
+        name: "speech.wav", // Use .wav extension
+      } as any);
 
-    // This is just a placeholder - in production, replace with actual STT implementation
-    return "This is a placeholder for speech-to-text conversion. Please implement a real STT service.";
+      const response = await fetch(`${API_URL}/speech-to-text`, {
+        method: "POST",
+        body: formData,
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Server error response:", errorText);
+        throw new Error("Speech to text conversion failed");
+      }
+
+      const responseText = await response.text();
+      console.log("Backend raw response:", responseText);
+
+      try {
+        const data = JSON.parse(responseText);
+        if (!data.text) {
+          throw new Error("No transcription received");
+        }
+        return data.text;
+      } catch (error) {
+        console.error("Speech-to-text parsing error:", error);
+        throw error;
+      }
+    } catch (error) {
+      console.error("Speech-to-text error:", error);
+      throw error;
+    }
   };
 
   const startPulseAnimation = () => {
@@ -635,7 +706,7 @@ export default function LanguageLearningScreen() {
     try {
       await Speech.stop();
       await Speech.speak(text, {
-        language: "en-US", // Use English for TTS when translated
+        language: "fr-CA", // Use English for TTS when translated
         pitch: 1.0,
         rate: 0.9,
         onError: (error) => console.error("Speech error:", error),
