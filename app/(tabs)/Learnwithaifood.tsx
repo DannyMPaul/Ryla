@@ -241,56 +241,81 @@ const ChatGame = () => {
 
   return (
     <View style={styles.container}>
-      {showResult ? (
-        <View style={styles.resultContainer}>
-          <Text style={styles.resultScore}>Your Score: {score}/{scenarios.length}</Text>
-          <Text style={styles.resultMessage}>{getResultMessage(score, scenarios.length)}</Text>
-          <TouchableOpacity style={styles.button} onPress={handleRestart}>
-            <Text style={styles.buttonText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-          <Text style={styles.heading}>{currentScenario.heading}</Text>
-          <Image source={currentScenario.image} style={styles.image} />
+      <View style={styles.header}>
+        <Text style={styles.heading}>{currentScenario.heading}</Text>
+      </View>
 
-          <FlatList
-            ref={chatListRef}
-            data={messages}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View
-                style={[
-                  styles.message,
-                  item.type === 'query' ? styles.query : styles.reply,
-                  item.type === 'reply' && item.correct !== undefined && (item.correct ? styles.correct : styles.incorrect),
-                ]}>
-                <Text style={styles.messageText}>{item.text}</Text>
-              </View>
-            )}
-            contentContainerStyle={styles.chatContainer}
+      <View style={styles.imageContainer}>
+        <Image source={currentScenario.image} style={styles.image} />
+        <TouchableOpacity 
+          style={styles.audioButton}
+          onPress={() => playAudio(`q${currentScenario.id}`)}
+        >
+          <Ionicons name="volume-high" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.progressIndicator}>
+        {scenarios.map((_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.progressDot,
+              index === currentScenarioIndex
+                ? styles.progressDotActive
+                : styles.progressDotInactive,
+            ]}
           />
+        ))}
+      </View>
 
-          <View style={styles.currentQuestionContainer}>
-            <TouchableOpacity style={styles.questionContainer} onPress={() => playAudio(`q${currentScenario.id}`)}>
+      <View style={styles.questionContainer}>
+        <Text style={styles.questionText}>{currentScenario.question}</Text>
+      </View>
 
-              {/* <View style={styles.bubbleTail} /> */}
+      <View style={styles.optionsContainer}>
+        {currentScenario.options.map((option) => (
+          <TouchableOpacity
+            key={option.id}
+            style={styles.optionButton}
+            onPress={() => handleReply(option)}
+          >
+            <Text style={styles.optionText}>{option.text}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-              <Text style={styles.questionText}>{currentScenario.question}</Text>
-            </TouchableOpacity>
-
-            <View style={styles.optionsContainer}>
-              {currentScenario.options.map((option) => (
-                <TouchableOpacity
-                  key={option.id}
-                  style={styles.optionButton}
-                  onPress={() => handleReply(option)}>
-                  <Text style={styles.optionText}>{option.text}</Text>
-                </TouchableOpacity>
-              ))}
+      <FlatList
+        ref={chatListRef}
+        data={messages}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.messageContainer}>
+            <View
+              style={[
+                styles.messageBubble,
+                item.type === 'query' ? styles.queryBubble : styles.replyBubble,
+              ]}
+            >
+              <Text style={styles.messageText}>{item.text}</Text>
             </View>
           </View>
-        </>
+        )}
+        style={styles.chatContainer}
+      />
+
+      {showResult && (
+        <View style={styles.resultContainer}>
+          <Text style={styles.resultScore}>
+            Score: {score}/{scenarios.length}
+          </Text>
+          <Text style={styles.resultMessage}>
+            {getResultMessage(score, scenarios.length)}
+          </Text>
+          <TouchableOpacity style={styles.backButton} onPress={handleRestart}>
+            <Text style={styles.backButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
       )}
       <BackButton />
     </View>
@@ -302,168 +327,185 @@ export default function Learnwithaifood() {
 }
 
 const styles = StyleSheet.create({
-  currentQuestionContainer: {
-    marginBottom: 20,
-  },
   container: {
     flex: 1,
-    backgroundColor: 'rgb(0, 0, 0)',
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#1A1A1A',
+    padding: normalize(16),
+  },
+  header: {
+    marginBottom: normalize(20),
+    paddingTop: normalize(40),
   },
   heading: {
-    marginTop: 30,
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: normalize(18),
+    color: '#FFFFFF',
+    marginBottom: normalize(10),
     textAlign: 'center',
-    marginBottom: 10,
-    color: '#fff',
-    letterSpacing: 1.4,
-    backgroundColor:'rgba(19, 9, 126, 0.4)',
+    paddingHorizontal: normalize(16),
+    fontWeight: '600',
+  },
+  imageContainer: {
+    width: SCREEN_WIDTH * 0.8,
+    height: SCREEN_WIDTH * 0.6,
+    alignSelf: 'center',
+    marginBottom: normalize(20),
+    borderRadius: normalize(12),
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   image: {
-    width: '45%',
-    height: SCREEN_HEIGHT * 0.25,
-    resizeMode: 'stretch',
-    marginBottom: 10,
-    borderWidth: 0.8,
-    borderColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: 40,
-    shadowColor: 'rgba(19, 9, 126, 0.8)',
-    shadowOffset: { width: -5, height: 14 },
-    shadowOpacity: 0.7,
-    shadowRadius: 40,
-    elevation: 10,
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   questionContainer: {
-    padding: 15,
-    backgroundColor: '#8a2be2',
-    borderRadius: 20,
-    borderTopStartRadius:20,
-    marginTop: 10,
-    marginLeft: 20,
-    marginBottom: 10,
-    marginRight: 30,
-    borderTopLeftRadius: 15,
-    borderBottomLeftRadius: 50,
-    shadowColor: 'rgba(19, 9, 126, 0.8)',
-    shadowOffset: { width: -2, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    position: 'relative',
+    backgroundColor: 'rgba(79, 198, 172, 0.15)',
+    padding: normalize(16),
+    borderRadius: normalize(12),
+    marginBottom: normalize(20),
+    borderWidth: 1,
+    borderColor: 'rgba(79, 198, 172, 0.3)',
   },
-  // bubbleTail: {
-  //   position: 'absolute',
-  //   width: 40,
-  //   height: 20,
-  //   backgroundColor: '#8a2be2',
-  //   left: -12,
-  //   bottom: 53,
-  //   transform: [{ rotate: '5deg' }],
-  //   borderBottomLeftRadius: 22,  
-  // },
-
   questionText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  chatContainer: {
-    flexGrow: 1,
-    marginVertical: 11,
-  },
-  message: {
-    marginVertical: 5,
-    padding: 5,
-    borderRadius: 8,
-  },
-  query: {
-    backgroundColor: '#e1f5fe',
-    alignSelf: 'flex-start',
-  },
-  reply: {
-    backgroundColor: '#c8e6c9',
-    alignSelf: 'flex-end',
-  },
-  correct: {
-    backgroundColor: '#d4edda',
-  },
-  incorrect: {
-    backgroundColor: 'rgba(242, 55, 52, 0.8)',
-  },
-  messageText: {
-    fontSize: 16,
+    fontSize: normalize(18),
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: normalize(10),
+    fontWeight: '500',
   },
   optionsContainer: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    marginTop: 10,
-    marginRight:30,
+    marginTop: normalize(10),
   },
   optionButton: {
-    backgroundColor: 'rgba(79, 198, 172, 0.8)',
-    padding: 10,
-    borderRadius: 25,
-    marginBottom: 10,
+    backgroundColor: 'rgba(79, 198, 172, 0.9)',
+    padding: normalize(12),
+    borderRadius: normalize(25),
+    marginBottom: normalize(12),
     borderBottomRightRadius: 0,
-    marginLeft: 80,
-    width: '90%',
+    marginLeft: normalize(20),
+    width: SCREEN_WIDTH * 0.8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 3,
   },
   optionText: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#FFFFFF',
+    fontSize: normalize(16),
     textAlign: 'center',
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  resultText: {
-    fontSize: 40,
-    marginBottom: 20,
+  chatContainer: {
+    flex: 1,
+    marginTop: normalize(20),
   },
-  button: {
-    backgroundColor: '#1976d2',
-    padding: 10,
-    borderRadius: 5,
-    marginVertical: 5,
+  messageContainer: {
+    flexDirection: 'row',
+    marginBottom: normalize(10),
+    paddingHorizontal: normalize(8),
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
+  messageBubble: {
+    maxWidth: SCREEN_WIDTH * 0.7,
+    padding: normalize(12),
+    borderRadius: normalize(20),
+    marginBottom: normalize(8),
+  },
+  queryBubble: {
+    backgroundColor: 'rgba(79, 198, 172, 0.25)',
+    alignSelf: 'flex-start',
+    borderBottomLeftRadius: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(79, 198, 172, 0.4)',
+  },
+  replyBubble: {
+    backgroundColor: 'rgba(79, 198, 172, 0.9)',
+    alignSelf: 'flex-end',
+    borderBottomRightRadius: 0,
+  },
+  messageText: {
+    fontSize: normalize(16),
+    color: '#FFFFFF',
+    fontWeight: '500',
   },
   resultContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#232B2B',
+    backgroundColor: '#1A1A1A',
+    padding: normalize(20),
   },
   resultScore: {
-    fontSize: 32,
+    fontSize: normalize(32),
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 20,
+    marginBottom: normalize(20),
   },
   resultMessage: {
-    fontSize: 24,
+    fontSize: normalize(24),
     textAlign: 'center',
     color: '#FFFFFF',
-    marginBottom: 30,
-    paddingHorizontal: 20,
+    marginBottom: normalize(30),
+    paddingHorizontal: normalize(20),
+    fontWeight: '500',
   },
   backButton: {
+    backgroundColor: '#4EC6AC',
+    padding: normalize(15),
+    borderRadius: normalize(25),
     position: 'absolute',
-    top: 40,
-    left: 16,
-    zIndex: 10,
-    width: 42,
-    height: 42,
-    justifyContent: 'center',
+    bottom: normalize(20),
+    left: normalize(20),
+    right: normalize(20),
     alignItems: 'center',
-    borderRadius: 21,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   backButtonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#FFFFFF',
+    fontSize: normalize(18),
     fontWeight: 'bold',
+  },
+  audioButton: {
+    position: 'absolute',
+    right: normalize(10),
+    top: normalize(10),
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: normalize(8),
+    borderRadius: normalize(20),
+  },
+  progressIndicator: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: normalize(20),
+  },
+  progressDot: {
+    width: normalize(8),
+    height: normalize(8),
+    borderRadius: normalize(4),
+    marginHorizontal: normalize(4),
+  },
+  progressDotActive: {
+    backgroundColor: '#4EC6AC',
+  },
+  progressDotInactive: {
+    backgroundColor: '#666666',
   },
 });

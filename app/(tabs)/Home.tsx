@@ -186,7 +186,8 @@ const HomeScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error checking progress:', error);
-      router.replace('/(tabs)/q1' as any); // Default to first question on error
+      // Default to first question on error
+      router.replace('/(tabs)/q1' as any);
     }
   };
 
