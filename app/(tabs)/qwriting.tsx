@@ -183,6 +183,9 @@ const WritingAssessmentScreen = () => {
         const db = getDatabase();
         const userRef = dbRef(db, `users/${user.uid}`);
 
+        const proficiencyRef = dbRef(db, `users/${user.uid}/model_data`);
+        await update(proficiencyRef, { proficiency_level: finalProficiency });
+
         await update(userRef, {
           writing_assessment: {
             text,
@@ -288,7 +291,7 @@ const WritingAssessmentScreen = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.skipButton}
             onPress={() => router.replace("./Frn/welcome")}
           >
@@ -350,7 +353,7 @@ const WritingAssessmentScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.skipButton}
           onPress={() => router.replace("./Welcome")}
         >
@@ -401,20 +404,20 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
     marginBottom: 20,
   },
   skipButton: {
-    backgroundColor: '#3C3C3C',
+    backgroundColor: "#3C3C3C",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   skipButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   title: {
     fontSize: 24,

@@ -92,6 +92,7 @@ export default function LanguageLearningScreen() {
   const initializeSession = async () => {
     try {
       const auth = getAuth();
+      await auth.currentUser?.reload()
       const user = auth.currentUser;
 
       if (!user) {

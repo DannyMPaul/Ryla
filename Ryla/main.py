@@ -88,11 +88,11 @@ def initialize_firebase():
         logging.info("Firebase app already initialized")
     except ValueError:
         try:
-            cred = credentials.Certificate(settings.firebase_credentials_path)
-            firebase_admin.initialize_app(cred, {
-                'databaseURL': settings.firebase_database_url,
-                # Remove databaseAuthVariableOverride since we're using service account
-            })
+            if not firebase_admin._apps:
+                cred = credentials.Certificate(settings.firebase_credentials_path)
+                firebase_admin.initialize_app(cred, {
+                    'databaseURL': settings.firebase_database_url,
+                })
             logging.info("Firebase initialized successfully")
         except Exception as e:
             logging.error(f"Firebase initialization error: {str(e)}")
@@ -152,10 +152,8 @@ async def initialize_session(session_data: UserSessionInit):
             user_ref = db.reference(f'users/{session_data.user_id}/model_data')
             
             # Use timeout to prevent hanging requests
-            user_data = await asyncio.wait_for(
-                asyncio.get_event_loop().run_in_executor(None, user_ref.get),
-                timeout=5.0
-            ) or {}
+            loop = asyncio.get_event_loop()
+            user_data = await loop.run_in_executor(None, lambda: user_ref.get() or {})
             
             if user_data:
                 logging.info(f"[{request_id}] Successfully retrieved Firebase data for user {session_data.user_id}")
@@ -363,11 +361,9 @@ async def process_text(user_input: UserInput) -> ProcessedResponse:
         # Fetch user preferences from Firebase with timeout
         try:
             user_ref = db.reference(f'users/{user_input.user_id}/model_data')
-            user_data = await asyncio.wait_for(
-                asyncio.get_event_loop().run_in_executor(None, user_ref.get),
-                timeout=5.0
-            ) or default_preferences
-            
+            loop = asyncio.get_event_loop()
+            user_data = await loop.run_in_executor(None, lambda: user_ref.get() or default_preferences)
+                        
         except asyncio.TimeoutError:
             logging.warning(f"Firebase timeout for user {user_input.user_id}")
             user_data = default_preferences
