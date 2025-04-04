@@ -32,10 +32,10 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 VOSK_MODEL_PATH = os.environ.get("VOSK_MODEL_PATH", r"C:\Users\DAN\OneDrive\Desktop\Git Up\Project-MWS-01\Ryla\vosk-model-small-fr-0.22")
 _vosk_model = None
+
+firebase_available = False
 
 class UserSessionInit(BaseModel):
     user_id: str
@@ -70,7 +70,6 @@ class TranslationResponse(BaseModel):
     error: Optional[str] = None
 
 def get_vosk_model():
-    """Lazily load the Vosk model to avoid startup issues"""
     global _vosk_model
     if _vosk_model is None:
         try:
@@ -83,49 +82,55 @@ def get_vosk_model():
     return _vosk_model
 
 def initialize_firebase():
+    global firebase_available
     try:
         firebase_admin.get_app()
+        firebase_available = True
         logging.info("Firebase app already initialized")
     except ValueError:
         try:
             if not firebase_admin._apps:
+                if not os.path.exists(settings.firebase_credentials_path):
+                    logging.error(f"Firebase credentials file not found: {settings.firebase_credentials_path}")
+                    firebase_available = False
+                    return False
+                
                 cred = credentials.Certificate(settings.firebase_credentials_path)
                 firebase_admin.initialize_app(cred, {
                     'databaseURL': settings.firebase_database_url,
                 })
-            logging.info("Firebase initialized successfully")
+                firebase_available = True
+                logging.info("Firebase initialized successfully")
         except Exception as e:
+            firebase_available = False
             logging.error(f"Firebase initialization error: {str(e)}")
-            raise
+    
+    return firebase_available
 
-# Initialize FastAPI
 app = FastAPI(
     title="Multilingual Assistant API",
     description="API for processing multilingual text with grammar correction and response generation",
     version="1.0.0"
 )
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:8081",
         "http://192.168.137.1:8000",
-        "*",  # Consider restricting this in production
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize the assistant
 from src.assistant import MultilingualAssistant
 assistant = MultilingualAssistant()
 
 @app.on_event("startup")
 async def startup_event():
     initialize_firebase()
-    logging.info("Application started, Firebase initialized")
+    logging.info(f"Application started, Firebase availability: {firebase_available}")
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
@@ -143,40 +148,38 @@ async def initialize_session(session_data: UserSessionInit):
     logging.info(f"[{request_id}] Session initialization request for user {session_data.user_id}")
     
     try:
-        # Set default values in case of any failures
         user_data = {}
         firebase_status = "not_attempted"
         
-        # Attempt to retrieve user preferences from Firebase
-        try:
-            user_ref = db.reference(f'users/{session_data.user_id}/model_data')
-            
-            # Use timeout to prevent hanging requests
-            loop = asyncio.get_event_loop()
-            user_data = await loop.run_in_executor(None, lambda: user_ref.get() or {})
-            
-            if user_data:
-                logging.info(f"[{request_id}] Successfully retrieved Firebase data for user {session_data.user_id}")
-                firebase_status = "success"
-            else:
-                logging.warning(f"[{request_id}] No data found in Firebase for user {session_data.user_id}")
-                firebase_status = "no_data"
-        except asyncio.TimeoutError:
-            logging.warning(f"[{request_id}] Firebase timeout after 5s for user {session_data.user_id}")
-            firebase_status = "timeout"
-        except Exception as firebase_error:
-            error_type = type(firebase_error).__name__
-            logging.error(f"[{request_id}] Firebase error ({error_type}): {str(firebase_error)}")
-            firebase_status = f"error:{error_type}"
+        if firebase_available:
+            try:
+                user_ref = db.reference(f'users/{session_data.user_id}/model_data')
+                
+                loop = asyncio.get_event_loop()
+                user_data = await loop.run_in_executor(None, lambda: user_ref.get() or {})
+                
+                if user_data:
+                    logging.info(f"[{request_id}] Successfully retrieved Firebase data for user {session_data.user_id}")
+                    firebase_status = "success"
+                else:
+                    logging.warning(f"[{request_id}] No data found in Firebase for user {session_data.user_id}")
+                    firebase_status = "no_data"
+            except asyncio.TimeoutError:
+                logging.warning(f"[{request_id}] Firebase timeout after 5s for user {session_data.user_id}")
+                firebase_status = "timeout"
+            except Exception as firebase_error:
+                error_type = type(firebase_error).__name__
+                logging.error(f"[{request_id}] Firebase error ({error_type}): {str(firebase_error)}")
+                firebase_status = f"error:{error_type}"
+        else:
+            firebase_status = "firebase_unavailable"
+            logging.warning(f"[{request_id}] Firebase is not available, using default values")
         
-        # Use provided values or fallback to Firebase data or defaults with precedence
-        # Client values override Firebase values, which override system defaults
         language = session_data.language or user_data.get('lang_to_learn', 'en')
         proficiency = session_data.proficiency or user_data.get('proficiency_level', 'intermediate')
         target = session_data.target or user_data.get('target_use', 'grammar_correction')
         
-        # Validate settings
-        if language not in ["en", "fr"]:  # Add other supported languages as needed
+        if language not in ["en", "fr"]:
             logging.warning(f"[{request_id}] Unsupported language {language}, defaulting to 'en'")
             language = "en"
             
@@ -184,12 +187,10 @@ async def initialize_session(session_data: UserSessionInit):
             logging.warning(f"[{request_id}] Invalid proficiency {proficiency}, defaulting to 'intermediate'")
             proficiency = "intermediate"
         
-        # Check if language models are available before proceeding
         models_available = await assistant.check_language_models(language)
         if not models_available:
             logging.warning(f"[{request_id}] Language models for {language} not available")
         
-        # Initialize user session - this method should be made resilient in the MultilingualAssistant class
         session_result = await assistant.initialize_user_session(
             user_id=session_data.user_id,
             language=language,
@@ -197,10 +198,10 @@ async def initialize_session(session_data: UserSessionInit):
             target=target
         )
         
-        # Add diagnostic information to the response
         session_result.update({
             "metadata": {
                 "firebase_status": firebase_status,
+                "firebase_available": firebase_available,
                 "models_available": models_available,
                 "request_id": request_id,
                 "processing_time_ms": int((datetime.utcnow() - start_time).total_seconds() * 1000)
@@ -217,13 +218,11 @@ async def initialize_session(session_data: UserSessionInit):
         error_detail = str(e)
         processing_time = int((datetime.utcnow() - start_time).total_seconds() * 1000)
         
-        # Log the full exception for debugging
         logging.error(
             f"[{request_id}] Session initialization failed with {error_type}: {error_detail}",
             exc_info=True
         )
         
-        # Return a structured error response that doesn't expose sensitive details
         return JSONResponse(
             status_code=500,
             content={
@@ -238,20 +237,9 @@ async def initialize_session(session_data: UserSessionInit):
 
 @app.post("/translate", response_model=TranslationResponse)
 async def translate_text(request: TranslationRequest):
-    """
-    Translate text from source language to target language with enhanced error handling.
-    
-    Args:
-        request: TranslationRequest with text and language parameters
-        
-    Returns:
-        TranslationResponse with translated text or appropriate error
-    """
     try:
-        # Log the translation request
         logging.info(f"Translation request: {len(request.text)} chars from {request.source_language} to {request.target_language}")
         
-        # Quick validation to avoid unnecessary processing
         if not request.text.strip():
             return TranslationResponse(
                 translated_text="",
@@ -260,7 +248,6 @@ async def translate_text(request: TranslationRequest):
                 success=True
             )
             
-        # Same language - no translation needed
         if request.source_language == request.target_language:
             return TranslationResponse(
                 translated_text=request.text,
@@ -269,7 +256,6 @@ async def translate_text(request: TranslationRequest):
                 success=True
             )
         
-        # Perform the translation with timeout
         try:
             translated_text = await asyncio.wait_for(
                 translation_service.translate_text(
@@ -277,14 +263,12 @@ async def translate_text(request: TranslationRequest):
                     source_lang=request.source_language,
                     target_lang=request.target_language
                 ),
-                timeout=15.0  # Increase timeout for slower translation services
+                timeout=15.0
             )
             
-            # If translation returns None, it's a service error
             if translated_text is None:
                 raise Exception("Translation service unavailable")
                 
-            # Return the successful response
             return TranslationResponse(
                 translated_text=translated_text,
                 source_language=request.source_language,
@@ -295,7 +279,7 @@ async def translate_text(request: TranslationRequest):
         except asyncio.TimeoutError:
             logging.warning(f"Translation service timeout after 15 seconds")
             return TranslationResponse(
-                translated_text=request.text,  # Return original text on timeout
+                translated_text=request.text,
                 source_language=request.source_language,
                 target_language=request.target_language,
                 success=False,
@@ -303,42 +287,25 @@ async def translate_text(request: TranslationRequest):
             )
             
     except Exception as e:
-        # Log the error with traceback for debugging
         error_message = f"Translation error: {str(e)}"
         logging.error(f"{error_message}\n{traceback.format_exc()}")
         
-        # Return error response with original text
         return TranslationResponse(
-            translated_text=request.text,  # Return original text on error
+            translated_text=request.text,
             source_language=request.source_language,
             target_language=request.target_language,
             success=False,
             error=str(e)
         )
 
-
 @app.post("/process_text")
 async def process_text(user_input: UserInput) -> ProcessedResponse:
-    """
-    Process user text input with comprehensive error handling.
-    
-    Args:
-        user_input (UserInput): User input model containing text and preferences
-        
-    Returns:
-        ProcessedResponse: Processed text with corrections and metadata
-        
-    Raises:
-        HTTPException: For various error conditions with appropriate status codes
-    """
-    # Default preferences if Firebase fails
     default_preferences = {
         'lang_to_learn': 'en',
         'proficiency_level': 'intermediate',
         'target_use': 'grammar_correction'
     }
     
-    # Request validation
     if not user_input.text.strip():
         raise HTTPException(
             status_code=400,
@@ -346,41 +313,45 @@ async def process_text(user_input: UserInput) -> ProcessedResponse:
         )
     
     if not user_input.user_id:
-        raise HTTPException(
-            status_code=400,
-            detail="User ID is required"
-        )
+        logging.warning("User ID is missing, using anonymous user")
+        user_input.user_id = "anonymous"
 
     try:
-        # Initialize response metadata
         metadata: Dict[str, Any] = {
             'processed_timestamp': datetime.utcnow().isoformat(),
-            'success': False
+            'success': False,
+            'firebase_available': firebase_available
         }
 
-        # Fetch user preferences from Firebase with timeout
-        try:
-            user_ref = db.reference(f'users/{user_input.user_id}/model_data')
-            loop = asyncio.get_event_loop()
-            user_data = await loop.run_in_executor(None, lambda: user_ref.get() or default_preferences)
+        user_data = default_preferences.copy()
+        
+        if firebase_available:
+            try:
+                user_ref = db.reference(f'users/{user_input.user_id}/model_data')
+                loop = asyncio.get_event_loop()
+                firebase_data = await loop.run_in_executor(None, lambda: user_ref.get() or {})
+                
+                if firebase_data:
+                    user_data.update(firebase_data)
+                    metadata['firebase_status'] = 'success'
+                else:
+                    metadata['firebase_status'] = 'no_data'
                         
-        except asyncio.TimeoutError:
-            logging.warning(f"Firebase timeout for user {user_input.user_id}")
-            user_data = default_preferences
-            metadata['firebase_status'] = 'timeout'
-            
-        except Exception as firebase_error:
-            logging.error(f"Firebase error: {str(firebase_error)}")
-            user_data = default_preferences
-            metadata['firebase_status'] = 'error'
-            metadata['firebase_error'] = str(firebase_error)
+            except asyncio.TimeoutError:
+                logging.warning(f"Firebase timeout for user {user_input.user_id}")
+                metadata['firebase_status'] = 'timeout'
+                
+            except Exception as firebase_error:
+                logging.error(f"Firebase error: {str(firebase_error)}")
+                metadata['firebase_status'] = 'error'
+                metadata['firebase_error'] = str(firebase_error)
+        else:
+            metadata['firebase_status'] = 'unavailable'
 
-        # Extract preferences with fallbacks
         language = user_input.language or user_data.get('lang_to_learn', 'en')
         proficiency = user_input.proficiency or user_data.get('proficiency_level', 'intermediate')
         target = user_input.target or user_data.get('target_use', 'grammar_correction')
 
-        # Update metadata with processing parameters
         metadata.update({
             'language': language,
             'proficiency': proficiency,
@@ -388,24 +359,18 @@ async def process_text(user_input: UserInput) -> ProcessedResponse:
             'input_length': len(user_input.text)
         })
 
-        # Process the input text with better error handling around model loading
         try:
-            # First, check if the models are available
             models_available = await assistant.check_language_models(language)
             
             if not models_available:
-                # If models aren't available, handle gracefully
                 logging.warning(f"Language models for {language} not available, using fallback mode")
                 metadata['model_status'] = 'unavailable'
                 
-                # Simple fallback for when models aren't available
-                # Return the input text with a helpful message
                 result = {
                     'corrected_text': user_input.text,
                     'response': "I'm currently unable to process text in this language. Please try again later or try English."
                 }
             else:
-                # Models are available, proceed with normal processing
                 result = await assistant.process_input(
                     text=user_input.text,
                     language=language,
@@ -415,7 +380,6 @@ async def process_text(user_input: UserInput) -> ProcessedResponse:
             
             metadata['success'] = True
             
-            # Combine results with metadata
             response = ProcessedResponse(
                 original_text=user_input.text,
                 corrected_text=result.get('corrected_text', user_input.text),
@@ -429,13 +393,12 @@ async def process_text(user_input: UserInput) -> ProcessedResponse:
             error_details = str(processing_error)
             logging.error(f"Processing error: {error_details}\n{traceback.format_exc()}")
             
-            # Create a fallback response when processing fails
             metadata['error_type'] = 'processing'
             metadata['error_details'] = error_details
             
             fallback_response = ProcessedResponse(
                 original_text=user_input.text,
-                corrected_text=user_input.text,  # Return original text unchanged
+                corrected_text=user_input.text,
                 response="I'm having trouble processing your text right now. Please try again later.",
                 metadata=metadata
             )
@@ -459,20 +422,18 @@ async def process_text(user_input: UserInput) -> ProcessedResponse:
 async def speech_to_text(audio: UploadFile = File(...)):
     request_id = f"stt-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
     temp_wav_path = None
+    temp_input_path = None
 
     try:
-        # Save uploaded file temporarily
         temp_input_path = os.path.join(tempfile.gettempdir(), f"input_{request_id}")
         with open(temp_input_path, "wb") as buffer:
             buffer.write(await audio.read())
 
-        # Convert to WAV if necessary
         temp_wav_path = temp_input_path + ".wav"
         audio_segment = AudioSegment.from_file(temp_input_path)
         audio_segment = audio_segment.set_frame_rate(16000).set_channels(1).set_sample_width(2)
         audio_segment.export(temp_wav_path, format="wav")
 
-        # Open WAV file for processing
         with wave.open(temp_wav_path, "rb") as wf:
             if wf.getnchannels() != 1 or wf.getsampwidth() != 2 or wf.getframerate() != 16000:
                 logging.error(f"[{request_id}] WAV format incorrect")
@@ -485,7 +446,6 @@ async def speech_to_text(audio: UploadFile = File(...)):
                     break
                 recognizer.AcceptWaveform(data)
 
-            # Get final transcription
             result = json.loads(recognizer.FinalResult())
             final_text = result.get("text", "")
 
@@ -496,7 +456,6 @@ async def speech_to_text(audio: UploadFile = File(...)):
         return JSONResponse(status_code=500, content={"error": str(e), "request_id": request_id})
 
     finally:
-        # Cleanup temporary files
         for path in [temp_input_path, temp_wav_path]:
             if path and os.path.exists(path):
                 try:
@@ -509,7 +468,8 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": str(datetime.now()),
-        "environment": settings.environment
+        "environment": settings.environment,
+        "firebase_available": firebase_available
     }
 
 if __name__ == "__main__":

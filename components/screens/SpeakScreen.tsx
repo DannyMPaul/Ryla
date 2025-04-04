@@ -26,8 +26,8 @@ type Message = {
   text: string;
   sender: "user1" | "bot";
   type?: "original" | "correction" | "response" | "greeting";
-  originalText?: string; // Store original text before translation
-  isTranslated?: boolean; // Track if message is currently translated
+  originalText?: string;
+  isTranslated?: boolean;
 };
 
 interface ProcessedResponse {
@@ -67,8 +67,8 @@ export default function LanguageLearningScreen() {
   const [isSpeechEnabled, setIsSpeechEnabled] = useState(true);
   const [sessionInitialized, setSessionInitialized] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
-  const [learningLanguage, setLearningLanguage] = useState("en"); // Default language
-  const [nativeLanguage, setNativeLanguage] = useState("fr"); // Default native language
+  const [learningLanguage, setLearningLanguage] = useState("en");
+  const [nativeLanguage, setNativeLanguage] = useState("fr");
   const [isTranslating, setIsTranslating] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
 
@@ -92,7 +92,7 @@ export default function LanguageLearningScreen() {
   const initializeSession = async () => {
     try {
       const auth = getAuth();
-      await auth.currentUser?.reload()
+      await auth.currentUser?.reload();
       const user = auth.currentUser;
 
       if (!user) {
@@ -130,17 +130,20 @@ export default function LanguageLearningScreen() {
         setConnectionError(false);
 
         if (data.greeting) {
-          // Auto-translate greeting if learning language is not English
           let greetingText = data.greeting;
-          if (learningLanguage !== "en") {
+          let originalGreeting = data.greeting;
+          let isTranslated = false;
+
+          if (nativeLanguage === "fr" && learningLanguage !== "fr") {
             try {
               const translatedGreeting = await translateText(
                 data.greeting,
                 learningLanguage,
-                "en"
+                nativeLanguage
               );
               if (translatedGreeting) {
                 greetingText = translatedGreeting;
+                isTranslated = true;
               }
             } catch (error) {
               console.error("Failed to translate greeting:", error);
@@ -151,8 +154,8 @@ export default function LanguageLearningScreen() {
             text: greetingText,
             sender: "bot",
             type: "greeting",
-            originalText: data.greeting,
-            isTranslated: learningLanguage !== "en",
+            originalText: originalGreeting,
+            isTranslated: isTranslated,
           });
 
           if (isSpeechEnabled) await speakText(greetingText);
@@ -161,9 +164,8 @@ export default function LanguageLearningScreen() {
         console.error("API connection error:", error);
         setConnectionError(true);
 
-        // Add a local greeting message if API is unavailable
         addMessage({
-          text: "Welcome to the Language Assistant! I'll help you practice and improve your language skills. Please note that I'm currently in offline mode due to connection issues.",
+          text: "Bienvenue dans l'Assistant Linguistique ! Je vais vous aider à pratiquer et améliorer vos compétences linguistiques. Veuillez noter que je suis actuellement en mode hors ligne en raison de problèmes de connexion.",
           sender: "bot",
           type: "greeting",
         });
@@ -178,26 +180,22 @@ export default function LanguageLearningScreen() {
     fromLang: string,
     toLang: string
   ): Promise<string | null> => {
-    // Don't attempt translation if text is empty or languages are the same
     if (!text || !text.trim() || fromLang === toLang) {
       return text;
     }
 
-    // Show a brief loading message for longer translations
     if (text.length > 100) {
       setIsTranslating(true);
     }
 
     try {
-      // Record start time for monitoring
       const startTime = Date.now();
 
-      // Set up a timeout to abort excessive wait times
       const timeoutId = setTimeout(() => {
         console.warn("Translation taking too long, using original text");
         setIsTranslating(false);
         return text;
-      }, 8000); // 8 second timeout
+      }, 8000);
 
       const response = await fetch(`${API_URL}/translate`, {
         method: "POST",
@@ -210,10 +208,8 @@ export default function LanguageLearningScreen() {
         }),
       });
 
-      // Clear the timeout since we got a response
       clearTimeout(timeoutId);
 
-      // Log translation time for monitoring
       const elapsedTime = Date.now() - startTime;
       console.log(`Translation took ${elapsedTime}ms`);
 
@@ -224,19 +220,14 @@ export default function LanguageLearningScreen() {
 
       const data = await response.json();
 
-      // Check if translation was successful according to API
       if (!data.success) {
         console.warn("Translation marked as unsuccessful:", data.error);
-        // If translation failed but server returned something, check if it's usable
         if (data.translated_text && data.translated_text !== text) {
-          // Server provided a partial translation, use it
           return data.translated_text;
         }
-        // Otherwise use original text
         return text;
       }
 
-      // Verify we actually got a real translation (not empty or identical)
       if (
         !data.translated_text ||
         data.translated_text.trim() === "" ||
@@ -248,20 +239,18 @@ export default function LanguageLearningScreen() {
       return data.translated_text;
     } catch (error) {
       console.error("Translation error:", error);
-      return text; // Fallback to original text
+      return text;
     } finally {
       setIsTranslating(false);
     }
   };
 
   const toggleMessageTranslation = async (messageId: string) => {
-    // Find the message to translate
     const messageToTranslate = messages.find(
       (message) => message.id === messageId
     );
     if (!messageToTranslate) return;
 
-    // Already translated - switch back to original
     if (messageToTranslate.isTranslated && messageToTranslate.originalText) {
       setMessages((prevMessages) =>
         prevMessages.map((message) =>
@@ -278,10 +267,8 @@ export default function LanguageLearningScreen() {
       return;
     }
 
-    // Not translated yet - translate now
     setIsTranslating(true);
     try {
-      // Determine translation direction based on message sender
       const fromLang =
         messageToTranslate.sender === "bot" ? learningLanguage : nativeLanguage;
       const toLang =
@@ -323,7 +310,6 @@ export default function LanguageLearningScreen() {
     let originalText = processedText;
     let translationFailed = false;
 
-    // Add user message immediately to improve perceived responsiveness
     const userMessageId = Date.now().toString();
     addMessage({
       text: originalText,
@@ -331,7 +317,6 @@ export default function LanguageLearningScreen() {
       type: "original",
     });
 
-    // Translate user input if needed
     if (learningLanguage !== nativeLanguage) {
       try {
         const translatedInput = await translateText(
@@ -342,10 +327,8 @@ export default function LanguageLearningScreen() {
 
         if (translatedInput) {
           if (translatedInput !== processedText) {
-            // Update the message with translation metadata if translation succeeded
             processedText = translatedInput;
 
-            // Update the user message to include original text reference
             setMessages((prevMessages) =>
               prevMessages.map((message) =>
                 message.id === userMessageId
@@ -368,7 +351,6 @@ export default function LanguageLearningScreen() {
 
     try {
       if (connectionError) {
-        // Fallback offline mode with more context
         setTimeout(() => {
           addMessage({
             text: "I'm currently offline. Your message was received, but I can't process it right now. Please check your internet connection.",
@@ -381,14 +363,12 @@ export default function LanguageLearningScreen() {
         return;
       }
 
-      // If translation failed, add a notice but continue processing with original text
       if (translationFailed) {
         addMessage({
           text: "Note: Translation service is currently unavailable. Processing your original message.",
           sender: "bot",
           type: "response",
         });
-        // Continue with the original text
         processedText = originalText;
       }
 
@@ -411,12 +391,10 @@ export default function LanguageLearningScreen() {
 
       const data: ProcessedResponse = await response.json();
 
-      // Handle correction message if exists and differs from input
       if (data.corrected_text && data.corrected_text !== processedText) {
         let correctionText = data.corrected_text;
         let originalCorrection = correctionText;
 
-        // Only attempt translation if the service is working
         if (!translationFailed && learningLanguage !== nativeLanguage) {
           try {
             const translatedCorrection = await translateText(
@@ -430,7 +408,6 @@ export default function LanguageLearningScreen() {
             }
           } catch (error) {
             console.error("Failed to translate correction:", error);
-            // Continue with untranslated text - don't add another failure message
           }
         }
 
@@ -447,12 +424,10 @@ export default function LanguageLearningScreen() {
         });
       }
 
-      // Handle response message
       if (data.response) {
         let responseText = data.response;
         let originalResponse = responseText;
 
-        // Only attempt translation if the service is working
         if (!translationFailed && learningLanguage !== nativeLanguage) {
           try {
             const translatedResponse = await translateText(
@@ -466,7 +441,6 @@ export default function LanguageLearningScreen() {
             }
           } catch (error) {
             console.error("Failed to translate response:", error);
-            // Continue with untranslated text
           }
         }
 
@@ -485,7 +459,6 @@ export default function LanguageLearningScreen() {
     } catch (error) {
       console.error("Process message error:", error);
 
-      // Add error message to chat
       addMessage({
         text: "Sorry, I couldn't process your message. Please try again later.",
         sender: "bot",
@@ -523,11 +496,11 @@ export default function LanguageLearningScreen() {
           isMeteringEnabled: true,
           android: {
             extension: ".wav",
-            outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_DEFAULT, // Ensure compatibility
-            audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AMR_NB, // More stable format
+            outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_DEFAULT,
+            audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AMR_NB,
             sampleRate: 16000,
             numberOfChannels: 1,
-            bitRate: 64000, // Lower bitrate for better performance
+            bitRate: 64000,
           },
           ios: {
             extension: ".wav",
@@ -549,7 +522,6 @@ export default function LanguageLearningScreen() {
         setRecording(recordingInstance);
         setIsListening(true);
 
-        // 🔥 Add this back to start the animation when recording starts
         startPulseAnimation();
       }
     } catch (error) {
@@ -578,11 +550,6 @@ export default function LanguageLearningScreen() {
         throw new Error("Audio file not found");
       }
 
-      // Try playing the file
-      const sound = new Audio.Sound();
-      await sound.loadAsync({ uri });
-      await sound.playAsync();
-
       console.log("Recording URI:", uri);
 
       setIsConverting(true);
@@ -593,7 +560,6 @@ export default function LanguageLearningScreen() {
       });
 
       try {
-        // Directly convert and process message
         const transcribedText = await convertSpeechToText(uri);
 
         setMessages((prev) =>
@@ -637,8 +603,8 @@ export default function LanguageLearningScreen() {
       const formData = new FormData();
       formData.append("audio", {
         uri: audioUri,
-        type: "audio/wav", // Ensure proper MIME type
-        name: "speech.wav", // Use .wav extension
+        type: "audio/wav",
+        name: "speech.wav",
       } as any);
 
       const response = await fetch(`${API_URL}/speech-to-text`, {
@@ -697,7 +663,6 @@ export default function LanguageLearningScreen() {
   const addMessage = (message: Omit<Message, "id">) => {
     const newMessage = { ...message, id: Date.now().toString() };
     setMessages((prev) => [...prev, newMessage]);
-    // Use setTimeout to ensure the list updates before scrolling
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
@@ -707,7 +672,7 @@ export default function LanguageLearningScreen() {
     try {
       await Speech.stop();
       await Speech.speak(text, {
-        language: "fr-CA", // Use English for TTS when translated
+        language: "fr-CA",
         pitch: 1.0,
         rate: 0.9,
         onError: (error) => console.error("Speech error:", error),
@@ -748,7 +713,6 @@ export default function LanguageLearningScreen() {
         )}
       </View>
 
-      {/* Translation button */}
       <TouchableOpacity
         style={styles.translateButton}
         onPress={() => toggleMessageTranslation(item.id)}
