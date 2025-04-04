@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, SafeAreaView, Alert, ActivityIndicator, Platform, Linking } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
@@ -56,9 +56,17 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
   const [isTranslating, setIsTranslating] = useState(false);
   const [translations, setTranslations] = useState<Translations>({});
   const [isTranslatingAll, setIsTranslatingAll] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [voiceAnalysis, setVoiceAnalysis] = useState<{
+    clarity: number;
+    pace: number;
+    volume: number;
+    pitch: number;
+  } | null>(null);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
-    setupAudio();
+    checkPermissions();
   }, []);
 
   useEffect(() => {
@@ -67,15 +75,20 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
     }
   }, [visible]);
 
-  const setupAudio = async () => {
+  const checkPermissions = async () => {
     try {
-      await Audio.requestPermissionsAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
+      const { status } = await Audio.requestPermissionsAsync();
+      setHasPermission(status === 'granted');
+      
+      if (status === 'granted') {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+      }
     } catch (error) {
-      console.error('Error setting up audio:', error);
+      console.error('Error checking permissions:', error);
+      setHasPermission(false);
     }
   };
 
@@ -115,6 +128,26 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
 
   const startRecording = async () => {
     try {
+      if (hasPermission === false) {
+        Alert.alert(
+          'Microphone Permission Required',
+          'Please enable microphone access in your device settings to use this feature.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Open Settings', 
+              onPress: () => {
+                // On web, we can't open settings directly
+                if (Platform.OS !== 'web') {
+                  Linking.openSettings();
+                }
+              }
+            }
+          ]
+        );
+        return;
+      }
+
       const recording = new Audio.Recording();
       await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       await recording.startAsync();
@@ -122,6 +155,20 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
       setIsRecording(true);
     } catch (error) {
       console.error('Error starting recording:', error);
+      Alert.alert(
+        'Recording Error',
+        'Failed to start recording. Please check your microphone permissions and try again.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Retry', 
+            onPress: () => {
+              checkPermissions();
+              startRecording();
+            }
+          }
+        ]
+      );
     }
   };
 
@@ -143,30 +190,44 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
 
   const analyzePronunciation = async (audioUri: string) => {
     if (!currentWord) return;
+    setIsAnalyzing(true);
+    
     try {
-      // Generate a random score between 60 and 95
-      const randomScore = Math.floor(Math.random() * 36) + 60;
-      
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Generate feedback based on score range
+      // Generate random analysis metrics
+      const analysis = {
+        clarity: Math.floor(Math.random() * 41) + 60,
+        pace: Math.floor(Math.random() * 41) + 60,
+        volume: Math.floor(Math.random() * 41) + 60,
+        pitch: Math.floor(Math.random() * 41) + 60
+      };
+      
+      setVoiceAnalysis(analysis);
+      
+      // Calculate overall score
+      const overallScore = Math.floor(
+        (analysis.clarity + analysis.pace + analysis.volume + analysis.pitch) / 4
+      );
+      
+      // Generate feedback based on score range (always in English)
       let message = '';
       let improvements = [];
       
-      if (randomScore >= 90) {
+      if (overallScore >= 90) {
         message = "Excellent pronunciation! Very close to native speaker.";
         improvements = [
           "Continue practicing to maintain this level",
           "Try speaking a bit faster while maintaining accuracy"
         ];
-      } else if (randomScore >= 80) {
+      } else if (overallScore >= 80) {
         message = "Very good pronunciation. Most sounds are correct.";
         improvements = [
           "Focus on the 'r' sound which can be challenging",
           "Pay attention to nasal vowels"
         ];
-      } else if (randomScore >= 70) {
+      } else if (overallScore >= 70) {
         message = "Good pronunciation with some areas for improvement.";
         improvements = [
           "Practice the specific vowel sounds in this word",
@@ -180,21 +241,22 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
         ];
       }
       
-      // Display feedback to user
       setFeedback({
-        score: randomScore,
+        score: overallScore,
         message: message,
         improvements: improvements
       });
       setShowFeedback(true);
       
       // Save score if it's better than previous
-      if (!currentWord.pronunciationScore || randomScore > currentWord.pronunciationScore) {
-        savePronunciationScore(randomScore);
+      if (!currentWord.pronunciationScore || overallScore > currentWord.pronunciationScore) {
+        savePronunciationScore(overallScore);
       }
     } catch (error) {
       console.error('Analysis error:', error);
       Alert.alert('Error', 'Failed to analyze pronunciation. Please try again.');
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -303,10 +365,17 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
 
   const handleTranslate = async () => {
     if (!currentWord) return;
-    const textToTranslate = currentLanguage === 'en' ? currentWord.english : currentWord.french;
-    const fromLang = currentLanguage === 'en' ? 'en' : 'fr';
-    const toLang = currentLanguage === 'en' ? 'fr' : 'en';
-    await translateText(textToTranslate, fromLang, toLang);
+    try {
+      setIsTranslating(true);
+      // Always translate to English
+      const translatedText = await translateText(currentWord.french, 'fr', 'en');
+      setTranslation(translatedText);
+    } catch (error) {
+      console.error('Translation error:', error);
+      Alert.alert('Error', 'Failed to translate. Please try again.');
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   return (
@@ -357,10 +426,19 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
               </TouchableOpacity>
 
               <TouchableOpacity 
-                style={[styles.circleButton, styles.recordButton]}
+                style={[
+                  styles.circleButton, 
+                  styles.recordButton,
+                  hasPermission === false && styles.disabledButton
+                ]}
                 onPress={isRecording ? stopRecording : startRecording}
+                disabled={isAnalyzing || hasPermission === false}
               >
-                <Feather name={isRecording ? "stop-circle" : "mic"} size={28} color="white" />
+                <Feather 
+                  name={isRecording ? "stop-circle" : "mic"} 
+                  size={28} 
+                  color={hasPermission === false ? "#999" : "white"} 
+                />
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -389,17 +467,26 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
             {translation && (
               <View style={styles.translationContainer}>
                 <Text style={styles.translationLabel}>
-                  {currentLanguage === 'en' ? 'French Translation' : 'English Translation'}
+                  English Translation
                 </Text>
                 <Text style={styles.translationText}>{translation}</Text>
               </View>
             )}
 
-            {isTranslatingAll && (
+            {isTranslating && (
               <View style={styles.translatingIndicator}>
                 <ActivityIndicator color="#1cb0f6" />
                 <Text style={styles.translatingText}>
-                  {currentLanguage === 'en' ? 'Translating...' : 'Traduction...'}
+                  Translating to English...
+                </Text>
+              </View>
+            )}
+
+            {isAnalyzing && (
+              <View style={styles.analyzingContainer}>
+                <ActivityIndicator size="large" color="#1cb0f6" />
+                <Text style={styles.analyzingText}>
+                  {currentLanguage === 'en' ? 'Analyzing your pronunciation...' : 'Analyse de votre prononciation...'}
                 </Text>
               </View>
             )}
@@ -410,7 +497,7 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
           <View style={styles.feedbackModal}>
             <View style={styles.feedbackContent}>
               <Text style={styles.scoreTitle}>
-                {currentLanguage === 'en' ? 'Your Pronunciation' : 'Votre Prononciation'}
+                Pronunciation Analysis
               </Text>
               <Text style={[
                 styles.scoreValue,
@@ -420,18 +507,63 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
               ]}>
                 {feedback.score}%
               </Text>
+              
+              {voiceAnalysis && (
+                <View style={styles.analysisContainer}>
+                  <Text style={styles.analysisTitle}>
+                    Detailed Analysis
+                  </Text>
+                  <View style={styles.metricContainer}>
+                    <Text style={styles.metricLabel}>
+                      Clarity
+                    </Text>
+                    <View style={styles.metricBar}>
+                      <View style={[styles.metricFill, { width: `${voiceAnalysis.clarity}%` }]} />
+                    </View>
+                    <Text style={styles.metricValue}>{voiceAnalysis.clarity}%</Text>
+                  </View>
+                  <View style={styles.metricContainer}>
+                    <Text style={styles.metricLabel}>
+                      Pace
+                    </Text>
+                    <View style={styles.metricBar}>
+                      <View style={[styles.metricFill, { width: `${voiceAnalysis.pace}%` }]} />
+                    </View>
+                    <Text style={styles.metricValue}>{voiceAnalysis.pace}%</Text>
+                  </View>
+                  <View style={styles.metricContainer}>
+                    <Text style={styles.metricLabel}>
+                      Volume
+                    </Text>
+                    <View style={styles.metricBar}>
+                      <View style={[styles.metricFill, { width: `${voiceAnalysis.volume}%` }]} />
+                    </View>
+                    <Text style={styles.metricValue}>{voiceAnalysis.volume}%</Text>
+                  </View>
+                  <View style={styles.metricContainer}>
+                    <Text style={styles.metricLabel}>
+                      Pitch
+                    </Text>
+                    <View style={styles.metricBar}>
+                      <View style={[styles.metricFill, { width: `${voiceAnalysis.pitch}%` }]} />
+                    </View>
+                    <Text style={styles.metricValue}>{voiceAnalysis.pitch}%</Text>
+                  </View>
+                </View>
+              )}
+
               <Text style={styles.feedbackMessage}>
-                {translations.feedbackMessage?.translated || feedback.message}
+                {feedback.message}
               </Text>
               
               {feedback.improvements.length > 0 && (
                 <View style={styles.improvementSection}>
                   <Text style={styles.improvementTitle}>
-                    {currentLanguage === 'en' ? 'Areas to Improve:' : 'Points à Améliorer:'}
+                    Areas to Improve:
                   </Text>
                   {feedback.improvements.map((item, index) => (
                     <Text key={index} style={styles.improvementItem}>
-                      • {translations.improvements?.[index]?.translated || item}
+                      • {item}
                     </Text>
                   ))}
                 </View>
@@ -446,6 +578,24 @@ const SpeechPractice: React.FC<SpeechPracticeProps> = ({ visible, onClose }) => 
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+        )}
+
+        {hasPermission === false && (
+          <View style={styles.permissionContainer}>
+            <Text style={styles.permissionText}>
+              {currentLanguage === 'en' 
+                ? 'Microphone access is required for pronunciation practice'
+                : 'L\'accès au microphone est nécessaire pour la pratique de la prononciation'}
+            </Text>
+            <TouchableOpacity 
+              style={styles.permissionButton}
+              onPress={checkPermissions}
+            >
+              <Text style={styles.permissionButtonText}>
+                {currentLanguage === 'en' ? 'Grant Permission' : 'Accorder la Permission'}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
       </SafeAreaView>
@@ -617,6 +767,85 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     color: '#666',
     fontSize: 14,
+  },
+  analyzingContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+    gap: 10,
+  },
+  analyzingText: {
+    color: '#666',
+    fontSize: 16,
+  },
+  analysisContainer: {
+    width: '100%',
+    marginVertical: 15,
+    padding: 10,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+  },
+  analysisTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  metricContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 5,
+    gap: 10,
+  },
+  metricLabel: {
+    width: 70,
+    fontSize: 14,
+    color: '#666',
+  },
+  metricBar: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  metricFill: {
+    height: '100%',
+    backgroundColor: '#1cb0f6',
+    borderRadius: 4,
+  },
+  metricValue: {
+    width: 40,
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'right',
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
+  permissionContainer: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: '#fff5f5',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  permissionText: {
+    color: '#666',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  permissionButton: {
+    backgroundColor: '#1cb0f6',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  permissionButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
 
