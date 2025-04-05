@@ -53,7 +53,7 @@ interface AudioError extends Error {
   code?: string;
 }
 
-const API_URL = "http://192.168.236.44:8000";
+const API_URL = "http://192.168.1.33:8000";
 
 export const getFirebaseToken = async () => {
   const auth = getAuth();

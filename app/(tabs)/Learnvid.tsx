@@ -55,7 +55,7 @@ const LearnVideoScreen = () => {
               <Icon name="play-circle" size={24} color="#0066FF" />
             </View>
             <View style={styles.lessonInfo}>
-              <Text style={styles.lessonTitle}>Speaking Spanish</Text>
+              <Text style={styles.lessonTitle}>Speaking French</Text>
               <Text style={styles.lessonType}>SPEAKING PRACTICE</Text>
             </View>
             <Icon name="chevron-right" size={24} color="#666666" />
@@ -134,7 +134,7 @@ const BackButton = () => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(184, 56, 56, 1)',
     padding: 16,
   },
   title: {
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   },
   chapterContainer: {
     marginBottom: 24,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(226, 83, 83, 1)',
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   },
   lessonCount: {
     fontSize: 16,
-    color: '#666666',
+    color: '#000000',
     marginBottom: 16,
   },
   lessonList: {
