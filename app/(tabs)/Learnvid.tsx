@@ -134,17 +134,18 @@ const BackButton = () => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(184, 56, 56, 1)',
+    backgroundColor: '#0a0a1a',
     padding: 16,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#FFFFFF',
     marginBottom: 20,
   },
   chapterContainer: {
     marginBottom: 24,
-    backgroundColor: 'rgba(226, 83, 83, 1)',
+    backgroundColor: '#1a1a2e',
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
@@ -156,11 +157,12 @@ const styles = StyleSheet.create({
   chapterTitle: {
     fontSize: 28,
     fontWeight: 'bold',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   lessonCount: {
     fontSize: 16,
-    color: '#000000',
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   lessonList: {
