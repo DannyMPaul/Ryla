@@ -296,10 +296,17 @@ const HomeScreen: React.FC = () => {
         const snapshot = await get(userRef);
         const userData = snapshot.val();
 
-        if (userData?.quiz_results?.details) {
+        if (userData?.quiz_results) {
+          // Get the latest quiz result
           setQuizResults({
-            userLevel: userData.quiz_results.details.userLevel ?? "beginner",
-            accuracy: userData.quiz_results.details.accuracy ?? "0%",
+            userLevel: userData.quiz_results.details?.userLevel ?? "beginner",
+            accuracy: userData.quiz_results.details?.accuracy ?? "0%",
+          });
+        } else if (userData?.quizResults) {
+          // Fallback to the older format if the new format doesn't exist
+          setQuizResults({
+            userLevel: userData.quizResults.finalLevel ?? "beginner",
+            accuracy: userData.quizResults.details?.accuracy ?? "0%",
           });
         }
       }
@@ -449,30 +456,13 @@ const HomeScreen: React.FC = () => {
             <Text style={styles.welcomeText}>
               Welcome, {userData?.name || "Learner"}!
             </Text>
-            {isFirstLogin && userData?.quizResults && (
-              <View style={styles.quizResultsContainer}>
-                <Text style={styles.levelText}>
-                  Level: {userData.quizResults.finalLevel}
-                </Text>
-                <Text style={styles.accuracyText}>
-                  Accuracy: {userData.quizResults.details?.accuracy || "0%"}
-                </Text>
-                <Text style={styles.motivationalText}>
-                  {getMotivationalQuote(userData.quizResults.finalLevel)}
-                </Text>
-              </View>
-            )}
           </View>
         </View>
       </View>
 
       <TouchableOpacity
         style={styles.switchButton}
-
         onPress={() => router.replace("/(tabs)/TabNavigator")}
-
-        
-
       >
         <Text style={styles.switchButtonText}>Back To Home</Text>
       </TouchableOpacity>

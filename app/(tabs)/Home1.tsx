@@ -76,7 +76,7 @@ const Home1Screen = () => {
         image: require('../../assets/images/qn.jpg'),
         isCompleted: false,
         isLocked: false, // Initially unlocked
-        route: '/(tabs)/q1' as const,
+        route: '/(tabs)/Home' as const,
         speechPractice: true
       },
       {

@@ -7,8 +7,9 @@ import {
   Image,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons, Feather } from "@expo/vector-icons";
 import {
   getAuth,
   onAuthStateChanged,
@@ -627,11 +628,21 @@ const ProfileScreen = () => {
         <Text style={styles.settingsText}>Settings</Text>
       </TouchableOpacity>
 
+      {/* Retake Quiz Button - Always visible */}
+      <TouchableOpacity 
+        style={styles.retakeQuizButton}
+        onPress={() => router.replace('/(tabs)/quiz')}
+      >
+        <Feather name="refresh-cw" size={20} color="#FFFFFF" />
+        <Text style={styles.retakeQuizText}>Retake Quiz</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
         <Feather name="log-out" size={24} color="#FF3B30" />
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
 
+      {/* Quiz Results Section - Only show if user has quiz results */}
       {userData?.quizResults && (
         <View style={styles.statsSection}>
           <Text style={styles.sectionTitle}>Your Progress</Text>
@@ -990,6 +1001,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontStyle: "italic",
     padding: 16,
+  },
+  retakeQuizButton: {
+    backgroundColor: "#58cc02",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  retakeQuizText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 

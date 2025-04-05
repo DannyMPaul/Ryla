@@ -203,7 +203,7 @@ const QuizScreen = () => {
   };
 
   const handleClose = () => {
-    router.back();
+    router.replace('/(tabs)/Home' as const);
   };
 
   const renderQuestion = () => {

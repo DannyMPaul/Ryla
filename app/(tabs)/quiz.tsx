@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getAuth } from 'firebase/auth';
-import { getDatabase, ref as dbRef, update, onValue } from 'firebase/database';
+import { getDatabase, ref as dbRef, update, onValue, get } from 'firebase/database';
 
 // Add interface at the top
 interface QuizQuestion {
@@ -232,34 +232,57 @@ const QuizScreen = () => {
     }
 
     try {
-      await update(userRef, {
-        'quiz_results': {
-          scores: {
-            beginner: beginnerScore,
-            intermediate: intermediateScore,
-            hard: hardScore,
-            admin: adminScore
+      // Get current user data to check if we need to update
+      const userSnapshot = await get(userRef);
+      const userData = userSnapshot.val();
+      
+      // Check if this is a better score than previous attempts
+      let shouldUpdate = true;
+      if (userData && userData.quiz_results) {
+        const previousAccuracy = parseFloat(userData.quiz_results.details.accuracy.replace('%', ''));
+        // Only update if the new score is better or if it's been more than 24 hours since the last attempt
+        const lastAttemptTime = new Date(userData.quiz_results.completedAt).getTime();
+        const currentTime = new Date().getTime();
+        const hoursSinceLastAttempt = (currentTime - lastAttemptTime) / (1000 * 60 * 60);
+        
+        if (accuracy <= previousAccuracy && hoursSinceLastAttempt < 24) {
+          shouldUpdate = false;
+        }
+      }
+      
+      if (shouldUpdate) {
+        await update(userRef, {
+          'quiz_results': {
+            scores: {
+              beginner: beginnerScore,
+              intermediate: intermediateScore,
+              hard: hardScore,
+              admin: adminScore
+            },
+            details: {
+              totalQuestions: finalScore.total,
+              correctAnswers: totalCorrect,
+              accuracy: `${accuracy.toFixed(1)}%`,
+              userLevel,
+              sectionScores: {
+                beginnerAccuracy: `${((beginnerScore / quizQuestions.filter(q => q.context === 'beginner').length) * 100).toFixed(1)}%`,
+                intermediateAccuracy: `${((intermediateScore / quizQuestions.filter(q => q.context === 'intermediate').length) * 100).toFixed(1)}%`,
+                hardAccuracy: `${((hardScore / quizQuestions.filter(q => q.context === 'hard').length) * 100).toFixed(1)}%`,
+                adminAccuracy: `${((adminScore / quizQuestions.filter(q => q.context === 'Admin Created').length) * 100).toFixed(1)}%`
+              }
+            },
+            completedAt: new Date().toISOString()
           },
-          details: {
-            totalQuestions: finalScore.total,
-            correctAnswers: totalCorrect,
-            accuracy: `${accuracy.toFixed(1)}%`,
-            userLevel,
-            sectionScores: {
-              beginnerAccuracy: `${((beginnerScore / quizQuestions.filter(q => q.context === 'beginner').length) * 100).toFixed(1)}%`,
-              intermediateAccuracy: `${((intermediateScore / quizQuestions.filter(q => q.context === 'intermediate').length) * 100).toFixed(1)}%`,
-              hardAccuracy: `${((hardScore / quizQuestions.filter(q => q.context === 'hard').length) * 100).toFixed(1)}%`,
-              adminAccuracy: `${((adminScore / quizQuestions.filter(q => q.context === 'Admin Created').length) * 100).toFixed(1)}%`
-            }
-          },
-          completedAt: new Date().toISOString()
-        },
-        'user_level': userLevel,
-        'accuracy_percentage': accuracy.toFixed(1)
-      });
+          'user_level': userLevel,
+          'accuracy_percentage': accuracy.toFixed(1)
+        });
+      }
+
+      // Show results screen instead of directly navigating
+      setShowResults(true);
     } catch (error) {
-      console.error('Error saving final results:', error);
-      Alert.alert('Error', 'Failed to save your results');
+      console.error('Error saving quiz results:', error);
+      Alert.alert('Error', 'Failed to save quiz results. Please try again.');
     }
   };
 
@@ -294,12 +317,34 @@ const QuizScreen = () => {
             }
           </Text>
 
-          <TouchableOpacity 
-            style={styles.continueButton}
-            onPress={() => router.replace('./qwriting')}
-          >
-            <Text style={styles.continueButtonText}>Return to Welcome</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={styles.retakeButton}
+              onPress={() => {
+                // Reset quiz state
+                setCurrentQuestion(0);
+                setSelectedAnswer(null);
+                setShowResults(false);
+                setFinalScore({ total: 0, correct: 0 });
+                // Generate new random questions
+                const newQuestions = [
+                  ...getRandomQuestions("beginner", 5),
+                  ...getRandomQuestions("intermediate", 5),
+                  ...getRandomQuestions("hard", 5)
+                ];
+                setQuizQuestions(newQuestions);
+              }}
+            >
+              <Text style={styles.retakeButtonText}>Retake Quiz</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.continueButton}
+              onPress={() => router.replace('/(tabs)/TabNavigator')}
+            >
+              <Text style={styles.continueButtonText}>Continue to Home</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -419,9 +464,9 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 20,
   },
   dontKnowButton: {
     flex: 1,
@@ -438,6 +483,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     fontStyle: 'italic',
+  },
+  retakeButton: {
+    backgroundColor: '#F04A63',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  retakeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  continueButton: {
+    backgroundColor: '#58cc02',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 10,
   },
   questionText: {
     fontSize: 20,
