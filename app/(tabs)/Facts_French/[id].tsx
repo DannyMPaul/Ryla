@@ -63,7 +63,10 @@ export default function FactDetailScreen() {
         // style={styles.video}
       />
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-        <TouchableOpacity onPress={goBack} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.replace("/(tabs)/Fact_Index")}
+          style={styles.backButton}
+        >
           <FontAwesome
             name="arrow-left"
             size={30}

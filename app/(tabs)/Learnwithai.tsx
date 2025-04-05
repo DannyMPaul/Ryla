@@ -135,7 +135,7 @@ const LearnWithAIScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(78, 13, 22, 0.23)', // Dark background
+    backgroundColor: '#000000', // Dark background
   },
   scrollView: {
     flex: 1,

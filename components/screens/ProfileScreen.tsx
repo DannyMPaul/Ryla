@@ -9,7 +9,12 @@ import {
   Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { getAuth, onAuthStateChanged, updateProfile, signOut } from "firebase/auth";
+import {
+  getAuth,
+  onAuthStateChanged,
+  updateProfile,
+  signOut,
+} from "firebase/auth";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -126,42 +131,64 @@ const LearningGoalsSection = ({
       if (!user) return;
 
       const db = getDatabase();
-      const targetUsesRef = dbRef(db, `users/${user.uid}/model_data/target_uses`);
+      const targetUsesRef = dbRef(
+        db,
+        `users/${user.uid}/model_data/target_uses`
+      );
       const snapshot = await get(targetUsesRef);
+
+      // Create a default settings object where all options are unselected
+      const defaultTargetUses: LanguageSettings = {
+        en: {
+          grammar_correction: {
+            selected: false,
+            description: "I want to improve my grammar",
+          },
+          text_coherent: {
+            selected: false,
+            description: "I want to learn to express myself clearly",
+          },
+          easier_understanding: {
+            selected: false,
+            description: "I want to understand English more easily",
+          },
+          paraphrasing: {
+            selected: false,
+            description: "I want to learn different ways to express myself",
+          },
+          formal_tone: {
+            selected: false,
+            description: "I want to learn formal English",
+          },
+          neutral_tone: {
+            selected: false,
+            description: "I want a neutral communication style",
+          },
+        },
+      };
 
       if (snapshot.exists()) {
         const data = snapshot.val();
-        // If the data is a string (simple target use), convert it to the expected format
-        if (typeof data === 'string') {
-          const defaultTargetUses: LanguageSettings = {
-            en: {
-              grammar_correction: { selected: data === 'grammar_correction', description: "I want to improve my grammar" },
-              text_coherent: { selected: data === 'text_coherent', description: "I want to learn to express myself clearly" },
-              easier_understanding: { selected: data === 'easier_understanding', description: "I want to understand English more easily" },
-              paraphrasing: { selected: data === 'paraphrasing', description: "I want to learn different ways to express myself" },
-              formal_tone: { selected: data === 'formal_tone', description: "I want to learn formal English" },
-              neutral_tone: { selected: data === 'neutral_tone', description: "I want a neutral communication style" },
-            }
-          };
-          setTargetUses(defaultTargetUses);
+        // If the data is a string (simple target use from paste-2), convert it to our format
+        if (typeof data === "string") {
+          // Mark only the selected option as true
+          if (defaultTargetUses.en[data]) {
+            defaultTargetUses.en[data].selected = true;
+          }
         } else {
+          // Use the existing complex object format
           setTargetUses(data);
+          return;
         }
       } else {
-        // Set default target uses if none exist
-        const defaultTargetUses: LanguageSettings = {
-          en: {
-            grammar_correction: { selected: false, description: "I want to improve my grammar" },
-            text_coherent: { selected: false, description: "I want to learn to express myself clearly" },
-            easier_understanding: { selected: false, description: "I want to understand English more easily" },
-            paraphrasing: { selected: false, description: "I want to learn different ways to express myself" },
-            formal_tone: { selected: false, description: "I want to learn formal English" },
-            neutral_tone: { selected: false, description: "I want a neutral communication style" },
-          }
-        };
-        setTargetUses(defaultTargetUses);
-        await set(targetUsesRef, defaultTargetUses);
+        // Set a default selection if none exists (matching paste-2's default)
+        defaultTargetUses.en.easier_understanding.selected = true;
+
+        // Save the default to Firebase in the new string format
+        await set(targetUsesRef, "easier_understanding");
       }
+
+      setTargetUses(defaultTargetUses);
     } catch (error) {
       console.error("Error loading target uses:", error);
     } finally {
@@ -209,14 +236,17 @@ const LearningGoalsSection = ({
       // Update state
       setTargetUses(updatedTargetUses);
 
-      // Save to Firebase
+      // Save to Firebase as a simple string (matching paste-2's format)
       const auth = getAuth();
       const user = auth.currentUser;
       if (!user) return;
 
       const db = getDatabase();
-      const targetUsesRef = dbRef(db, `users/${user.uid}/model_data/target_uses`);
-      await set(targetUsesRef, updatedTargetUses);
+      const targetUsesRef = dbRef(
+        db,
+        `users/${user.uid}/model_data/target_uses`
+      );
+      await set(targetUsesRef, useCase);
 
       onUpdate();
     } catch (error) {
@@ -507,10 +537,10 @@ const ProfileScreen = () => {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      router.replace('/');
+      router.replace("/");
     } catch (error) {
-      console.error('Error signing out:', error);
-      Alert.alert('Error', 'Failed to sign out. Please try again.');
+      console.error("Error signing out:", error);
+      Alert.alert("Error", "Failed to sign out. Please try again.");
     }
   };
 

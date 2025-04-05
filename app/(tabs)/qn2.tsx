@@ -18,12 +18,13 @@ interface LanguageOption {
   id: string;
   flag: string;
   title: string;
+  code: string;
 }
 
 const languages: LanguageOption[] = [
-  { id: "1", flag: "gb", title: "English" },
-  { id: "2", flag: "de", title: "German" },
-  { id: "3", flag: "fr", title: "French" },
+  { id: "1", flag: "gb", title: "English", code: "en" },
+  { id: "2", flag: "de", title: "German", code: "de" },
+  { id: "3", flag: "fr", title: "French", code: "fr" },
 ];
 
 const qn2 = () => {
@@ -32,18 +33,19 @@ const qn2 = () => {
 
   const handleLanguageSelect = async (languageId: string) => {
     setSelectedLanguage(languageId);
-    const auth = getAuth();
     const user = auth.currentUser;
 
     if (user) {
       const db = getDatabase();
       const userRef = dbRef(db, `users/${user.uid}`);
 
+      const selectedLang = languages.find((l) => l.id === languageId);
+
       try {
         await update(userRef, {
           "responses/languageSelection": {
             selectedLanguage: languageId,
-            languageTitle: languages.find((l) => l.id === languageId)?.title,
+            languageTitle: selectedLang?.title,
             timestamp: new Date().toISOString(),
           },
         });
@@ -53,7 +55,7 @@ const qn2 = () => {
 
       const langRef = dbRef(db, `users/${user.uid}/model_data`);
       update(langRef, {
-        lang_to_learn: languages.find((l) => l.id === selectedLanguage)?.title,
+        lang_to_learn: selectedLang?.code,
       });
     }
   };

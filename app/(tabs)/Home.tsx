@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,18 +8,18 @@ import {
   Animated,
   Dimensions,
   BackHandler,
-} from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import TabNavigator from './TabNavigator';
-import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
-import { getAuth } from 'firebase/auth';
-import { ref, onValue, update, get } from 'firebase/database';
-import { Video, ResizeMode } from 'expo-av';
-import { database } from '../firebase/firebase';
+} from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import TabNavigator from "./TabNavigator";
+import { NavigationContainer, useFocusEffect } from "@react-navigation/native";
+import { getAuth } from "firebase/auth";
+import { ref, onValue, update, get } from "firebase/database";
+import { Video, ResizeMode } from "expo-av";
+import { database } from "../firebase/firebase";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 interface CardProps {
   title: string;
@@ -28,7 +28,12 @@ interface CardProps {
   children: React.ReactNode;
 }
 
-const ExpandableCard: React.FC<CardProps> = ({ title, isExpanded, onToggle, children }) => {
+const ExpandableCard: React.FC<CardProps> = ({
+  title,
+  isExpanded,
+  onToggle,
+  children,
+}) => {
   const animatedHeight = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
@@ -43,10 +48,10 @@ const ExpandableCard: React.FC<CardProps> = ({ title, isExpanded, onToggle, chil
     <View style={styles.card}>
       <TouchableOpacity onPress={onToggle} style={styles.cardHeader}>
         <Text style={styles.cardTitle}>{title}</Text>
-        <MaterialCommunityIcons 
-          name={isExpanded ? 'chevron-up' : 'chevron-down'} 
-          size={24} 
-          color="#fff" 
+        <MaterialCommunityIcons
+          name={isExpanded ? "chevron-up" : "chevron-down"}
+          size={24}
+          color="#fff"
         />
       </TouchableOpacity>
       <Animated.View
@@ -129,7 +134,9 @@ const HomeScreen: React.FC = () => {
   });
   const [unlockedStars, setUnlockedStars] = useState<number>(1);
   const [lastCompletedStar, setLastCompletedStar] = useState<number>(0);
-  const [completedQuestions, setCompletedQuestions] = useState<{[key: string]: boolean}>({});
+  const [completedQuestions, setCompletedQuestions] = useState<{
+    [key: string]: boolean;
+  }>({});
   const starScale = useRef(new Animated.Value(1)).current;
   const starOpacity = useRef(new Animated.Value(1)).current;
   const [showUnlockAnimation, setShowUnlockAnimation] = useState(false);
@@ -139,7 +146,7 @@ const HomeScreen: React.FC = () => {
     star2: false,
     star3: false,
     star4: false,
-    star5: false
+    star5: false,
   });
   const starAnimations = {
     scale: useRef(new Animated.Value(1)).current,
@@ -159,7 +166,7 @@ const HomeScreen: React.FC = () => {
     try {
       const auth = getAuth();
       const user = auth.currentUser;
-      
+
       if (!user) return;
 
       const userRef = ref(database, `users/${user.uid}/progress`);
@@ -169,25 +176,26 @@ const HomeScreen: React.FC = () => {
       if (progress) {
         const currentQuestion = progress.currentQuestion || 1;
         const questions = progress.questions || {};
-        
+
         // Find first incomplete question
-        for (let i = 1; i <= 10; i++) { // Assuming 10 questions
+        for (let i = 1; i <= 10; i++) {
+          // Assuming 10 questions
           if (!questions[`q${i}`]?.completed) {
             router.replace(`/(tabs)/q${i}` as any);
             return;
           }
         }
-        
+
         // All questions completed
-        router.replace('/(tabs)/completion' as any);
+        router.replace("/(tabs)/completion" as any);
       } else {
         // No progress, start from first question
-        router.replace('/(tabs)/q1' as any);
+        router.replace("/(tabs)/q1" as any);
       }
     } catch (error) {
-      console.error('Error checking progress:', error);
+      console.error("Error checking progress:", error);
       // Default to first question on error
-      router.replace('/(tabs)/q1' as any);
+      router.replace("/(tabs)/q1" as any);
     }
   };
 
@@ -196,7 +204,7 @@ const HomeScreen: React.FC = () => {
     const user = auth.currentUser;
     if (user) {
       const userRef = ref(database, `users/${user.uid}`);
-      
+
       // Load initial state
       const loadUserProgress = async () => {
         const snapshot = await get(userRef);
@@ -218,13 +226,13 @@ const HomeScreen: React.FC = () => {
           }
           // Update last login time
           await update(userRef, {
-            lastLogin: new Date().toISOString()
+            lastLogin: new Date().toISOString(),
           });
         }
       };
-      
+
       loadUserProgress();
-      
+
       // Listen for real-time updates;'c b
       const unsubscribe = onValue(userRef, (snapshot) => {
         const data = snapshot.val();
@@ -237,12 +245,12 @@ const HomeScreen: React.FC = () => {
             star2q2: data.quizResponses?.star2q2?.completed || false,
           };
           setCompletedQuestions(completed);
-          
+
           const previousUnlockedStars = unlockedStars;
           const newUnlockedStars = data.unlockedStars ?? 1;
           setUnlockedStars(newUnlockedStars);
           setLastCompletedStar(data.lastCompletedStar || 0);
-          
+
           if (newUnlockedStars > previousUnlockedStars) {
             setTimeout(animateStarUnlock, 500);
           }
@@ -258,17 +266,17 @@ const HomeScreen: React.FC = () => {
               Animated.timing(unlockScale, {
                 toValue: 1.2,
                 duration: 300,
-                useNativeDriver: true
+                useNativeDriver: true,
               }),
               Animated.timing(unlockScale, {
                 toValue: 1,
                 duration: 200,
-                useNativeDriver: true
-              })
+                useNativeDriver: true,
+              }),
             ]).start();
-            
+
             update(userRef, {
-              lastViewedStar: data.unlockedStars
+              lastViewedStar: data.unlockedStars,
             });
           }
         });
@@ -282,7 +290,7 @@ const HomeScreen: React.FC = () => {
     const fetchQuizResults = async () => {
       const auth = getAuth();
       const user = auth.currentUser;
-      
+
       if (user) {
         const userRef = ref(database, `users/${user.uid}`);
         const snapshot = await get(userRef);
@@ -290,8 +298,8 @@ const HomeScreen: React.FC = () => {
 
         if (userData?.quiz_results?.details) {
           setQuizResults({
-            userLevel: userData.quiz_results.details.userLevel ?? 'beginner',
-            accuracy: userData.quiz_results.details.accuracy ?? '0%'
+            userLevel: userData.quiz_results.details.userLevel ?? "beginner",
+            accuracy: userData.quiz_results.details.accuracy ?? "0%",
           });
         }
       }
@@ -304,13 +312,13 @@ const HomeScreen: React.FC = () => {
     const quotes = {
       Beginner: "Every expert was once a beginner. Let's start your journey!",
       Intermediate: "You're making great progress! Keep pushing forward!",
-      Advanced: "Impressive skills! You're well on your way to mastery!"
+      Advanced: "Impressive skills! You're well on your way to mastery!",
     };
     return quotes[level as keyof typeof quotes] || quotes.Beginner;
   };
 
   const toggleCard = (card: keyof typeof expandedCards) => {
-    setExpandedCards(prev => ({
+    setExpandedCards((prev) => ({
       ...prev,
       [card]: !prev[card],
     }));
@@ -345,58 +353,61 @@ const HomeScreen: React.FC = () => {
     ]).start();
 
     // Update star progress
-    setStarProgress(prev => ({
+    setStarProgress((prev) => ({
       ...prev,
-      [`star${starNumber}`]: true
+      [`star${starNumber}`]: true,
     }));
   };
 
-  const renderPathNode = (level: number, icon: MaterialCommunityIconName, onPress: () => void) => {
+  const renderPathNode = (
+    level: number,
+    icon: MaterialCommunityIconName,
+    onPress: () => void
+  ) => {
     const isUnlocked = level <= unlockedStars;
-    const isCompleted = level === 1 ? 
-      (completedQuestions.q1 && completedQuestions.q2) : 
-      level === 2 ? 
-      (completedQuestions.star2q1 && completedQuestions.star2q2) : 
-      false;
+    const isCompleted =
+      level === 1
+        ? completedQuestions.q1 && completedQuestions.q2
+        : level === 2
+        ? completedQuestions.star2q1 && completedQuestions.star2q2
+        : false;
     const isNextToUnlock = level === unlockedStars + 1;
-    
+
     // Determine which route to navigate to based on progress
     const handlePress = () => {
       if (!isUnlocked) return;
-      
-      switch(level) {
+
+      switch (level) {
         case 1:
-          if (!completedQuestions.q1) router.replace('./q1');
-          else if (!completedQuestions.q2) router.replace('./q2');
+          if (!completedQuestions.q1) router.replace("./q1");
+          else if (!completedQuestions.q2) router.replace("./q2");
           break;
         case 2:
-          if (!completedQuestions.star2q1) router.replace('./star2q1');
-          else if (!completedQuestions.star2q2) router.replace('./star2q2');
+          if (!completedQuestions.star2q1) router.replace("./star2q1");
+          else if (!completedQuestions.star2q2) router.replace("./star2q2");
           break;
         default:
           onPress();
       }
     };
-    
+
     return (
-      <TouchableOpacity 
-        onPress={onPress}
-        disabled={!isUnlocked}
-      >
+      <TouchableOpacity onPress={onPress} disabled={!isUnlocked}>
         <Animated.View
           style={[
             styles.pathNode,
             isUnlocked && styles.unlockedNode,
-            level === 2 && !starProgress.star2 && {
-              transform: [{ scale: starAnimations.scale }],
-              opacity: starAnimations.opacity,
-            }
+            level === 2 &&
+              !starProgress.star2 && {
+                transform: [{ scale: starAnimations.scale }],
+                opacity: starAnimations.opacity,
+              },
           ]}
         >
-          <MaterialCommunityIcons 
-            name={icon} 
-            size={32} 
-            color={isUnlocked ? "#58cc02" : "#666"} 
+          <MaterialCommunityIcons
+            name={icon}
+            size={32}
+            color={isUnlocked ? "#58cc02" : "#666"}
           />
           {!isUnlocked && (
             <View style={styles.lockIconContainer}>
@@ -415,15 +426,16 @@ const HomeScreen: React.FC = () => {
         return true;
       };
 
-      BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      return () =>
+        BackHandler.removeEventListener("hardwareBackPress", onBackPress);
     }, [])
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <Video
-        source={require('@/assets/videos/bg4.mp4')} 
+        source={require("@/assets/videos/bg4.mp4")}
         style={styles.backgroundVideo}
         resizeMode={ResizeMode.COVER}
         shouldPlay={false}
@@ -435,7 +447,7 @@ const HomeScreen: React.FC = () => {
         <View style={styles.headerContent}>
           <View style={styles.headerTextContainer}>
             <Text style={styles.welcomeText}>
-              Welcome, {userData?.name || 'Learner'}!
+              Welcome, {userData?.name || "Learner"}!
             </Text>
             {isFirstLogin && userData?.quizResults && (
               <View style={styles.quizResultsContainer}>
@@ -443,7 +455,7 @@ const HomeScreen: React.FC = () => {
                   Level: {userData.quizResults.finalLevel}
                 </Text>
                 <Text style={styles.accuracyText}>
-                  Accuracy: {userData.quizResults.details?.accuracy || '0%'}
+                  Accuracy: {userData.quizResults.details?.accuracy || "0%"}
                 </Text>
                 <Text style={styles.motivationalText}>
                   {getMotivationalQuote(userData.quizResults.finalLevel)}
@@ -454,9 +466,9 @@ const HomeScreen: React.FC = () => {
         </View>
       </View>
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.switchButton}
-        onPress={() => router.replace('/(tabs)/Home1')}
+        onPress={() => router.replace("/(tabs)/TabNavigator")}
       >
         <Text style={styles.switchButtonText}>Back To Home</Text>
       </TouchableOpacity>
@@ -466,14 +478,21 @@ const HomeScreen: React.FC = () => {
           <Text style={styles.resultTitle}>Quiz Results</Text>
           <View style={styles.resultRow}>
             <Text style={styles.resultLabel}>Level:</Text>
-            <Text style={[
-              styles.resultValue, 
-              {
-                color: quizResults.userLevel === 'beginner' ? '#FF6B6B' :
-                       quizResults.userLevel === 'intermediate' ? '#4ECDC4' : '#95E1D3'
-              }
-            ]}>
-              {quizResults.userLevel.charAt(0).toUpperCase() + quizResults.userLevel.slice(1)}
+            <Text
+              style={[
+                styles.resultValue,
+                {
+                  color:
+                    quizResults.userLevel === "beginner"
+                      ? "#FF6B6B"
+                      : quizResults.userLevel === "intermediate"
+                      ? "#4ECDC4"
+                      : "#95E1D3",
+                },
+              ]}
+            >
+              {quizResults.userLevel.charAt(0).toUpperCase() +
+                quizResults.userLevel.slice(1)}
             </Text>
           </View>
           <View style={styles.resultRow}>
@@ -487,40 +506,54 @@ const HomeScreen: React.FC = () => {
         <View style={styles.content}>
           {/* Learning Path */}
           <View style={styles.learningPath}>
-            <TouchableOpacity 
-              style={styles.startButton} 
-              onPress={() => router.replace('/(tabs)/q1' as any)}
+            <TouchableOpacity
+              style={styles.startButton}
+              onPress={() => router.replace("/(tabs)/q1" as any)}
             >
               <Text style={styles.startButtonText}>START</Text>
             </TouchableOpacity>
 
-            {renderPathNode(1, "star", () => router.replace('/(tabs)/q1' as any))}
+            {renderPathNode(1, "star", () =>
+              router.replace("/(tabs)/q1" as any)
+            )}
             <View style={styles.pathLine} />
-            
-            <Animated.View style={[
-              styles.star,
-              showUnlockAnimation && { transform: [{ scale: unlockScale }] }
-            ]}>
-              <TouchableOpacity 
-                onPress={() => router.replace('/(tabs)/star2q1' as any)}
-                disabled={!userData?.unlockedStars || userData.unlockedStars < 2}
+
+            <Animated.View
+              style={[
+                styles.star,
+                showUnlockAnimation && { transform: [{ scale: unlockScale }] },
+              ]}
+            >
+              <TouchableOpacity
+                onPress={() => router.replace("/(tabs)/star2q1" as any)}
+                disabled={
+                  !userData?.unlockedStars || userData.unlockedStars < 2
+                }
               >
-                <MaterialCommunityIcons 
-                  name="star" 
-                  size={40} 
-                  color={(userData?.unlockedStars ?? 0) >= 2 ? "#FFD700" : "#666666"}
+                <MaterialCommunityIcons
+                  name="star"
+                  size={40}
+                  color={
+                    (userData?.unlockedStars ?? 0) >= 2 ? "#FFD700" : "#666666"
+                  }
                 />
               </TouchableOpacity>
             </Animated.View>
             <View style={styles.pathLine} />
-            
-            {renderPathNode(3, "star", () => router.replace(`/(tabs)/q3` as any))}
+
+            {renderPathNode(3, "star", () =>
+              router.replace(`/(tabs)/q3` as any)
+            )}
             <View style={styles.pathLine} />
-            
-            {renderPathNode(4, "treasure-chest", () => router.replace(`/(tabs)/bonus` as any))}
+
+            {renderPathNode(4, "treasure-chest", () =>
+              router.replace(`/(tabs)/bonus` as any)
+            )}
             <View style={styles.pathLine} />
-            
-            {renderPathNode(5, "trophy", () => router.replace(`/(tabs)/final` as any))}
+
+            {renderPathNode(5, "trophy", () =>
+              router.replace(`/(tabs)/final` as any)
+            )}
           </View>
 
           {/* Expandable Cards */}
@@ -528,7 +561,7 @@ const HomeScreen: React.FC = () => {
             <ExpandableCard
               title="Unlock Leaderboards!"
               isExpanded={expandedCards.leaderboards}
-              onToggle={() => toggleCard('leaderboards')}
+              onToggle={() => toggleCard("leaderboards")}
             >
               <Text style={styles.cardText}>
                 Complete 10 more lessons to start competing
@@ -538,14 +571,18 @@ const HomeScreen: React.FC = () => {
             <ExpandableCard
               title="Daily Quests"
               isExpanded={expandedCards.quests}
-              onToggle={() => toggleCard('quests')}
+              onToggle={() => toggleCard("quests")}
             >
               <View style={styles.questItem}>
-                <MaterialCommunityIcons name="lightning-bolt" size={24} color="#ffd700" />
+                <MaterialCommunityIcons
+                  name="lightning-bolt"
+                  size={24}
+                  color="#ffd700"
+                />
                 <View style={styles.questContent}>
                   <Text style={styles.questText}>Earn 10 XP</Text>
                   <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: '0%' }]} />
+                    <View style={[styles.progressFill, { width: "0%" }]} />
                   </View>
                 </View>
                 <Text style={styles.questProgress}>0/10</Text>
@@ -564,38 +601,38 @@ const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111b21',
+    backgroundColor: "#111b21",
   },
   header: {
-    backgroundColor: '#F0657A',
+    backgroundColor: "#F0657A",
     padding: 16,
   },
   headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   headerTextContainer: {
     flex: 1,
     marginLeft: 16,
   },
   sectionTitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   lessonTitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   statsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   statsText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
   },
   scrollView: {
     flex: 1,
@@ -604,40 +641,40 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   learningPath: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
   },
   startButton: {
-    backgroundColor: '#F0657A',
+    backgroundColor: "#F0657A",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 18,
     marginBottom: 16,
   },
   startButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
     fontSize: 16,
   },
   pathNode: {
     width: 74,
     height: 74,
     borderRadius: 42,
-    backgroundColor: '#2b3940',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    backgroundColor: "#2b3940",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
   pathLine: {
     width: 3,
     height: 40,
-    backgroundColor: '#2b3940',
+    backgroundColor: "#2b3940",
   },
   lockIconContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: -8,
     right: -8,
-    backgroundColor: '#1f2937',
+    backgroundColor: "#1f2937",
     borderRadius: 12,
     padding: 4,
   },
@@ -645,34 +682,34 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   card: {
-    backgroundColor: '#1f2937',
+    backgroundColor: "#1f2937",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 18,
     marginBottom: 16,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 16,
   },
   cardTitle: {
-    color: '#F0657A',
+    color: "#F0657A",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   cardContent: {
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   cardText: {
-    color: '#9ca3af',
+    color: "#9ca3af",
     padding: 16,
     paddingTop: 0,
   },
   questItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     paddingTop: 0,
     gap: 12,
@@ -681,21 +718,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   questText: {
-    color: '#fff',
+    color: "#fff",
     marginBottom: 4,
   },
   questProgress: {
-    color: '#9ca3af',
+    color: "#9ca3af",
     fontSize: 12,
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#2b3940',
+    backgroundColor: "#2b3940",
     borderRadius: 4,
   },
   progressFill: {
-    height: '100%',
-    backgroundColor: 'pink',
+    height: "100%",
+    backgroundColor: "pink",
     borderRadius: 4,
   },
   viewAllButton: {
@@ -703,131 +740,131 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   viewAllText: {
-    color: '#1cb0f6',
-    fontWeight: 'bold',
+    color: "#1cb0f6",
+    fontWeight: "bold",
   },
   createProfileButton: {
-    backgroundColor: '#F0657A',
+    backgroundColor: "#F0657A",
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     margin: 16,
     marginBottom: 8,
   },
   signInButton: {
-    backgroundColor: '#1cb0f6',
+    backgroundColor: "#1cb0f6",
     padding: 12,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginHorizontal: 16,
     marginBottom: 16,
   },
   buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
   },
   welcomeText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
   },
   quizResultsContainer: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: "rgba(255,255,255,0.1)",
     padding: 16,
     margin: 16,
     borderRadius: 12,
   },
   levelText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   accuracyText: {
-    color: '#58cc02',
+    color: "#58cc02",
     fontSize: 16,
     marginTop: 4,
   },
   motivationalText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
-    fontStyle: 'italic',
+    fontStyle: "italic",
     marginTop: 8,
     opacity: 0.9,
   },
   unlockedNode: {
-    backgroundColor: '#1f2937',
+    backgroundColor: "#1f2937",
   },
   nodeContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   completedNode: {
-    borderColor: '#58cc02',
+    borderColor: "#58cc02",
     borderWidth: 2,
   },
   star: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#2b3940',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    backgroundColor: "#2b3940",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
   backgroundVideo: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     bottom: 0,
     right: 0,
     zIndex: -1,
     width: width, // Use window width
-    // height: height, // Use window height  
+    // height: height, // Use window height
   },
   quizResultsCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     margin: 16,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   resultTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
     marginBottom: 12,
   },
   resultRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginVertical: 4,
   },
   resultLabel: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     opacity: 0.8,
   },
   resultValue: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#58cc02',
+    fontWeight: "bold",
+    color: "#58cc02",
   },
   switchButton: {
-    backgroundColor: 'rgb(240, 74, 99)',
+    backgroundColor: "rgb(240, 74, 99)",
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 20,
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     marginRight: 20,
     marginTop: -20, // Negative margin to pull it up closer to welcome container
   },
   switchButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
 

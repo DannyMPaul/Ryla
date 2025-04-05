@@ -53,9 +53,14 @@ interface AudioError extends Error {
   code?: string;
 }
 
-let recording: Audio.Recording | null = null;
+const API_URL = "http://192.168.236.44:8000";
 
-const API_URL = "http://192.168.1.37:8000";
+export const getFirebaseToken = async () => {
+  const auth = getAuth();
+  const user = auth.currentUser;
+  if (!user) throw new Error("User not logged in");
+  return await user.getIdToken();
+};
 
 export default function LanguageLearningScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -81,10 +86,7 @@ export default function LanguageLearningScreen() {
     initializeSession();
 
     return () => {
-      cleanup();
-      if (recording) {
-        recording.stopAndUnloadAsync().catch(console.error);
-      }
+      if (recording) recording.stopAndUnloadAsync().catch(console.error);
       Speech.stop().catch(console.error);
     };
   }, []);
@@ -109,9 +111,7 @@ export default function LanguageLearningScreen() {
       try {
         const response = await fetch(`${API_URL}/initialize_session`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             user_id: tempUserId,
             language: learningLanguage,
@@ -180,17 +180,11 @@ export default function LanguageLearningScreen() {
     fromLang: string,
     toLang: string
   ): Promise<string | null> => {
-    if (!text || !text.trim() || fromLang === toLang) {
-      return text;
-    }
+    if (!text || !text.trim() || fromLang === toLang) return text;
 
-    if (text.length > 100) {
-      setIsTranslating(true);
-    }
+    if (text.length > 100) setIsTranslating(true);
 
     try {
-      const startTime = Date.now();
-
       const timeoutId = setTimeout(() => {
         console.warn("Translation taking too long, using original text");
         setIsTranslating(false);
@@ -210,9 +204,6 @@ export default function LanguageLearningScreen() {
 
       clearTimeout(timeoutId);
 
-      const elapsedTime = Date.now() - startTime;
-      console.log(`Translation took ${elapsedTime}ms`);
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Translation failed");
@@ -222,21 +213,16 @@ export default function LanguageLearningScreen() {
 
       if (!data.success) {
         console.warn("Translation marked as unsuccessful:", data.error);
-        if (data.translated_text && data.translated_text !== text) {
-          return data.translated_text;
-        }
-        return text;
+        return data.translated_text && data.translated_text !== text
+          ? data.translated_text
+          : text;
       }
 
-      if (
-        !data.translated_text ||
+      return !data.translated_text ||
         data.translated_text.trim() === "" ||
         data.translated_text === text
-      ) {
-        return text;
-      }
-
-      return data.translated_text;
+        ? text
+        : data.translated_text;
     } catch (error) {
       console.error("Translation error:", error);
       return text;
@@ -246,9 +232,7 @@ export default function LanguageLearningScreen() {
   };
 
   const toggleMessageTranslation = async (messageId: string) => {
-    const messageToTranslate = messages.find(
-      (message) => message.id === messageId
-    );
+    const messageToTranslate = messages.find((msg) => msg.id === messageId);
     if (!messageToTranslate) return;
 
     if (messageToTranslate.isTranslated && messageToTranslate.originalText) {
@@ -328,14 +312,10 @@ export default function LanguageLearningScreen() {
         if (translatedInput) {
           if (translatedInput !== processedText) {
             processedText = translatedInput;
-
             setMessages((prevMessages) =>
               prevMessages.map((message) =>
                 message.id === userMessageId
-                  ? {
-                      ...message,
-                      originalText: translatedInput,
-                    }
+                  ? { ...message, originalText: translatedInput }
                   : message
               )
             );
@@ -458,7 +438,6 @@ export default function LanguageLearningScreen() {
       }
     } catch (error) {
       console.error("Process message error:", error);
-
       addMessage({
         text: "Sorry, I couldn't process your message. Please try again later.",
         sender: "bot",
@@ -534,23 +513,15 @@ export default function LanguageLearningScreen() {
     try {
       if (!recording) return;
 
-      console.log("Stopping recording...");
       await recording.stopAndUnloadAsync();
       setIsListening(false);
       pulseAnim.setValue(0);
 
       const uri = recording.getURI();
-      if (!uri) {
-        throw new Error("No recording URI available");
-      }
+      if (!uri) throw new Error("No recording URI available");
 
       const fileInfo = await FileSystem.getInfoAsync(uri);
-      if (!fileInfo.exists) {
-        console.error("File does not exist:", uri);
-        throw new Error("Audio file not found");
-      }
-
-      console.log("Recording URI:", uri);
+      if (!fileInfo.exists) throw new Error("Audio file not found");
 
       setIsConverting(true);
       addMessage({
@@ -598,8 +569,6 @@ export default function LanguageLearningScreen() {
 
   const convertSpeechToText = async (audioUri: string): Promise<string> => {
     try {
-      console.log("Sending RAW PCM file to backend...");
-
       const formData = new FormData();
       formData.append("audio", {
         uri: audioUri,
@@ -623,13 +592,10 @@ export default function LanguageLearningScreen() {
       }
 
       const responseText = await response.text();
-      console.log("Backend raw response:", responseText);
 
       try {
         const data = JSON.parse(responseText);
-        if (!data.text) {
-          throw new Error("No transcription received");
-        }
+        if (!data.text) throw new Error("No transcription received");
         return data.text;
       } catch (error) {
         console.error("Speech-to-text parsing error:", error);
@@ -681,11 +647,6 @@ export default function LanguageLearningScreen() {
       console.error("Speech error:", error);
       setIsSpeechEnabled(false);
     }
-  };
-
-  const cleanup = () => {
-    Speech.stop();
-    if (recording) recording.stopAndUnloadAsync();
   };
 
   const handleKeyPress = (e: any) => {

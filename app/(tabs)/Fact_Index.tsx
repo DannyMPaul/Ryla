@@ -1,13 +1,19 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { StyleSheet, FlatList, View, Animated, TouchableOpacity } from 'react-native';
-import { Link, useFocusEffect, router } from 'expo-router';
-import { Video,ResizeMode } from 'expo-av'; // Import Video component
-import { FACTS } from '../../constants/Facts';
-import FactItem from '@/components/FactItem';
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  StyleSheet,
+  FlatList,
+  View,
+  Animated,
+  TouchableOpacity,
+} from "react-native";
+import { Link, useFocusEffect, router } from "expo-router";
+import { Video, ResizeMode } from "expo-av"; // Import Video component
+import { FACTS } from "../../constants/Facts";
+import FactItem from "@/components/FactItem";
 // import FactItem from '../../components/FactItem';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 
-import { Fact } from '../../types/index';
+import { Fact } from "../../types/index";
 
 export default function TabOneScreen() {
   const [facts, setFacts] = useState<Fact[]>([]);
@@ -53,9 +59,9 @@ export default function TabOneScreen() {
   );
 
   const BackButton = () => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.backButton}
-      onPress={() => router.replace('./TabNavigator')}
+      onPress={() => router.replace("/(tabs)/TabNavigator")}
       activeOpacity={0.7}
     >
       <Ionicons name="arrow-back-circle" size={42} color="#F0657A" />
@@ -66,7 +72,7 @@ export default function TabOneScreen() {
     <View style={styles.container}>
       {/* Video Background */}
       <Video
-        source={require('@/assets/videos/FeedbackBackground.mp4')} // Ensure your file path matches
+        source={require("@/assets/videos/FeedbackBackground.mp4")} // Ensure your file path matches
         style={StyleSheet.absoluteFillObject} // Fill the screen
         resizeMode={ResizeMode.COVER} // Fixed issue by using ResizeMode enum
         shouldPlay
@@ -87,23 +93,22 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black', // Ensures black background behind video
-    
+    backgroundColor: "black", // Ensures black background behind video
   },
   listContainer: {
     padding: 15,
     zIndex: 2, // Ensure content is above the video background
   },
   backButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 40,
     left: 16,
     zIndex: 10,
     width: 42,
     height: 42,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 21,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
   },
 });
