@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Image, Platform, BackHandler } from 'react-nati
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import TranslationBot from '../../components/TranslationBot';
 
 // Import your screens
 import LearnScreen from '../../components/screens/LearnScreen';
@@ -29,66 +30,64 @@ const TabNavigator = () => {
   );
 
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: '#0066FF',
-        tabBarInactiveTintColor: '#666666',
-        tabBarLabelStyle: styles.tabBarLabel,
-      }}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="globe" size={24} color={color} />
-          ),
+    <View style={{ flex: 1 }}>
+      <Tab.Navigator
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: styles.tabBar,
+          tabBarActiveTintColor: '#0066FF',
+          tabBarInactiveTintColor: '#666666',
+          tabBarLabelStyle: styles.tabBarLabel,
         }}
-      />
-      <Tab.Screen
-        name="Learn"
-        component={LearnScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="users" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Speak"
-        component={SpeakScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="message-circle" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Discussion"
-        component={DiscussionScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="message-square" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Me"
-        component={ProfileScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <View style={[styles.profileIcon, focused && styles.profileIconActive]}>
-              {/* <Image
-                source={require('../assets/profile-placeholder.jpg')}
-                style={styles.profileImage}
-              /> */}
-            </View>
-          ),
-        }}
-      />
-    </Tab.Navigator>
+      >
+        <Tab.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <Feather name="globe" size={24} color={color} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Learn"
+          component={LearnScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <Feather name="users" size={24} color={color} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Speak"
+          component={SpeakScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <Feather name="message-circle" size={24} color={color} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Discussion"
+          component={DiscussionScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <Feather name="message-square" size={24} color={color} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <Feather name="user" size={24} color={color} />
+            ),
+          }}
+        />
+      </Tab.Navigator>
+      <TranslationBot />
+    </View>
   );
 };
 

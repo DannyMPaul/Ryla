@@ -135,7 +135,7 @@ const LearnWithAIScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(78, 13, 22, 0.23)', // Dark background
+    backgroundColor: '#0a0a1a', // Changed from 'rgba(78, 13, 22, 0.23)' to a darker blue-black
   },
   scrollView: {
     flex: 1,
@@ -200,19 +200,19 @@ const styles = StyleSheet.create({
   itemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2C2C2C', // Darker background for items
+    backgroundColor: '#1a1a2e', // Changed from '#2C2C2C' to a darker blue
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#444444', // Subtle border
+    borderColor: '#2a2a3e', // Changed from '#444444' to a darker blue
     padding: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.15, // Softer shadow for dark mode
+    shadowOpacity: 0.25, // Increased shadow opacity for better contrast
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3, // Increased elevation for better depth
   },
   itemImage: {
     width: 60,
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 21,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Darker background for better contrast
   },
 });
 
