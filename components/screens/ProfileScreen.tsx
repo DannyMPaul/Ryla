@@ -572,10 +572,6 @@ const ProfileScreen = () => {
           </Text>
           <Text style={styles.statLabel}>Words</Text>
         </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>7</Text>
-          <Text style={styles.statLabel}>Day Streak</Text>
-        </View>
       </View>
 
       <LearningGoalsSection userData={userData} onUpdate={loadUserData} />

@@ -468,7 +468,11 @@ const HomeScreen: React.FC = () => {
 
       <TouchableOpacity
         style={styles.switchButton}
+
         onPress={() => router.replace("/(tabs)/TabNavigator")}
+
+        
+
       >
         <Text style={styles.switchButtonText}>Back To Home</Text>
       </TouchableOpacity>

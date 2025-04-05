@@ -38,6 +38,7 @@ const qn2 = () => {
     if (user) {
       const db = getDatabase();
       const userRef = dbRef(db, `users/${user.uid}`);
+      const selectedLanguage = languages.find((l) => l.id === languageId);
 
       const selectedLang = languages.find((l) => l.id === languageId);
 
@@ -45,18 +46,24 @@ const qn2 = () => {
         await update(userRef, {
           "responses/languageSelection": {
             selectedLanguage: languageId,
-            languageTitle: selectedLang?.title,
+
+            languageTitle: selectedLanguage?.title || '',
+
             timestamp: new Date().toISOString(),
           },
         });
+
+        if (selectedLanguage?.title) {
+          const langRef = dbRef(db, `users/${user.uid}/model_data`);
+          await update(langRef, {
+            lang_to_learn: selectedLanguage.title
+          });
+        }
       } catch (error) {
         console.error("Error saving language:", error);
       }
 
-      const langRef = dbRef(db, `users/${user.uid}/model_data`);
-      update(langRef, {
-        lang_to_learn: selectedLang?.code,
-      });
+
     }
   };
 
