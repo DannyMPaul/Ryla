@@ -119,7 +119,26 @@ const QuizScreen = () => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [finalScore, setFinalScore] = useState({ total: 0, correct: 0 });
+  const [isNewUser, setIsNewUser] = useState(false);
   const router = useRouter();
+
+  // Reset quiz state when component mounts
+  useEffect(() => {
+    // Reset quiz state
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+    setShowResults(false);
+    setFinalScore({ total: 0, correct: 0 });
+    setIsNewUser(false);
+    
+    // Generate new random questions
+    const newQuestions = [
+      ...getRandomQuestions("beginner", 5),
+      ...getRandomQuestions("intermediate", 5),
+      ...getRandomQuestions("hard", 5)
+    ];
+    setQuizQuestions(newQuestions);
+  }, []);
 
   useEffect(() => {
     // Use the global questions object
@@ -248,6 +267,9 @@ const QuizScreen = () => {
         if (accuracy <= previousAccuracy && hoursSinceLastAttempt < 24) {
           shouldUpdate = false;
         }
+      } else {
+        // If user has no quiz results, they are a new user
+        setIsNewUser(true);
       }
       
       if (shouldUpdate) {
@@ -318,32 +340,50 @@ const QuizScreen = () => {
           </Text>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={styles.retakeButton}
-              onPress={() => {
-                // Reset quiz state
-                setCurrentQuestion(0);
-                setSelectedAnswer(null);
-                setShowResults(false);
-                setFinalScore({ total: 0, correct: 0 });
-                // Generate new random questions
-                const newQuestions = [
-                  ...getRandomQuestions("beginner", 5),
-                  ...getRandomQuestions("intermediate", 5),
-                  ...getRandomQuestions("hard", 5)
-                ];
-                setQuizQuestions(newQuestions);
-              }}
-            >
-              <Text style={styles.retakeButtonText}>Retake Quiz</Text>
-            </TouchableOpacity>
+            {isNewUser ? (
+              <TouchableOpacity 
+                style={styles.proceedButton}
+                onPress={() => router.replace('/(tabs)/qwriting')}
+              >
+                <Text style={styles.proceedButtonText}>Proceed to Writing</Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <TouchableOpacity 
+                  style={styles.retakeButton}
+                  onPress={() => {
+                    // Reset quiz state
+                    setCurrentQuestion(0);
+                    setSelectedAnswer(null);
+                    setShowResults(false);
+                    setFinalScore({ total: 0, correct: 0 });
+                    // Generate new random questions
+                    const newQuestions = [
+                      ...getRandomQuestions("beginner", 5),
+                      ...getRandomQuestions("intermediate", 5),
+                      ...getRandomQuestions("hard", 5)
+                    ];
+                    setQuizQuestions(newQuestions);
+                  }}
+                >
+                  <Text style={styles.retakeButtonText}>Retake Quiz</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.continueButton}
-              onPress={() => router.replace('/(tabs)/TabNavigator')}
-            >
-              <Text style={styles.continueButtonText}>Continue to Home</Text>
-            </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.continueButton}
+                  onPress={() => router.replace('/(tabs)/TabNavigator')}
+                >
+                  <Text style={styles.continueButtonText}>Continue to Home</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.writingButton}
+                  onPress={() => router.replace('/(tabs)/qwriting')}
+                >
+                  <Text style={styles.writingButtonText}>Writing (New User)</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       </SafeAreaView>
@@ -520,6 +560,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     marginBottom: 20,
+  },
+  proceedButton: {
+    backgroundColor: '#58cc02',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 20,
+    width: '100%',
+  },
+  proceedButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  writingButton: {
+    backgroundColor: '#58cc02',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,
+    width: '100%',
+  },
+  writingButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 

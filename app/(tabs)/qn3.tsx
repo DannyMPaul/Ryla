@@ -57,10 +57,8 @@ const ModelSettingsScreen = () => {
       if (snapshot.exists()) {
         setSelectedTargetUse(snapshot.val());
       } else {
-        // Set a default selection if none exists
-        const defaultTargetUse: TargetUseOption = "easier_understanding";
-        await saveModelData(defaultTargetUse);
-        setSelectedTargetUse(defaultTargetUse);
+        // No default selection - user must choose an option
+        setSelectedTargetUse(null);
       }
     } catch (error) {
       console.error("Error loading model data:", error);
@@ -159,11 +157,21 @@ const ModelSettingsScreen = () => {
         </View>
       </ScrollView>
 
+      {selectedTargetUse === null && (
+        <Text style={styles.selectionRequiredText}>
+          Please select a learning goal to continue
+        </Text>
+      )}
+
       <TouchableOpacity
-        style={styles.nextButton}
+        style={[
+          styles.nextButton,
+          selectedTargetUse === null && styles.nextButtonDisabled
+        ]}
         onPress={() => {
           router.replace("/(tabs)/quiz");
         }}
+        disabled={selectedTargetUse === null}
       >
         <Text style={styles.nextButtonText}>Continue to Quiz</Text>
       </TouchableOpacity>
@@ -199,24 +207,25 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 18,
     textAlign: "center",
-    marginTop: 50,
   },
   optionsContainer: {
-    gap: 12,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   optionCard: {
-    backgroundColor: "rgb(255, 255, 255)",
-    borderRadius: 25,
+    backgroundColor: "#1E1E1E",
+    borderRadius: 12,
     padding: 16,
+    marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   optionCardSelected: {
-    backgroundColor: "rgb(255, 225, 225)",
+    backgroundColor: "#2A2A2A",
+    borderColor: "#58cc02",
+    borderWidth: 2,
   },
   optionContent: {
     flexDirection: "row",
@@ -227,51 +236,56 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#F5F5F5",
-    alignItems: "center",
+    backgroundColor: "#333333",
     justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   optionText: {
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "500",
-    color: "#000000",
     flex: 1,
   },
   radioContainer: {
-    marginLeft: 12,
+    marginLeft: 10,
   },
   radioOuter: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#000000",
-    alignItems: "center",
+    borderColor: "#58cc02",
     justifyContent: "center",
+    alignItems: "center",
   },
   radioInner: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#000000",
+    backgroundColor: "#58cc02",
   },
   nextButton: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#FFFFFF",
-    borderRadius: 15,
+    backgroundColor: "#58cc02",
+    padding: 16,
+    borderRadius: 12,
+    margin: 20,
     alignItems: "center",
-    backgroundColor: "rgb(240, 74, 99)",
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
+  },
+  nextButtonDisabled: {
+    backgroundColor: "#333333",
+    opacity: 0.7,
   },
   nextButtonText: {
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  selectionRequiredText: {
+    color: "#FF6B6B",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 10,
+    paddingHorizontal: 20,
   },
 });
 

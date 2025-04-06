@@ -21,7 +21,6 @@ const { width } = Dimensions.get('window');
 
 type ValidRoute = 
   | '/(tabs)/Home' 
-  | '/(tabs)/q1' 
   | '/(tabs)/q2' 
   | '/(tabs)/q3';
 
