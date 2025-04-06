@@ -24,11 +24,34 @@ interface Message {
   mentorName: string;
   timestamp: number;
   isReply: boolean;
+  audioUrl?: string;
+  isVoiceMessage?: boolean;
 }
 
 interface User {
   name: string;
   email: string;
+  lastLogin?: string;
+  progress?: {
+    currentQuestion: number;
+    totalCorrect: number;
+    hearts: number;
+  };
+  quizResults?: {
+    finalLevel: string;
+    totalScore: number;
+    scores: {
+      beginner: number;
+      intermediate: number;
+      hard: number;
+    };
+    details: {
+      totalQuestions: number;
+      correctAnswers: number;
+      accuracy: string;
+    };
+    completedAt: string;
+  };
 }
 
 const MentorDashboard = () => {
@@ -181,9 +204,26 @@ const MentorDashboard = () => {
               ]}
             >
               <View style={styles.messageHeader}>
-                <Text style={styles.messageSender}>
-                  {message.isReply ? 'You' : users[message.userId]?.name || message.userName}
-                </Text>
+                <View style={styles.senderInfo}>
+                  <Text style={styles.messageSender}>
+                    {message.isReply ? 'You' : users[message.userId]?.name || message.userName}
+                  </Text>
+                  {!message.isReply && users[message.userId] && (
+                    <View style={styles.userDetails}>
+                      <Text style={styles.userEmail}>{users[message.userId]?.email || 'No email'}</Text>
+                      {users[message.userId]?.quizResults && (
+                        <View style={styles.userStats}>
+                          <Text style={styles.userLevel}>
+                            Level: {users[message.userId]?.quizResults?.finalLevel || 'N/A'}
+                          </Text>
+                          <Text style={styles.userAccuracy}>
+                            Accuracy: {users[message.userId]?.quizResults?.details?.accuracy || 'N/A'}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
                 <Text style={styles.messageTime}>
                   {formatTime(message.timestamp)}
                 </Text>
@@ -316,6 +356,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 8,
+  },
+  senderInfo: {
+    flex: 1,
+  },
+  userDetails: {
+    marginTop: 4,
+  },
+  userEmail: {
+    color: '#a0aec0',
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  userStats: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  userLevel: {
+    color: '#58cc02',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  userAccuracy: {
+    color: '#58cc02',
+    fontSize: 12,
+    fontWeight: '500',
   },
   messageSender: {
     color: '#58cc02',
