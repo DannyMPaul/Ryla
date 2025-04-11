@@ -151,7 +151,7 @@ const LearningGoalsSection = ({
           },
           easier_understanding: {
             selected: false,
-            description: "I want to understand English more easily",
+            description: "I want to understand Language more easily",
           },
           paraphrasing: {
             selected: false,
@@ -159,7 +159,7 @@ const LearningGoalsSection = ({
           },
           formal_tone: {
             selected: false,
-            description: "I want to learn formal English",
+            description: "I want to learn formal Language",
           },
           neutral_tone: {
             selected: false,

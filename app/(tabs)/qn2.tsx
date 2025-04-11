@@ -34,38 +34,35 @@ const qn2 = () => {
   const handleLanguageSelect = async (languageId: string) => {
     setSelectedLanguage(languageId);
     const user = auth.currentUser;
-
+  
     if (user) {
       const db = getDatabase();
       const userRef = dbRef(db, `users/${user.uid}`);
       const selectedLanguage = languages.find((l) => l.id === languageId);
-
+  
       const selectedLang = languages.find((l) => l.id === languageId);
-
+  
       try {
         await update(userRef, {
           "responses/languageSelection": {
             selectedLanguage: languageId,
-
-            languageTitle: selectedLanguage?.title || '',
-
+            languageCode: selectedLanguage?.code || '', // 🔁 storing .code instead of .title
             timestamp: new Date().toISOString(),
           },
         });
-
-        if (selectedLanguage?.title) {
+  
+        if (selectedLanguage?.code) {
           const langRef = dbRef(db, `users/${user.uid}/model_data`);
           await update(langRef, {
-            lang_to_learn: selectedLanguage.title
+            lang_to_learn: selectedLanguage.code, // 🔁 this is the correct path and variable
           });
         }
       } catch (error) {
         console.error("Error saving language:", error);
       }
-
-
     }
   };
+  
 
   const handleNext = async () => {
     if (!selectedLanguage) return;

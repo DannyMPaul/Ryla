@@ -235,16 +235,18 @@ const ChatGame = () => {
       onPress={() => router.replace('./Learnwithai')}
       activeOpacity={0.7}
     >
-      <Ionicons name="arrow-back-circle" size={42} color="#F0657A" />
+      <Ionicons name="arrow-back" size={24} color="#F0657A" />
     </TouchableOpacity>
   );
-
+  
   return (
     <View style={styles.container}>
+      <BackButton />
+  
       <View style={styles.header}>
         <Text style={styles.heading}>{currentScenario.heading}</Text>
       </View>
-
+  
       <View style={styles.imageContainer}>
         <Image source={currentScenario.image} style={styles.image} />
         <TouchableOpacity 
@@ -254,7 +256,7 @@ const ChatGame = () => {
           <Ionicons name="volume-high" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
-
+  
       <View style={styles.progressIndicator}>
         {scenarios.map((_, index) => (
           <View
@@ -268,11 +270,11 @@ const ChatGame = () => {
           />
         ))}
       </View>
-
+  
       <View style={styles.questionContainer}>
         <Text style={styles.questionText}>{currentScenario.question}</Text>
       </View>
-
+  
       <View style={styles.optionsContainer}>
         {currentScenario.options.map((option) => (
           <TouchableOpacity
@@ -284,7 +286,7 @@ const ChatGame = () => {
           </TouchableOpacity>
         ))}
       </View>
-
+  
       <FlatList
         ref={chatListRef}
         data={messages}
@@ -303,7 +305,7 @@ const ChatGame = () => {
         )}
         style={styles.chatContainer}
       />
-
+  
       {showResult && (
         <View style={styles.resultContainer}>
           <Text style={styles.resultScore}>
@@ -317,195 +319,195 @@ const ChatGame = () => {
           </TouchableOpacity>
         </View>
       )}
-      <BackButton />
     </View>
-  );
-};
-
-export default function Learnwithaifood() {
-  return <ChatGame />;
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#1A1A1A',
-    padding: normalize(16),
-  },
-  header: {
-    marginBottom: normalize(20),
-    paddingTop: normalize(40),
-  },
-  heading: {
-    fontSize: normalize(18),
-    color: '#FFFFFF',
-    marginBottom: normalize(10),
-    textAlign: 'center',
-    paddingHorizontal: normalize(16),
-    fontWeight: '600',
-  },
-  imageContainer: {
-    width: SCREEN_WIDTH * 0.8,
-    height: SCREEN_WIDTH * 0.6,
-    alignSelf: 'center',
-    marginBottom: normalize(20),
-    borderRadius: normalize(12),
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
+  )};
+  
+  export default function Learnwithaifood() {
+    return <ChatGame />;
+  }
+  
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#1A1A1A',
+      padding: normalize(16),
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  questionContainer: {
-    backgroundColor: 'rgba(79, 198, 172, 0.15)',
-    padding: normalize(16),
-    borderRadius: normalize(12),
-    marginBottom: normalize(20),
-    borderWidth: 1,
-    borderColor: 'rgba(79, 198, 172, 0.3)',
-  },
-  questionText: {
-    fontSize: normalize(18),
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: normalize(10),
-    fontWeight: '500',
-  },
-  optionsContainer: {
-    marginTop: normalize(10),
-  },
-  optionButton: {
-    backgroundColor: 'rgba(79, 198, 172, 0.9)',
-    padding: normalize(12),
-    borderRadius: normalize(25),
-    marginBottom: normalize(12),
-    borderBottomRightRadius: 0,
-    marginLeft: normalize(20),
-    width: SCREEN_WIDTH * 0.8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
+    header: {
+      marginBottom: normalize(20),
+      paddingTop: normalize(40),
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 3,
-  },
-  optionText: {
-    color: '#FFFFFF',
-    fontSize: normalize(16),
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  chatContainer: {
-    flex: 1,
-    marginTop: normalize(20),
-  },
-  messageContainer: {
-    flexDirection: 'row',
-    marginBottom: normalize(10),
-    paddingHorizontal: normalize(8),
-  },
-  messageBubble: {
-    maxWidth: SCREEN_WIDTH * 0.7,
-    padding: normalize(12),
-    borderRadius: normalize(20),
-    marginBottom: normalize(8),
-  },
-  queryBubble: {
-    backgroundColor: 'rgba(79, 198, 172, 0.25)',
-    alignSelf: 'flex-start',
-    borderBottomLeftRadius: 0,
-    borderWidth: 1,
-    borderColor: 'rgba(79, 198, 172, 0.4)',
-  },
-  replyBubble: {
-    backgroundColor: 'rgba(79, 198, 172, 0.9)',
-    alignSelf: 'flex-end',
-    borderBottomRightRadius: 0,
-  },
-  messageText: {
-    fontSize: normalize(16),
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-  resultContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1A1A1A',
-    padding: normalize(20),
-  },
-  resultScore: {
-    fontSize: normalize(32),
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: normalize(20),
-  },
-  resultMessage: {
-    fontSize: normalize(24),
-    textAlign: 'center',
-    color: '#FFFFFF',
-    marginBottom: normalize(30),
-    paddingHorizontal: normalize(20),
-    fontWeight: '500',
-  },
-  backButton: {
-    backgroundColor: '#4EC6AC',
-    padding: normalize(15),
-    borderRadius: normalize(25),
-    position: 'absolute',
-    bottom: normalize(20),
-    left: normalize(20),
-    right: normalize(20),
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
+    heading: {
+      fontSize: normalize(18),
+      color: '#FFFFFF',
+      marginBottom: normalize(10),
+      textAlign: 'center',
+      paddingHorizontal: normalize(16),
+      fontWeight: '600',
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  backButtonText: {
-    color: '#FFFFFF',
-    fontSize: normalize(18),
-    fontWeight: 'bold',
-  },
-  audioButton: {
-    position: 'absolute',
-    right: normalize(10),
-    top: normalize(10),
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    padding: normalize(8),
-    borderRadius: normalize(20),
-  },
-  progressIndicator: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: normalize(20),
-  },
-  progressDot: {
-    width: normalize(8),
-    height: normalize(8),
-    borderRadius: normalize(4),
-    marginHorizontal: normalize(4),
-  },
-  progressDotActive: {
-    backgroundColor: '#4EC6AC',
-  },
-  progressDotInactive: {
-    backgroundColor: '#666666',
-  },
-});
+    imageContainer: {
+      width: SCREEN_WIDTH * 0.8,
+      height: SCREEN_WIDTH * 0.6,
+      alignSelf: 'center',
+      marginBottom: normalize(20),
+      borderRadius: normalize(12),
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    image: {
+      width: '100%',
+      height: '100%',
+      resizeMode: 'cover',
+    },
+    questionContainer: {
+      backgroundColor: 'rgba(79, 198, 172, 0.15)',
+      padding: normalize(16),
+      borderRadius: normalize(12),
+      marginBottom: normalize(20),
+      borderWidth: 1,
+      borderColor: 'rgba(79, 198, 172, 0.3)',
+    },
+    questionText: {
+      fontSize: normalize(18),
+      color: '#FFFFFF',
+      textAlign: 'center',
+      marginBottom: normalize(10),
+      fontWeight: '500',
+    },
+    optionsContainer: {
+      marginTop: normalize(10),
+    },
+    optionButton: {
+      backgroundColor: 'rgba(79, 198, 172, 0.9)',
+      padding: normalize(12),
+      borderRadius: normalize(25),
+      marginBottom: normalize(12),
+      borderBottomRightRadius: 0,
+      marginLeft: normalize(20),
+      width: SCREEN_WIDTH * 0.8,
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 3,
+    },
+    optionText: {
+      color: '#FFFFFF',
+      fontSize: normalize(16),
+      textAlign: 'center',
+      fontWeight: '600',
+    },
+    chatContainer: {
+      flex: 1,
+      marginTop: normalize(20),
+    },
+    messageContainer: {
+      flexDirection: 'row',
+      marginBottom: normalize(10),
+      paddingHorizontal: normalize(8),
+    },
+    messageBubble: {
+      maxWidth: SCREEN_WIDTH * 0.7,
+      padding: normalize(12),
+      borderRadius: normalize(20),
+      marginBottom: normalize(8),
+    },
+    queryBubble: {
+      backgroundColor: 'rgba(79, 198, 172, 0.25)',
+      alignSelf: 'flex-start',
+      borderBottomLeftRadius: 0,
+      borderWidth: 1,
+      borderColor: 'rgba(79, 198, 172, 0.4)',
+    },
+    replyBubble: {
+      backgroundColor: 'rgba(79, 198, 172, 0.9)',
+      alignSelf: 'flex-end',
+      borderBottomRightRadius: 0,
+    },
+    messageText: {
+      fontSize: normalize(16),
+      color: '#FFFFFF',
+      fontWeight: '500',
+    },
+    resultContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#1A1A1A',
+      padding: normalize(20),
+    },
+    resultScore: {
+      fontSize: normalize(32),
+      fontWeight: 'bold',
+      color: '#FFFFFF',
+      marginBottom: normalize(20),
+    },
+    resultMessage: {
+      fontSize: normalize(24),
+      textAlign: 'center',
+      color: '#FFFFFF',
+      marginBottom: normalize(30),
+      paddingHorizontal: normalize(20),
+      fontWeight: '500',
+    },
+    backButton: {
+      backgroundColor: '#4EC6AC',
+      width: normalize(40),
+      height: normalize(40),
+      borderRadius: normalize(20),
+      position: 'absolute',
+      top: normalize(20),
+      left: normalize(20),
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    backButtonText: {
+      color: '#FFFFFF',
+      fontSize: normalize(18),
+      fontWeight: 'bold',
+    },
+    audioButton: {
+      position: 'absolute',
+      right: normalize(10),
+      top: normalize(10),
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      padding: normalize(8),
+      borderRadius: normalize(20),
+    },
+    progressIndicator: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: normalize(20),
+    },
+    progressDot: {
+      width: normalize(8),
+      height: normalize(8),
+      borderRadius: normalize(4),
+      marginHorizontal: normalize(4),
+    },
+    progressDotActive: {
+      backgroundColor: '#4EC6AC',
+    },
+    progressDotInactive: {
+      backgroundColor: '#666666',
+    },
+  });
+  

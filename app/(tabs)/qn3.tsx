@@ -25,9 +25,9 @@ type TargetUseOption =
 const targetUseDescriptions: Record<TargetUseOption, string> = {
   grammar_correction: "I want to improve my grammar",
   text_coherent: "I want to learn to express myself clearly",
-  easier_understanding: "I want to understand French more easily",
+  easier_understanding: "I want to understand Language more easily",
   paraphrasing: "I want to learn different ways to express myself",
-  formal_tone: "I want to learn formal French",
+  formal_tone: "I want to learn formal Language",
   neutral_tone: "I want a neutral communication style",
 };
 
@@ -166,7 +166,7 @@ const ModelSettingsScreen = () => {
       <TouchableOpacity
         style={[
           styles.nextButton,
-          selectedTargetUse === null && styles.nextButtonDisabled
+          selectedTargetUse === null && styles.nextButtonDisabled,
         ]}
         onPress={() => {
           router.replace("/(tabs)/quiz");

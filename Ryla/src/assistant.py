@@ -24,12 +24,18 @@ class MultilingualAssistant:
         logger.info(f"Using device: {self.device}")
         
         self.language_configs = {
-            'fr': {
-                'grammar_model': "PoloHuggingface/French_grammar_error_corrector",
-                'chat_model': "microsoft/DialoGPT-medium",
-                'tokenizer_class': AutoTokenizer,
-                'model_class': AutoModelForCausalLM
+            "fr": {
+                'grammar_model': "grammarly/coedit-large",
+                'chat_model': "facebook/blenderbot-400M-distill",
+                'tokenizer_class': BlenderbotTokenizer,
+                'model_class': BlenderbotForConditionalGeneration
             },
+            # 'fr': {
+            #     'grammar_model': "PoloHuggingface/French_grammar_error_corrector",
+            #     'chat_model': "microsoft/DialoGPT-medium",
+            #     'tokenizer_class': AutoTokenizer,
+            #     'model_class': AutoModelForCausalLM
+            # },
             "en": {
                 'grammar_model': "grammarly/coedit-large",
                 'chat_model': "facebook/blenderbot-400M-distill",
@@ -39,14 +45,22 @@ class MultilingualAssistant:
         }
         
         self.target_uses = {
-            'fr': {
-                'grammar_correction': {'prompt': "Corriger la grammaire: ", 'weight': 1.0},
-                'text_coherent': {'prompt': "Rendre ce texte plus cohérent: ", 'weight': 0.8},
-                'easier_understanding': {'prompt': "Simplifier ce texte: ", 'weight': 0.6},
-                'paraphrasing': {'prompt': "Paraphraser ce texte: ", 'weight': 0.7},
-                'formal_tone': {'prompt': "Rendre le texte plus formel: ", 'weight': 0.9},
-                'neutral_tone': {'prompt': "Convertir le texte en ton neutre: ", 'weight': 0.8}
+            "fr": {
+                'grammar_correction': {'prompt': "Correct the grammar: ", 'weight': 1.0},
+                'text_coherent': {'prompt': "Make this text more coherent: ", 'weight': 0.8},
+                'easier_understanding': {'prompt': "Simplify this text: ", 'weight': 0.6},
+                'paraphrasing': {'prompt': "Paraphrase this text: ", 'weight': 0.7},
+                'formal_tone': {'prompt': "Make the text more formal: ", 'weight': 0.9},
+                'neutral_tone': {'prompt': "Convert text to a neutral tone: ", 'weight': 0.8}
             },
+            # 'fr': {
+            #     'grammar_correction': {'prompt': "Corriger la grammaire: ", 'weight': 1.0},
+            #     'text_coherent': {'prompt': "Rendre ce texte plus cohérent: ", 'weight': 0.8},
+            #     'easier_understanding': {'prompt': "Simplifier ce texte: ", 'weight': 0.6},
+            #     'paraphrasing': {'prompt': "Paraphraser ce texte: ", 'weight': 0.7},
+            #     'formal_tone': {'prompt': "Rendre le texte plus formel: ", 'weight': 0.9},
+            #     'neutral_tone': {'prompt': "Convertir le texte en ton neutre: ", 'weight': 0.8}
+            # },
             "en": {
                 'grammar_correction': {'prompt': "Correct the grammar: ", 'weight': 1.0},
                 'text_coherent': {'prompt': "Make this text more coherent: ", 'weight': 0.8},

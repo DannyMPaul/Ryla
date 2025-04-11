@@ -53,7 +53,7 @@ interface AudioError extends Error {
   code?: string;
 }
 
-const API_URL = "http://192.168.1.33:8000";
+const API_URL = "http://172.20.10.9:8000";
 
 export const getFirebaseToken = async () => {
   const auth = getAuth();
@@ -705,14 +705,16 @@ export default function LanguageLearningScreen() {
         <View style={styles.header}>
           <Text style={styles.headerText}>Language Assistant</Text>
           <View style={styles.headerControls}>
-            {connectionError && (
-              <TouchableOpacity
-                onPress={retryConnection}
-                style={styles.retryButton}
-              >
-                <MaterialIcons name="refresh" size={24} color="white" />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              onPress={retryConnection}
+              style={styles.retryButton}
+            >
+              <MaterialIcons
+                name="refresh"
+                size={24}
+                color="white"
+              />
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setIsSpeechEnabled(!isSpeechEnabled)}
               style={styles.speechToggle}
@@ -725,7 +727,7 @@ export default function LanguageLearningScreen() {
             </TouchableOpacity>
           </View>
         </View>
-
+  
         {connectionError && (
           <View style={styles.connectionError}>
             <Text style={styles.connectionErrorText}>
@@ -733,7 +735,7 @@ export default function LanguageLearningScreen() {
             </Text>
           </View>
         )}
-
+  
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -741,7 +743,7 @@ export default function LanguageLearningScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.messageList}
         />
-
+  
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.inputContainer}
@@ -776,7 +778,7 @@ export default function LanguageLearningScreen() {
               </TouchableOpacity>
             )}
           </View>
-
+  
           <TouchableOpacity
             style={[
               styles.micButton,
@@ -795,7 +797,7 @@ export default function LanguageLearningScreen() {
         </KeyboardAvoidingView>
       </SafeAreaView>
     </LinearGradient>
-  );
+  );  
 }
 
 const styles = StyleSheet.create({

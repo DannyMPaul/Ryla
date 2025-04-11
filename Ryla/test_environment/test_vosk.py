@@ -2,7 +2,7 @@ from vosk import Model, KaldiRecognizer
 import wave
 import json
 
-VOSK_MODEL_PATH = r"C:\Users\DAN\OneDrive\Desktop\Git Up\Project-MWS-01\Ryla\vosk-model-small-fr-0.22"  # Adjust path if needed
+VOSK_MODEL_PATH = r"..\Ryla\vosk-model-small-fr-0.22"  # Adjust path if needed
 
 model = Model(VOSK_MODEL_PATH)
 recognizer = KaldiRecognizer(model, 16000)
