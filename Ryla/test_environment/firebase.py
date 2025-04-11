@@ -5,18 +5,18 @@
 #     try:
 #         firebase_admin.get_app()
 #     except ValueError:
-#         cred = credentials.Certificate("C:\Users\DAN\OneDrive\Desktop\Git Up\Project-MWS-01\Ryla\Firebase_connection.json")
+#         cred = credentials.Certificate("..\Ryla\Firebase_connection.json")
 #         firebase_admin.initialize_app(cred, {
-#             'databaseURL': 'https://rylaang-64c80-default-rtdb.asia-southeast1.firebasedatabase.app/'
+#             'databaseURL': 'https:'
 #         })
 
 import firebase_admin
 from firebase_admin import credentials, db
 
 # Initialize Firebase (Ensure your service account JSON is correct)
-cred = credentials.Certificate(r"C:\Users\DAN\OneDrive\Desktop\Git Up\Project-MWS-01\Ryla\Firebase_connection.json")
+cred = credentials.Certificate(r"..\Ryla\Firebase_connection.json")
 firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://rylaang-64c80-default-rtdb.asia-southeast1.firebasedatabase.app/'
+    'databaseURL': 'https:'
 })
 
 def fetch_user_data(user_id):

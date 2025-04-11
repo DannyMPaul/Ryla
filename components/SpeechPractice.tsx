@@ -45,7 +45,7 @@ interface Translations {
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-const OPENAI_API_KEY = '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';
+const OPENAI_API_KEY = "sk";
 
 const MYMEMORY_API_URL = "https://api.mymemory.translated.net/get";
 

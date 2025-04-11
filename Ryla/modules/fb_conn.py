@@ -2,7 +2,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore, db
 from google.cloud.firestore_v1.base_query import FieldFilter,Or
 
-cred = credentials.Certificate(r"C:\Users\DAN\OneDrive\Desktop\Ryla\Firebase_connection.json")
+cred = credentials.Certificate(r"..\Ryla\Firebase_connection.json")
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()

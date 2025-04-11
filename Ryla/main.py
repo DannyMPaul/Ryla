@@ -32,9 +32,9 @@ AudioSegment.converter = which("ffmpeg") or r"..\\..\\FFmpeg\\bin\\ffmpeg.exe"
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Global variables
-VOSK_MODEL_PATH_FR = os.environ.get("VOSK_MODEL_PATH_FR", r"..\Ryla\vosk-model-small-fr-0.22")
+VOSK_MODEL_PATH_FR = os.environ.get("VOSK_MODEL_PATH_FR", r"..\Ryla\vosk-model-fr-0.22")
 _vosk_model_fr = None
-VOSK_MODEL_PATH_EN = os.environ.get("VOSK_MODEL_PATH_EN", r"..\Ryla\vosk-model-small-en-us-0.15")
+VOSK_MODEL_PATH_EN = os.environ.get("VOSK_MODEL_PATH_EN", r"..\Ryla\vosk-model-en-us-0.22")
 _vosk_model_en = None
 firebase_available = False
 
@@ -97,9 +97,9 @@ def get_vosk_model_en():
     return _vosk_model_en
 
 def get_vosk_model(language):
-    if language == "en":
+    if language == "fr":
         return get_vosk_model_fr()
-    elif language == "fr":
+    elif language == "en":
         return get_vosk_model_en()
     else:
         # Default to English if language is not recognized
@@ -126,9 +126,9 @@ def initialize_firebase():
         logging.info("Firebase app already initialized")
     except ValueError:
         try:
-            cred = credentials.Certificate(r"C:\Users\DAN\OneDrive\Desktop\Git Up\Project-MWS-01\Ryla\Firebase_connection.json")
+            cred = credentials.Certificate(r"..\Ryla\Firebase_connection.json")
             firebase_admin.initialize_app(cred, {
-                'databaseURL': 'https://rylaang-64c80-default-rtdb.asia-southeast1.firebasedatabase.app/'
+                'databaseURL': 'https:'
             })
             firebase_available = True
             logging.info("Firebase initialized successfully (direct setup)")
